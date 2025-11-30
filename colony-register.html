@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · Colony Register</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#f3f4f6; --card-bg:#ffffff; --accent:#0ea5e9; --border-soft:#e5e7eb; --text-main:#111827; --text-muted:#6b7280; }
+    body {
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      margin:0;
+      background:radial-gradient(circle at top,#e0f2fe 0,var(--bg) 60%);
+      color:var(--text-main);
+    }
+    .outer{min-height:100vh;display:flex;justify-content:center;align-items:flex-start;}
+    .container{max-width:900px;width:100%;padding:24px;box-sizing:border-box;}
+    .card{
+      background:var(--card-bg);
+      border-radius:16px;
+      padding:22px;
+      box-shadow:0 18px 30px rgba(15,23,42,0.08),0 0 0 1px rgba(15,23,42,0.02);
+      border:1px solid var(--border-soft);
+      margin-bottom:20px;
+    }
+    .top-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+    .top-nav-title{font-weight:600;font-size:0.95rem;color:#0f172a;}
+    .top-nav-links a{font-size:0.85rem;color:#4b5563;text-decoration:none;margin-left:10px;}
+    .top-nav-links a:hover{color:#0ea5e9;}
+    h1{margin:4px 0 12px;font-size:1.55rem;}
+    p{color:var(--text-muted);font-size:0.9rem;line-height:1.5;margin-bottom:10px;}
+    label{display:block;margin-top:9px;margin-bottom:3px;font-size:0.82rem;color:#374151;font-weight:500;}
+    input,textarea{
+      width:100%;
+      padding:7px 9px;
+      border-radius:9px;
+      border:1px solid #d1d5db;
+      background:#f9fafb;
+      color:var(--text-main);
+      box-sizing:border-box;
+      font-size:0.88rem;
+    }
+    textarea{min-height:70px;resize:vertical;}
+    button{
+      margin-top:13px;
+      padding:9px 18px;
+      border-radius:999px;
+      border:none;
+      font-size:0.9rem;
+      font-weight:550;
+      cursor:pointer;
+      background:var(--accent);
+      color:#f9fafb;
+    }
+    button:hover{background:#0369a1;}
+    .colony-list-item{
+      padding:14px;
+      border-radius:14px;
+      border:1px solid var(--border-soft);
+      background:#fff;
+      margin-top:10px;
+    }
+    .list-title{font-weight:600;font-size:1rem;margin:0 0 8px;}
+    @media(max-width:800px){.container{padding:14px;}}
+  </style>
+</head>
+
+<body>
+  <div class="outer">
+    <div class="container">
+
+      <!-- NAV -->
+      <div class="top-nav">
+        <div class="top-nav-title">Frog Social</div>
+        <div class="top-nav-links">
+          <a href="index.html">Home</a>
+          <a href="colony-register.html">Colonies</a>
+          <a href="case-intake.html">New Case</a>
+          <a href="case-history.html">Case History</a>
+          <a href="social.html">Social</a>
+          <a href="account.html">Account</a>
+         <a class="signout" href="index.html">Sign Out</a>
+        </div>
+      </div>
+
+      <!-- PAGE TITLE -->
+      <div class="card">
+        <h1>Colony Register</h1>
+        <p>
+          Add each colony, room, rack, or housing system you'd like Frog Social to track.
+          This creates a quick-access reference and helps when submitting case summaries.
+        </p>
+
+        <!-- FORM -->
+        <form id="colonyForm">
+          <label for="colonyName">Colony / Room Name</label>
+          <input id="colonyName" placeholder="e.g., Room B217, Rack 3" required>
+
+          <label for="systemType">System Type</label>
+          <input id="systemType" placeholder="e.g., Recirculating rack">
+
+          <label for="approxFrogs">Approx # of Frogs</label>
+          <input id="approxFrogs" placeholder="e.g., 120">
+
+          <label for="notes">Notes (optional)</label>
+          <textarea id="notes" placeholder="Anything unique about this colony (density, age structure, water source, etc.)"></textarea>
+
+          <button type="submit">Add Colony</button>
+        </form>
+      </div>
+
+      <!-- LIST -->
+      <div class="card">
+        <h2>Registered Colonies</h2>
+        <div id="colonyList"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function loadColonies() {
+      try {
+        const c = localStorage.getItem("frogSocialColonies");
+        return c ? JSON.parse(c) : [];
+      } catch { return []; }
+    }
+
+    function saveColonies(list) {
+      localStorage.setItem("frogSocialColonies", JSON.stringify(list));
+    }
+
+    const colonyForm = document.getElementById("colonyForm");
+    const colonyListDiv = document.getElementById("colonyList");
+
+    function renderColonies() {
+      const colonies = loadColonies();
+      colonyListDiv.innerHTML = "";
+
+      if (colonies.length === 0) {
+        colonyListDiv.innerHTML = `<p class="small" style="color:#6b7280;">No colonies registered yet.</p>`;
+        return;
+      }
+
+      colonies.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "colony-list-item";
+        div.innerHTML = `
+          <div class="list-title">${c.name}</div>
+          <div><strong>System:</strong> ${c.system || "—"}</div>
+          <div><strong>Frogs:</strong> ${c.count || "—"}</div>
+          <div><strong>Notes:</strong> ${c.notes || "—"}</div>
+        `;
+        colonyListDiv.appendChild(div);
+      });
+    }
+
+    colonyForm.addEventListener("submit", e => {
+      e.preventDefault();
+      const newColony = {
+        id: Date.now(),
+        name: document.getElementById("colonyName").value.trim(),
+        system: document.getElementById("systemType").value.trim(),
+        count: document.getElementById("approxFrogs").value.trim(),
+        notes: document.getElementById("notes").value.trim()
+      };
+
+      const colonies = loadColonies();
+      colonies.unshift(newColony);
+      saveColonies(colonies);
+      renderColonies();
+      colonyForm.reset();
+    });
+
+    renderColonies();
+  </script>
+</body>
+</html>
+

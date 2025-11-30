@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* same basic theme as index */
+    :root {
+      --bg: #f3f4f6;
+      --card-bg: #ffffff;
+      --accent: #0ea5e9;
+      --border-soft: #e5e7eb;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: radial-gradient(circle at top, #e0f2fe 0, var(--bg) 60%);
+      color: var(--text-main);
+    }
+    .outer { min-height: 100vh; display:flex; justify-content:center; align-items:flex-start; }
+    .container { max-width: 1100px; width:100%; padding:24px; box-sizing:border-box; }
+    .card {
+      background:var(--card-bg);
+      border-radius:16px;
+      padding:22px;
+      box-shadow:0 18px 30px rgba(15,23,42,0.08),0 0 0 1px rgba(15,23,42,0.02);
+      border:1px solid var(--border-soft);
+      margin-bottom:20px;
+    }
+    .top-nav {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .top-nav-title { font-weight:600; font-size:0.95rem; color:#0f172a; }
+    .top-nav-links a {
+      font-size:0.85rem;
+      color:#4b5563;
+      text-decoration:none;
+      margin-left:10px;
+    }
+    .top-nav-links a:hover { color:#0ea5e9; }
+    h1 { margin:4px 0 6px; font-size:1.7rem; letter-spacing:-0.02em; }
+    p { color:var(--text-muted); font-size:0.9rem; line-height:1.5; }
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:16px;
+      margin-top:10px;
+    }
+    .tile {
+      border-radius:14px;
+      border:1px solid #e5e7eb;
+      padding:14px;
+      background:#f9fafb;
+    }
+    .tile h2 { font-size:1rem; margin:0 0 4px; }
+    .tile p { font-size:0.82rem; margin:0 0 6px; }
+    .tile a {
+      font-size:0.8rem;
+      color:#0369a1;
+      text-decoration:none;
+      font-weight:500;
+    }
+    .tile a:hover { text-decoration:underline; }
+    @media (max-width:800px) { .container{padding:14px;} }
+  </style>
+</head>
+<body>
+  <div class="outer">
+    <div class="container">
+      <div class="top-nav">
+        <div class="top-nav-title">Frog Social</div>
+        <div class="top-nav-links">
+          <a href="home.html">Home</a>
+          <a href="colony-register.html">Colonies</a>
+          <a href="case-intake.html">New Case</a>
+          <a href="case-history.html">Case History</a>
+          <a href="social.html">Social</a>
+          <a href="index.html">Sign out</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h1>Colony Companion</h1>
+        <p>
+          Welcome to Frog Social. From here you can register your colony, have colony history saved here, describe problems, get solutions, review case histories, and participate in a husbandry-focused discussion stream.
+        </p>
+      </div>
+
+      <div class="top-nav-links">
+  <a href="index.html">Home</a>
+  <a href="colony-register.html">Colonies</a>
+  <a href="case-intake.html">New Case</a>
+  <a href="case-history.html">Case History</a>
+  <a href="social.html">Social</a>
+  <a href="account.html">Account</a>
+
+    </div>
+  </div>
+</body>
+</html>

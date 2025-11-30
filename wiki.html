@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · Guides & Recipes</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: #f3f4f6;
+      color: #111827;
+    }
+    .nav {
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 12px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-left { font-weight: 600; font-size: 0.95rem; }
+    .nav-links a {
+      margin-left: 14px;
+      text-decoration: none;
+      color: #4b5563;
+      font-size: 0.9rem;
+    }
+    .nav-links a:hover { color: #0ea5e9; }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .card {
+      background: white;
+      padding: 24px;
+      margin-top: 16px;
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+    }
+    h1 {
+      margin-top: 4px;
+      font-size: 1.8rem;
+    }
+    h2 {
+      margin-top: 32px;
+      font-size: 1.3rem;
+      color: #0f172a;
+    }
+    h3 {
+      margin-top: 18px;
+      font-size: 1.05rem;
+      color: #111827;
+    }
+    p, li {
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: #374151;
+    }
+    a { color: #0ea5e9; }
+    a:hover { text-decoration: underline; }
+
+    .toc {
+      background: #f9fafb;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      padding: 12px 14px;
+      margin-top: 12px;
+    }
+    .toc-title {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .toc ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    .toc li {
+      margin: 2px 0;
+      font-size: 0.86rem;
+    }
+
+    details {
+      margin-top: 12px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 8px 10px 10px;
+    }
+    summary {
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #111827;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+
+    code {
+      background: #f1f5f9;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    .small-note {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="nav">
+    <div class="nav-left">Frog Social</div>
+    <div class="nav-links">
+      <a href="index.html">Dashboard</a>
+      <a href="case-intake.html">New Case</a>
+      <a href="case-history.html">Case History</a>
+      <a href="social.html">Social</a>
+      <a href="account.html">Account</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h1>Guides, Endpoints, & Recipes</h1>
+      <p>
+        Core reference material for Xenopus husbandry, embryo handling, and experimental
+        solutions. This page is meant as a <em>living companion</em> to case histories and
+        social discussion, not as a fixed textbook.  
+        A project of the <strong>Xenopus Model Welfare Organization</strong>.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">On this page</div>
+        <ul>
+          <li><a href="#solutions">Solution recipes (Barth’s, MMR, ND96)</a></li>
+          <li><a href="#water">System water & environment targets</a></li>
+          <li><a href="#embryos">Embryo & tadpole troubleshooting</a></li>
+          <li><a href="#oocytes">Oocyte handling & ion channel basics</a></li>
+          <li><a href="#welfare">Husbandry-first welfare notes</a></li>
+          <li><a href="#links">Model Welfare links & credits</a></li>
+        </ul>
+      </div>
+
+      <!-- Solutions -->
+      <h2 id="solutions">Solution recipes (working starting points)</h2>
+      <p class="small-note">
+        Exact formulations vary slightly by lab tradition. These are typical values and
+        starting points, to be refined and confirmed locally.
+      </p>
+
+      <h3>Barth’s / Modified Barth’s (stock + working)</h3>
+      <details>
+        <summary>Show Barth’s stock & working solution</summary>
+        <p><strong>Example 10× Barth’s stock</strong> (dissolve in distilled water, adjust pH 7.4–7.8):</p>
+        <ul>
+          <li>NaCl — 880 mM</li>
+          <li>KCl — 10 mM</li>
+          <li>MgSO₄·7H₂O — 25 mM</li>
+          <li>Ca(NO₃)₂·4H₂O — 8 mM</li>
+          <li>CaCl₂·6H₂O — 10 mM</li>
+          <li>NaHCO₃ — 250 mM</li>
+          <li>HEPES — 100 mM</li>
+        </ul>
+        <p>
+          <strong>Working Barth’s / MBS:</strong> dilute 1:10 in distilled water and re-check pH.
+          Many labs add antibiotics or adjust osmolarity; record any deviations you adopt.
+        </p>
+      </details>
+
+      <h3>0.1× MMR (standard embryo medium)</h3>
+      <details>
+        <summary>Show 0.1× MMR composition</summary>
+        <ul>
+          <li>NaCl — 10 mM</li>
+          <li>KCl — 0.2 mM</li>
+          <li>MgSO₄ — 0.1 mM</li>
+          <li>CaCl₂ — 0.1 mM</li>
+          <li>HEPES — 5 mM (pH ~7.8–7.9 with NaOH)</li>
+        </ul>
+        <p>
+          Prepare as a 10× stock if helpful, then dilute 1:10 for 0.1× working
+          solution. Always document the pH you actually use and whether you add
+          antibiotics or other supplements.
+        </p>
+      </details>
+
+      <h3>ND96 (oocyte recording buffer)</h3>
+      <details>
+        <summary>Show ND96 composition</summary>
+        <ul>
+          <li>NaCl — 96 mM</li>
+          <li>KCl — 2 mM</li>
+          <li>CaCl₂ — 1.8 mM</li>
+          <li>MgCl₂ — 1 mM</li>
+          <li>HEPES — 5 mM (pH ~7.5)</li>
+        </ul>
+        <p>
+          Variants include added antibiotics and modified divalent concentrations.
+          For troubleshooting, it is critical to record which ND96 variant was used,
+          how often it was changed, and how pH was verified.
+        </p>
+      </details>
+
+      <!-- Water & environment -->
+      <h2 id="water">System water & environment targets</h2>
+      <p>
+        These are <em>typical working bands</em>, not hard limits. Stability and trend
+        awareness are often more important than a single measurement.
+      </p>
+      <ul>
+        <li><strong>Temperature:</strong> 18–20&nbsp;°C preferred; 18–22&nbsp;°C common.</li>
+        <li><strong>pH:</strong> roughly 7.0–8.0, stable within a narrow band over days.</li>
+        <li><strong>Conductivity:</strong> commonly ~800–2200 µS depending on system design.</li>
+        <li><strong>Ammonia:</strong> target non-detectable; persistent detection is a red flag.</li>
+        <li><strong>Flow:</strong> gentle turnover without strong jets; avoid chronic vibration.</li>
+        <li><strong>Lighting:</strong> consistent photoperiod; avoid extremes and sudden changes.</li>
+      </ul>
+      <p class="small-note">
+        When logging a case in Frog Social, record actual values where possible, and make
+        note of drift over the previous 2–4 weeks, not just “today.”
+      </p>
+
+      <!-- Embryos & tadpoles -->
+      <h2 id="embryos">Embryo & tadpole troubleshooting (very high level)</h2>
+      <p>
+        Developmental failures often cluster in “bands” of time. The goal is to pair
+        the <em>when</em> (stage/time) with likely environmental or procedural stressors.
+      </p>
+
+      <h3>Very early loss (0–12 hours post-fertilization)</h3>
+      <ul>
+        <li>Fertilization failure or poor egg quality.</li>
+        <li>Large pH swings or incorrect osmolarity of fertilization medium.</li>
+        <li>Temperature shocks immediately post-fertilization.</li>
+      </ul>
+
+      <h3>Gastrulation / neurulation issues</h3>
+      <ul>
+        <li>Overly alkaline MMR or medium (pH drifting well above target).</li>
+        <li>Temperature fluctuations during cleavage/gastrulation.</li>
+        <li>Mechanical disturbance (vibration, rough handling).</li>
+      </ul>
+
+      <h3>Later tadpole losses</h3>
+      <ul>
+        <li>Ammonia buildup and poor water change routines.</li>
+        <li>Inadequate aeration / oxygenation as biomass increases.</li>
+        <li>Inadequate food particle size or frequency (underfeeding or fouling).</li>
+      </ul>
+
+      <p class="small-note">
+        The case-intake page is the right place to document these patterns in detail;
+        this section is only a scaffold to remind people what to look for.
+      </p>
+
+      <!-- Oocytes & ion channels -->
+      <h2 id="oocytes">Oocyte handling & ion channel basics (scaffold)</h2>
+      <p>
+        This section is not a complete protocol, but a checklist of domains that
+        matter when troubleshooting oocyte recordings or expression.
+      </p>
+
+      <h3>Defolliculation</h3>
+      <ul>
+        <li>Collagenase lot, concentration, and incubation time.</li>
+        <li>Temperature and mixing intensity during digestion.</li>
+        <li>Gentle rinsing and removal of enzyme when finished.</li>
+      </ul>
+
+      <h3>Storage conditions</h3>
+      <ul>
+        <li>Buffer: which ND96 variant, additives, and exact pH.</li>
+        <li>Temperature stability in the storage incubator or room.</li>
+        <li>How often solutions are changed (e.g., daily or more often).</li>
+        <li>Routine removal of dead/unhealthy oocytes from the dish.</li>
+      </ul>
+
+      <h3>RNA / cRNA & injection</h3>
+      <ul>
+        <li>Integrity and concentration of RNA/cRNA; storage and freeze–thaw history.</li>
+        <li>Injection volume, needle calibration, and technique consistency.</li>
+        <li>Timing between injection and recording.</li>
+      </ul>
+
+      <p class="small-note">
+        In many “bad recording” cases, these lab-side variables dominate over colony
+        or rack conditions. Frog Social’s case-intake can help capture both sides
+        without defaulting to “blame the frogs.”
+      </p>
+
+      <!-- Welfare notes -->
+      <h2 id="welfare">Husbandry-first welfare notes</h2>
+      <p>
+        A central premise of the Xenopus Model Welfare effort is that
+        <strong>colony health is driven primarily by environment, behavior, and
+        long-term husbandry</strong>, with pathogens acting mainly as opportunists.
+      </p>
+
+      <h3>Pseudocapillaroides xenopi context</h3>
+      <p>
+        <em>P. xenopi</em> is frequently present in Xenopus colonies at low levels without
+        obvious disease. Widespread lesions, poor condition, or systemic signs should
+        trigger investigation into <strong>husbandry stressors</strong> (aging animals,
+        water quality, density, diet, flow, vibration), rather than an immediate move
+        toward elimination of every detectable organism.
+      </p>
+      <p class="small-note">
+        Pathogen and PCR data can be logged in cases, but they should be interpreted
+        within this broader environmental context rather than as sole health metrics.
+      </p>
+<p class="small-note">
+  For an optional appendix focused on lab-side troubleshooting of extracts, oocytes,
+  and early embryology workflows, see the
+  <a href="lab-bonus.html">Lab-side Bonus Notes</a> page.
+</p>
+
+      <!-- Links & credits -->
+      <h2 id="links">Model Welfare links & credits</h2>
+      <p>
+        Official hub for husbandry-first Xenopus model stewardship:
+        <br />
+        <a href="https://xenopuswelfare.org" target="_blank" rel="noopener noreferrer">
+          https://xenopuswelfare.org
+        </a>
+      </p>
+      <p class="small-note">
+        Frog Social, Xenopus 1, Xenoocyte, and the Xenopus Model Welfare Organization
+        are aligned around sustaining the model system through decentralized, transparent,
+        and environmentally grounded husbandry practice.
+      </p>
+
+    </div>
+  </div>
+
+</body>
+</html>
+

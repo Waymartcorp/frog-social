@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · The Xenopus Research Network</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --primary: #1b4b82;
+      --accent: #0ea5e9;
+      --bg-soft: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      color: var(--text-main);
+      background: white;
+      line-height: 1.5;
+    }
+    
+    /* NAV */
+    nav {
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .brand { font-weight: 800; font-size: 1.2rem; color: var(--primary); letter-spacing: -0.02em; }
+    .nav-right { font-size: 0.9rem; color: var(--text-muted); }
+
+    /* HERO GRID */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 85vh; /* Takes up most of the screen */
+    }
+    
+    /* LEFT SIDE: The Pitch */
+    .hero-content {
+      padding: 60px 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: radial-gradient(circle at top left, #f0f9ff, #ffffff);
+    }
+    h1 { font-size: 3rem; line-height: 1.1; margin: 0 0 24px; color: #0f172a; letter-spacing: -0.03em; }
+    .hero-sub { font-size: 1.2rem; color: var(--text-muted); margin-bottom: 40px; max-width: 500px; }
+    
+    .features { display: grid; gap: 24px; margin-top: 20px; }
+    .feature-item { display: flex; gap: 12px; }
+    .check { color: var(--accent); font-weight: bold; }
+
+    /* RIGHT SIDE: The Gate */
+    .login-zone {
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* The "Card" sits on the right */
+    .login-card {
+      background: white;
+      padding: 40px;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      z-index: 10;
+    }
+    
+    /* Form Styles */
+    label { display: block; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: #475569; }
+    input, select {
+      width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1;
+      margin-bottom: 16px; font-size: 1rem; box-sizing: border-box;
+    }
+    button {
+      width: 100%; padding: 14px; border-radius: 8px; border: none;
+      background: var(--accent); color: white; font-weight: 700; font-size: 1rem;
+      cursor: pointer; transition: transform 0.1s;
+    }
+    button:hover { background: #0284c7; transform: translateY(-1px); }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .hero-content { padding: 40px; }
+      .login-zone { padding: 40px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="brand">FROG SOCIAL</div>
+    <div class="nav-right">Xenopus 1 Infrastructure Initiative</div>
+  </nav>
+
+  <div class="hero-grid">
+    
+    <div class="hero-content">
+      <h1>The global nervous system for Xenopus research.</h1>
+      <p class="hero-sub">
+        A unified platform connecting colony health, experimental protocols, and global supply logistics in real time.
+      </p>
+
+      <div class="features">
+        <div class="feature-item">
+          <div class="check">✓</div>
+          <div><strong>Colony Resilience:</strong> Track health trends across institutions.</div>
+        </div>
+        <div class="feature-item">
+          <div class="check">✓</div>
+          <div><strong>Protocol Intelligence:</strong> Share "LabWorks" bench notes instantly.</div>
+        </div>
+        <div class="feature-item">
+          <div class="check">✓</div>
+          <div><strong>AI-Assisted Diagnostics:</strong> Triage husbandry issues faster.</div>
+        </div>
+      </div>
+      
+      <p style="margin-top: 60px; font-size: 0.9rem; color: #94a3b8;">
+        Supported by <strong>Xenopus 1</strong> and the <strong>Model Welfare Organization</strong>.
+      </p>
+    </div>
+
+    <div class="login-zone">
+      <div style="position:absolute; inset:0; opacity:0.1; background-image: url('images/first-frog.png'); background-size: cover;"></div>
+
+      <div class="login-card">
+        <h2 style="margin-top:0;">Beta Access</h2>
+        <p style="font-size:0.9rem; color:#64748b; margin-bottom:24px;">
+          Frog Social is currently in private beta for select PIs and Facility Managers.
+        </p>
+
+        <form onsubmit="checkInvite(event)">
+          <label for="name">Name</label>
+          <input id="name" required placeholder="Dr. Jane Doe">
+
+          <label for="institution">Institution</label>
+          <input id="institution" required placeholder="University / Lab">
+
+          <label for="access-code" style="color:var(--accent);">Invite Code</label>
+          <input id="access-code" required placeholder="Enter code..." style="border-color: var(--accent);">
+
+          <button type="submit">Enter Platform</button>
+        </form>
+
+        <p id="status" style="color:red; font-size:0.85rem; margin-top:10px; display:none;">
+          Incorrect Invite Code.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function checkInvite(e) {
+      e.preventDefault();
+      const codeInput = document.getElementById('access-code').value.trim().toUpperCase();
+      
+      // THIS IS WHERE YOU SET THE PASSWORD
+      const validCodes = ['FROG2025', 'XENOPUS1', 'KARIN', 'BETA'];
+
+      if (validCodes.includes(codeInput)) {
+        // Save user info so the dashboard knows who they are
+        const profile = { 
+          name: document.getElementById('name').value, 
+          institution: document.getElementById('institution').value 
+        };
+        localStorage.setItem("frogSocialProfile", JSON.stringify(profile));
+        
+        // OPEN THE DOOR (Go to dashboard.html)
+        window.location.href = 'dashboard.html';
+      } else {
+        const msg = document.getElementById('status');
+        msg.style.display = 'block';
+        msg.textContent = "Invalid Code. Please contact Robert for access.";
+      }
+    }
+  </script>
+
+</body>
+</html>

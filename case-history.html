@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · Case History</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#f3f4f6; --card-bg:#ffffff; --border-soft:#e5e7eb; --text-main:#111827; --text-muted:#6b7280; }
+    body {
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      margin:0;
+      background:radial-gradient(circle at top,#e0f2fe 0,var(--bg) 60%);
+      color:var(--text-main);
+    }
+    .outer{min-height:100vh;display:flex;justify-content:center;align-items:flex-start;}
+    .container{max-width:1100px;width:100%;padding:24px;box-sizing:border-box;}
+    .card{
+      background:var(--card-bg);
+      border-radius:16px;
+      padding:22px;
+      box-shadow:0 18px 30px rgba(15,23,42,0.08),0 0 0 1px rgba(15,23,42,0.02);
+      border:1px solid var(--border-soft);
+      margin-bottom:20px;
+    }
+    .top-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+    .top-nav-title{font-weight:600;font-size:0.95rem;color:#0f172a;}
+    .top-nav-links a{font-size:0.85rem;color:#4b5563;text-decoration:none;margin-left:10px;}
+    .top-nav-links a:hover{color:#0ea5e9;}
+    h1{margin:4px 0 6px;font-size:1.6rem;}
+    p{color:var(--text-muted);font-size:0.9rem;line-height:1.5;}
+    .panel{
+      background:#f9fafb;
+      border-radius:12px;
+      border:1px solid var(--border-soft);
+      padding:10px 11px;
+      max-height:60vh;
+      overflow:auto;
+      font-size:0.8rem;
+      white-space:pre-wrap;
+      margin-top:10px;
+    }
+    @media(max-width:800px){.container{padding:14px;}}
+  </style>
+</head>
+<body>
+  <div class="outer">
+    <div class="container">
+      <div class="top-nav">
+        <div class="top-nav-title">Frog Social</div>
+        <div class="top-nav-links">
+          <a href="index.html">Home</a>
+          <a href="colony-register.html">Colonies</a>
+          <a href="case-intake.html">New Case</a>
+          <a href="case-history.html">Case History</a>
+          <a href="social.html">Social</a>
+          <a href="account.html">Account</a>
+          <a class="signout" href="index.html">Sign Out</a>
+
+        </div>
+      </div>
+
+      <div class="card">
+        <h1>Case History</h1>
+        <p>
+          Cases stored in this browser from previous case intake sessions. In a future version this
+          becomes a shared, searchable institutional history.
+        </p>
+        <div id="caseHistoryBox" class="panel">
+          No cases stored yet.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function loadCases() {
+      try {
+        const raw = localStorage.getItem("frogSocialCases");
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+
+    function renderCaseHistory() {
+      const box = document.getElementById("caseHistoryBox");
+      const cases = loadCases();
+      if (!cases.length) {
+        box.textContent = "No cases stored yet.";
+        return;
+      }
+
+      const lines = cases.map(k => {
+        const when = k.createdAt ? new Date(k.createdAt).toLocaleString() : "";
+        const submitBits = [];
+        if (k.submittedByName) submitBits.push(k.submittedByName);
+        if (k.submittedByLabel) submitBits.push("(" + k.submittedByLabel + ")");
+        if (k.submittedByInstitution) submitBits.push("· " + k.submittedByInstitution);
+        const submitted = submitBits.length ? "Submitted by: " + submitBits.join(" ") : "";
+
+        return [
+          `Case: ${k.colonyName || "(unlabeled colony)"}${k.institution ? " @ " + k.institution : ""}`,
+          `Concern: ${k.mainConcern}`,
+          k.snippet ? `Snippet: ${k.snippet}` : "",
+          when ? `Created: ${when}` : "",
+          submitted
+        ].filter(Boolean).join("\n");
+      });
+
+      box.textContent = lines.join("\n\n------------------------------\n\n");
+    }
+
+    renderCaseHistory();
+  </script>
+</body>
+</html>
+
