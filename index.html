@@ -114,7 +114,7 @@
       <div class="features">
         <div class="feature-item">
           <div class="check">✓</div>
-          <div><strong>Colony resilience, protocol stability:</strong> Track health trends, scroll cases, communicate with peers across institutions.</div>
+          <div><strong>Colony resilience, protocol stability:</strong> scroll cases, communicate with peers across institutions.</div>
         </div>
         <div class="feature-item">
           <div class="check">✓</div>
@@ -135,7 +135,7 @@
       <div class="login-card">
         <h2 style="margin-top:0;">Beta Access</h2>
         <p style="font-size:0.9rem; color:#64748b; margin-bottom:24px;">
-          Frog Social is currently in private beta for Facility Managers, PI's, Veterinarians Lab Workers and Post-Docs.
+          Frog Social is currently in private beta for Facility Managers, PI's, Veterinarians, Lab Workers and Post-Docs.
         </p>
         <form onsubmit="checkInvite(event)">
           <label for="name">Name</label>
@@ -164,7 +164,7 @@
       const codeInput = document.getElementById('access-code').value.trim().toUpperCase();
       
       // THIS IS WHERE YOU SET THE PASSWORD
-      const validCodes = ['FROG2025', 'XENOPUS1', 'KARIN', 'BETA'];
+      const validCodes = ['FROG2025', 'KARIN', 'BETA'];
 
       if (validCodes.includes(codeInput)) {
         // Save user info so the dashboard knows who they are
@@ -179,7 +179,7 @@
       } else {
         const msg = document.getElementById('status');
         msg.style.display = 'block';
-        msg.textContent = "Invalid Code. Please contact Rob for access, robweymouth@gmail.com.";
+        msg.textContent = "Invalid Code. Please contact info@xenopuswelfare.org";
       }
     }
   </script>
