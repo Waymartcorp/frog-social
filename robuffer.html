@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ROBUFFER · Frog Social</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f8fafc;color:#0f172a}
+    .wrap{max-width:900px;margin:0 auto;padding:28px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:18px;margin:14px 0}
+    h1{margin:0 0 10px;font-size:28px}
+    h2{margin:0 0 8px;font-size:18px}
+    .muted{color:#64748b}
+    code{background:#f1f5f9;padding:2px 6px;border-radius:6px}
+    ul{margin:8px 0 0 18px}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#e0f2fe;color:#075985;font-weight:700;font-size:12px}
+    .back a{color:#1b4b82;text-decoration:none;font-weight:700}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:800px){.grid{grid-template-columns:1fr}}
+    input{width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;font-size:14px;box-sizing:border-box}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="back"><a href="/dashboard.html">← Back to Dashboard</a></div>
+    <h1>ROBUFFER <span class="pill">Water stability</span></h1>
+    <p class="muted">This is the facility-standard remineralization / conductivity buffer for RO water. Use this card during troubleshooting and when onboarding new staff.</p>
+
+    <div class="card">
+      <h2>Purpose</h2>
+      <ul>
+        <li>Stabilize water conductivity and reduce stress</li>
+        <li>Standardize “what water means” across rooms, racks, and institutions</li>
+        <li>Make troubleshooting measurable (conductivity targets + repeatable mixing)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Targets (fill in)</h2>
+      <div class="grid">
+        <div>
+          <label class="muted">Target conductivity (µS/cm)</label>
+          <input placeholder="e.g., 900">
+        </div>
+        <div>
+          <label class="muted">Acceptable range (µS/cm)</label>
+          <input placeholder="e.g., 750–1100">
+        </div>
+      </div>
+      <p class="muted" style="margin-top:10px;">
+        Note: Conductivity meter calibration is non-negotiable. If readings drift, the whole “buffer” concept collapses.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Recipe (put your exact formula here)</h2>
+      <p class="muted">Per <strong>1 liter</strong> RO water:</p>
+      <ul>
+        <li><code>Salt A</code>: ___ g</li>
+        <li><code>Salt B</code>: ___ g</li>
+        <li><code>Salt C</code>: ___ g</li>
+        <li><code>Salt D</code> (optional): ___ g</li>
+      </ul>
+      <p class="muted">Per <strong>10 liters</strong> RO water: multiply by 10.</p>
+    </div>
+
+    <div class="card">
+      <h2>Mixing steps</h2>
+      <ol>
+        <li>Fill container to ~80–90% final volume with RO water.</li>
+        <li>Add salts, mix until fully dissolved.</li>
+        <li>Top up to final volume.</li>
+        <li>Measure conductivity with a calibrated meter.</li>
+        <li>Log: date/time, batch, target vs measured conductivity, who mixed it.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>Common mistakes</h2>
+      <ul>
+        <li><strong>Uncalibrated meters</strong> (false “mystery problems”).</li>
+        <li><strong>Chasing pH</strong> instead of fixing conductivity / buffering consistency.</li>
+        <li><strong>Changing multiple variables</strong> at once during troubleshooting.</li>
+        <li><strong>Lot-to-lot salt differences</strong> without logging.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>When ROBUFFER is suspect</h2>
+      <ul>
+        <li>Sudden behavior changes across many tanks/racks</li>
+        <li>Feeding suppression + lethargy after water change</li>
+        <li>Chronic low-level stress signs with no visible lesions</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
