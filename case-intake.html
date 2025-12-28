@@ -97,8 +97,8 @@
       <div class="card">
         <h1>New Case · Situation Intake</h1>
         <p class="small">
-          Husbandry-first framing tool. Fill in what you can. The goal is to clarify thinking,
-          not generate a diagnosis.
+          Husbandry-first framing tool. Fill in what you can. The goal is to narrow the potential stressors,
+          not generate an exact diagnosis.
         </p>
 
         <div class="split">
@@ -131,7 +131,9 @@
 
               <label for="conductivity">Conductivity / salts (µS or ppm, optional)</label>
               <input id="conductivity" type="text" placeholder="e.g., 600 µS, or 'not measured'" />
-
+<p class="muted">
+  Water help: <a href="/robuffer.html" target="_blank" rel="noopener">ROBUFFER formula & mixing guide</a>
+</p>
               <label for="ammonia">Ammonia (NH3/NH4) status</label>
               <select id="ammonia">
                 <option value="Unknown">Unknown / not tested</option>
@@ -158,7 +160,6 @@
 
               <label for="description">Describe what you are seeing</label>
               <textarea id="description" placeholder="E.g., three sudden deaths in 48 hours, older females, system flushed last week, slightly cloudy water..."></textarea>
-
               <button type="submit">Generate case view</button>
               <div class="small">
                 All processing happens in your browser. Not medical advice. If animals are crashing,
