@@ -1,197 +1,193 @@
-# Frog Social – Social Stream & AI Console ("Social Aspect" Think Doc)
+# Frog Social – Social Layer & Learning Surfaces
 
-## Overall concept
-
-The Social page is the beating heart of Frog Social.
-
-It is a **Slack-like, lab-serious conversation space** where:
-- Anyone signed in can post problems and observations.
-- The AI agent sits alongside the conversation, not replacing it.
-- The AI:
-  1. Summarizes ongoing threads.
-  2. Guides people toward solutions based on our husbandry troubleshooting model.
-  3. Builds and updates case histories.
-  4. Follows up with users to capture resolution and outcomes.
-
-Over time, this space will accumulate:
-- Problem → recommendations → resolution chains.
-- Feeding-response and skin-health assessments.
-- Signals we can later correlate with device telemetry and proprietary algorithms.
+Frog Social is more than a chat: it is a **husbandry console with memory**, built around three main “surfaces” that all talk to the same case model.
 
 ---
 
-## Goals of the Social page
+## 1. Core surfaces
 
-1. **Be the default place people go when “something feels wrong.”**
-2. **Turn messy chat into structured knowledge** (case histories, best practices).
-3. **Embed our 13-point husbandry model** into every interaction:
-   - Water source, buffering, pH, GH/KH, temp.
-   - Density + feeding response.
-   - Vibration, flow, light, disturbance.
-   - Skin condition, lesions, PVC fighting, etc.
-4. **Record and learn from outcomes.**
-   - For each thread, we want: *problem → guidance → resolution* captured.
-5. **Eventually integrate device-based feeding + “frog look” metrics** into the same flow.
-   - Quantitative assessment of feeding response (video-based).
-   - Quantitative assessment of skin shine and texture.
+### 1.1 Social Feed
 
----
+- A Slack-like stream of messages where:
+  - Users describe issues, observations, and experiments.
+  - They can attach images / videos (especially feeding behavior).
+  - They can link posts to existing **Cases**.
 
-## Layout (first version)
+- The right-hand side is an **AI assistant panel** that:
+  - Summarizes the current discussion.
+  - Highlights husbandry levers (density, water, ROBUFFER, flow, vibration, etc.).
+  - Suggests next steps in a non-diagnostic way.
+  - Points users back toward good intake (Describe a Problem) and Case History.
 
-Route: `/social`
+### 1.2 Describe a Problem (New Case Intake)
 
-Three main columns:
+- Structured intake page for new situations.
+- Captures:
+  - Facility/colony info.
+  - Water & system snapshot.
+  - Husbandry snapshot (13 points).
+  - Optional feeding video + metadata.
+- Outputs a **initial AI summary**:
+  - Situation summary.
+  - Key husbandry focus areas.
+  - Suggested steps.
+  - When to escalate.
 
-1. **Left column – Threads list**
-   - Shows all threads relevant to the user:
-     - Title / short problem summary.
-     - Status: `open`, `needs follow-up`, `resolved`.
-     - Last updated timestamp.
-   - Filters:
-     - Problem type (not eating, skin, mortality, breeding, water quality, system build).
-     - Facility (if multi-facility).
-     - My threads vs all.
+This page **creates or updates a Case** in the backend.
 
-2. **Center column – Conversation**
-   - Chronological messages (like Slack).
-   - Each message can include:
-     - Free text (what happened).
-     - Selected or inferred problem type.
-     - Attached telemetry snapshot (optional but encouraged).
-   - At the bottom:
-     - Message composer with:
-       - Text box.
-       - Quick telemetry fields (density band, feeding response, water source, etc.).
-       - Option to attach video (for feeding behavior) or images (skin).
+### 1.3 Case History & Resolution
 
-3. **Right column – AI Side Bar (Agent)**
-   - Always showing live information for the selected thread:
-     1. **Short summary** of the situation (plain, lab-serious language).
-     2. **13-point husbandry checklist** with colored status:
-        - Green / Amber / Red for each item.
-        - One-sentence explanation and recommendation per red item.
-     3. **Steering recommendations** (2–5 suggested next actions).
-     4. **Case history snapshot**:
-        - Root question / main problem.
-        - Key telemetry highlights.
-        - What has been tried so far.
-     5. **Follow-up plan**:
-        - “What we will ask the user later.”
-        - A simple “follow-up due” indicator.
+- List of cases with:
+  - Initial intake summary.
+  - Linked social discussion snippets.
+  - Resolution notes.
+  - Follow-up outcome.
+
+Users can:
+
+- Mark a case as **resolved**.
+- Add a short resolution summary.
+- Log whether a follow-up was done and what happened.
+
+This creates a **feedback loop** the AI can learn from.
 
 ---
 
-## How the AI should behave
+## 2. Key entities
 
-### When someone posts a new message
+We conceptually have:
 
-For each new message (with telemetry):
+- **Facility / System**
+  - A lab, room, or rack – something that is relatively stable in time.
+  - Stores baseline config (water source, system type, density policy, etc.).
 
-1. **Store the raw message** in the thread.
-2. **Update the telemetry picture** for the thread:
-   - Water source / buffering / pH / GH / KH / temp.
-   - Density band, feeding response.
-   - Skin condition.
-   - Vibration, flow, light, disturbance.
-3. **Evaluate the husbandry state** using our internal logic (13-point model):
-   - This should produce structured signals like:
-     - `"water_source": status, explanation, recommendation`
-     - `"density_feeding": status, explanation, recommendation`
-4. **Ask the LLM to:**
-   - Generate a reply message in the thread (center column) that:
-     - References the key husbandry signals.
-     - Avoids panic / pathogen obsession.
-     - Offers concrete, prioritized steps.
-   - Update:
-     - A short summary.
-     - The checklist item statuses and text.
-     - A small set of next-step recommendations.
+- **Case**
+  - A discrete problem or question:
+    - “Frogs not eating after water change”
+    - “Green water in static tanks”
+  - Has:
+    - Intake snapshot (from Describe a Problem).
+    - Status: open / resolved / needs follow-up.
+    - Resolution summary.
+    - Follow-up notes.
 
-### Case-building and follow-up
+- **Thread / Social Message**
+  - A conversational thread stored under Social.
+  - Messages belong to threads; threads can be linked to one or more Cases.
+  - Messages can include:
+    - Text.
+    - Media references (videos, images).
+    - Quick husbandry tags.
 
-- Each thread has:
-  - `root_question`: what the original problem was.
-  - `case_history`: a timeline of key decisions and changes.
-  - `resolution`: free text + a few structured fields once we know the outcome.
+- **User / Profile**
+  - Name, institution, role.
+  - Allows attribution of cases and social posts.
 
-- The AI should:
-  - Keep track of what recommendations were given.
-  - After some time or when user returns, **ask explicitly**:
-    - “Did X help? What changed?”
-  - When the user reports outcomes, we mark the thread as resolved and fill in resolution info.
-
-This converts chat into:
-- Problem → recommended actions → actual outcome.
-- Usable for training and future guidance.
+Backends can store these using simple in-memory or DB structures; the important part is the **relationships**:
+- Case ↔ Intake
+- Case ↔ Social thread
+- Case ↔ Resolution / follow-up
 
 ---
 
-## Feeding behavior & skin “technological assessment”
+## 3. AI roles in the social layer
 
-Current phase (before device):
+The AI has three primary jobs:
 
-- We will:
-  - Let users upload short feeding videos (High / Medium / Low density).
-  - Ask them to tag:
-    - Density band: low / medium / high.
-    - Observed feeding response: high / medium / low.
-  - Ask them for simple skin notes:
-    - Shiny / dull / lesions, maybe with example reference images.
+### 3.1 Intake summarizer
 
-- The AI + rules will:
-  - Combine density + feeding response + skin notes with water and environment.
-  - Still treat:
-    - Feeding behavior and skin shine as primary **positive health indicators**.
-    - But not in isolation (e.g., feeding can look decent while micronutrient or vibration issues still stress frogs).
+In Describe a Problem:
 
-Longer term (device phase):
+- Read all structured fields + free text.
+- Use the **Husbandry Master Key** (13 points) as the mental checklist.
+- Produce:
+  - One-paragraph situation summary.
+  - List of 3–7 husbandry focus areas (ranking the most likely).
+  - 3–5 concrete next steps that are:
+    - Actionable.
+    - Logically justified by the inputs.
+  - “When to escalate” section:
+    - When to involve vets, institutional staff, etc.
 
-- We want:
-  - Device-based quantitative measurements of feeding and skin.
-  - These will feed into the same thread telemetry as “trusted metrics.”
-- Important:
-  - Visual assessment by humans is inherently noisy.
-  - The platform must be able to say:
-    - “We think feeding and skin look OK, but water hardness or vibration are still problematic.”
+This goes on the right-hand “Intake Summary” panel.
+
+### 3.2 Social co-pilot
+
+On the Social feed:
+
+- Watch the evolving thread for a case.
+- Summarize every X messages:
+  - “Here’s what has happened so far.”
+  - “Here’s what has been tried.”
+  - “Here are the remaining unknowns.”
+- Suggest:
+  - Additional husbandry data to collect.
+  - Experiments to run (e.g. test tank with increased density).
+  - Which Master Key points are still unchecked.
+
+Importantly:
+
+- It does **not** replace peer-to-peer discussion.
+- It acts as a “steady, calm husbandry expert” in the background.
+
+### 3.3 Resolution & learning
+
+When a case is resolved:
+
+- The user (or a moderator) writes a brief resolution:
+  - “Increased density, adjusted ROBUFFER, calmed vibration; appetite returned.”
+- Optionally logs:
+  - Time to resolution.
+  - Whether frogs returned to spawning, gained body condition, etc.
+
+AI can then:
+
+- Store: (inputs → recommendations → actual resolution outcome).
+- Use this for future patterning:
+  - e.g., “Most similar cases responded to density increase + buffered water adjustments.”
+
+This is **not training data in code here**, but the data model and UI should assume this is where things are headed.
 
 ---
 
-## Important design principles
+## 4. Interaction between surfaces
 
-- **Husbandry first, pathogens second.**
-  - Default assumption: problems are driven by water, density, feeding, environment.
-  - Pathogens are *opportunistic* and secondary.
+Key flows:
 
-- **Respect for nuance.**
-  - Frogs can be eating “ok” while still being stressed by:
-    - Poor buffering / hardness.
-    - Vibration or turbulence.
-    - Chronic slight pH drift.
-  - The system must consider and rank multiple factors, not only feeding and skin.
+1. **Describe → Social**
+   - A new intake can spin up an associated social thread automatically.
+   - The intake summary shows in the social sidebar.
 
-- **No “same answer every time” slop.**
-  - The agent must not say “increase density” by default on every problem.
-  - It must balance:
-    - Feeding response,
-    - Skin,
-    - Water / environment,
-    - Recent changes.
+2. **Social → Case**
+   - Social messages can be linked to an existing case.
+   - If a conversation starts in Social first, users can later “promote” it into a Case and fill in the intake form.
 
-- **Serious, lab-style tone.**
-  - No cute language.
-  - Clear, directive recommendations:
-    - “Today: adjust X.”
-    - “Over the next week: monitor Y.”
-    - “If Z occurs, escalate to [vet / expert contact].”
+3. **Case History → Social/Intake**
+   - Case History entries should show:
+     - Intake snapshot.
+     - Links to the associated social thread.
+     - Resolution & follow-up.
+   - From Case History, users can:
+     - Re-open a case.
+     - Start a new thread referencing it.
+     - Clone it as a template for a similar scenario.
 
 ---
 
-## Open questions / to refine
+## 5. Tone & behavior guidelines for AI in the social layer
 
-- How aggressively should the agent push toward ROBUFFER vs. mixed city/RO water?
-- How do we handle conflicting signals (good feeding but chronic skin dullness + mortalities)?
-- How often should follow-up prompts be sent, and by what channel (email, in-app notification, both)?
-- What minimal telemetry fields are *mandatory* for meaningful guidance?
+The assistant:
 
-These can be filled in as we build the first version.
+- Is **calm, non-panicky, and non-judgmental**.
+- Does not scold users for imperfect setups; it helps them improve.
+- Avoids diagnosing specific diseases; instead, it:
+  - Highlights husbandry factors (water, density, vibration, pH, etc.).
+  - Encourages sensible next steps and vet involvement when appropriate.
+- Emphasizes **performance-based health**:
+  - Appetite, body condition, skin, spawning success.
+  - Not just lab numbers or pathogen tests.
+
+This document guides **how the Social page and related APIs should evolve**:
+- Two-column layout (conversation + AI).
+- Linking to Cases.
+- Making resolution and follow-up first-class, so the system becomes smarter over time.
