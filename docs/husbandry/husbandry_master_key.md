@@ -1,376 +1,221 @@
-# Frog Social – Husbandry Master Key (13-Point Baseline)
+# Husbandry Master Key – Frog Social
 
-This document defines the **core husbandry model** that Frog Social uses for
-troubleshooting and assessing Xenopus colony health.
+Core principle: **most Xenopus problems are husbandry, not pathogens**.  
+Frog Social should always foreground environment, water, density/feeding, and handling BEFORE talking about pathogens.
 
-The 13 points below are the **primary lens** for all diagnostics.
-
-- Pathogens are treated as **secondary, opportunistic** factors.
-- Healthy colonies are defined primarily by:
-  - Water source and buffering.
-  - Density and feeding behavior.
-  - Environmental stressors (vibration, light, disturbance).
-  - Skin condition.
-
-Later, device-based telemetry (feeding behavior + skin shininess metrics)
-will plug into this same model.
+The AI is **non-diagnostic** and **husbandry-first**.
 
 ---
 
-## 0. Telemetry Overview
+## 1. Base variables to check every time
 
-For each thread/case, we aim to capture a telemetry object that includes
-(at least):
+When a user describes a problem, we try to get (or infer) these:
 
-- `water_source`: `"RO" | "city" | "well"`
-- `buffering_method`: `"none" | "salts_only" | "ROBUFFER" | "mix_city_RO" | "other"`
-- `gh`: number | null
-- `kh`: number | null
-- `ph`: number | null
-- `ph_meter_calibrated`: boolean | null
-- `temp_c`: number | null
-- `density_band`: `"low" | "medium" | "high"`
-- `feeding_response`: `"high" | "medium" | "low"`
-- `skin_status`: `"shiny" | "dull" | "lesions"`
-- `vibration`: `"quiet" | "some_hum" | "loud"`
-- `flow_turbulence`: `"gentle" | "splashy"`
-- `light_level`: `"low" | "medium" | "high"`
-- `disturbance`: `"rare" | "frequent"`
-- `shelter_competition`: `"none" | "moderate" | "severe"`
-- `recent_changes`: free text summary of major changes in last 1–2 weeks
+- **Water source**
+  - Reverse osmosis (RO / RO+DI)
+  - Treated city water
+  - Well water
+  - Mixed (e.g. RO + tap)
 
-The backend will use this telemetry to produce a list of **HusbandrySignals**,
-each with:
+- **Micronutrients & buffering**
+  - Are they using RO-only with a simple salt mix?
+  - Do they have any source of Ca/Mg and carbonate/bicarbonate (GH/KH)?
 
-- `id`: short string key (e.g. `"water_source"`)
-- `status`: `"ok" | "watch" | "problem" | "unknown"`
-- `message`: one-sentence explanation
-- `recommendation`: one concrete, prioritized suggestion
+- **Temperature**
+  - Current temp and recent swings.
 
-These signals drive:
-- The AI’s written guidance.
-- The checklist & color-coding in the UI.
-- Future learning and ranking of risk factors.
+- **pH**
+  - Value (range) and whether the meter is **calibrated**.
+  - Quick rule: “pH readings are meaningless if the meter isn’t calibrated.”
 
----
+- **Conductivity / TDS**
+  - As a proxy for salt content and buffering.
 
-## 1. Water Source
+- **Flow & vibration**
+  - Rack flow rate, nozzle distance to water surface, splashing/noise.
+  - Room vibration/hum (air handlers, pumps, etc.).
 
-**What:** RO, treated city water, or well water.  
-**Why:** Source determines baseline mineral profile, buffering, and long-term
-stability.
+- **Light**
+  - Intensity (too bright vs comfortable)
+  - Schedule (assume 12/12 unless clearly wrong).
 
-**Healthy pattern:**
+- **Disturbance**
+  - How often people are entering the room, slamming doors, etc.
 
-- Well water or properly treated city water with stable chemistry, **or**
-- RO **plus** a robust remineralization/buffering protocol (e.g. ROBUFFER),
-  not bare RO alone.
+- **Density**
+  - Low / medium / high frog density per tank.
 
-**Problem patterns:**
+- **Feeding**
+  - What they feed, **how** they feed (observed vs toss-and-walk-away).
+  - How quickly food is found/eaten, and for how long frogs actively feed.
 
-- Pure RO with no remineralization.
-- “RO + salts only” where GH/KH remain very low and unstable.
+- **Handling & injections**
+  - Injection site and angle.
+  - Frequency of handling.
+
+- **Physical lesions / skin**
+  - Shiny vs dull vs lesions/redness.
+  - Lesions on faces/flanks that may come from fighting over PVC or shelters.
 
 ---
 
-## 2. Buffering & Mineral Profile (GH / KH)
+## 2. Thirteen-point thriving pattern checklist
 
-**What:**  
-- General hardness (GH; mainly Ca²⁺ and Mg²⁺).  
-- Carbonate hardness (KH; bicarbonate/carbonate buffer).
+These are the **13 “master key” patterns** that define a thriving colony.  
+The AI should try to recognize when these are violated and steer the user back toward them.
 
-**Why:**  
-- GH and KH maintain pH stability and support skin, osmoregulation, and
-  reproduction.
-- Extremely soft, unbuffered water is fragile and prone to swings.
+1. **Water source & micronutrients**
+   - Healthy colonies often run on **well water** or properly buffered city water.
+   - RO on its own is “empty” – no Ca/Mg, no natural alkalinity.
+   - Using RO + salts only (e.g. simple salt mix) can lead to micronutrient and buffer deficiencies.
 
-**Healthy pattern:**
+2. **Buffering & hardness (GH/KH)**
+   - Frogs do poorly in extremely soft, unbuffered water.
+   - Aim for a **moderate** GH/KH so pH is stable.
+   - ROBUFFER-style mixture (Ca, Mg, bicarbonate) can be used to bring RO water into a more natural range.
 
-- Moderate GH and KH (not zero, not extreme), e.g.:
-  - GH somewhere in a reasonable mid-range (e.g. ~4–10 °dGH).
-  - KH ~3–8 °dKH (enough buffering to prevent wild pH drift).
-- GH/KH achieved either by:
-  - Using suitable well/city water, or
-  - RO plus a remineralization protocol (ROBUFFER-type approach).
+3. **Salt mix vs “real” water**
+   - Salts-only systems (no Ca/Mg/alkalinity) are fragile.
+   - Recommend either:
+     - a proven commercial remineralization / buffer product, or
+     - a ROBUFFER recipe, or
+     - blending RO with a known good tap/well source (where safe/allowed).
 
-**Problem patterns:**
+4. **Temperature & swings**
+   - Frogs tolerate a range but **swings** and extremes are stressful.
+   - Sudden changes after water changes are a classic trigger for “frogs off food” and disease.
 
-- GH ≈ 0 and KH ≈ 0 with RO + “salt mix only.”
-- Very high GH/KH from uncontrolled additives.
+5. **pH & meter calibration**
+   - Many labs use pH meters that are not calibrated → “false comfort”.
+   - The assistant should frequently ask:
+     - “When was the pH meter last calibrated?”
+     - “Can you confirm with calibration standards?”
+   - pH out of range + no calibration is a red flag.
 
----
+6. **Conductivity / salts**
+   - Very low conductivity = extremely soft, unbuffered water (RO + tiny salts).
+   - Very high = possible over-salting or inconsistent mixes.
+   - The AI should treat conductivity as context, not a target number, but note extremes.
 
-## 3. pH Level and Stability
+7. **Flow & nozzle splash**
+   - High flow + nozzle hitting water surface can produce vibration and noise.
+   - This can stress frogs even if chemistry is perfect.
+   - Nozzle distance and splash noise should be checked and minimized.
 
-**What:** Actual pH and whether the instrument is trustworthy.
+8. **Room vibration / hum**
+   - Frogs dislike chronic vibration/hum from equipment, nearby machinery, or fans.
+   - “Quiet room with gentle flow” is better than “chemically perfect but noisy”.
 
-**Why:**  
-- Chronic pH drift or extremes cause stress, redness, appetite changes,
-  and can destabilize the microbial environment.
-- Miscalibrated meters create phantom problems (chasing fake pH numbers).
+9. **Density & competition**
+   - Low density:
+     - Frogs take longer to find food.
+     - Feeding can look “weak” even if they’re basically fine.
+   - Higher density:
+     - Faster detection, stronger “feeding frenzy”.
+     - Often better body condition in practice (as long as waste is managed).
+   - AI should consider **low density + low feeding** as a specific pattern.
 
-**Healthy pattern:**
+10. **Feeding protocol (as an event)**
+    - Tossing in a fixed amount and walking away is a recipe for underfeeding.
+    - Healthy practice:
+      - Start with a small amount.
+      - Watch for response.
+      - Incrementally feed small amounts, keeping frogs actively feeding for ~10 minutes.
+    - AI should ask:
+      - “Do you watch them feed?”
+      - “How long does feeding last?”
+      - “Is uneaten food left on the bottom?”
 
-- pH in a stable band ~7.0–7.6 (facility-specific norms acceptable).
-- Minimal drift day-to-day.
-- pH meter calibrated with appropriate standards on a regular schedule.
+11. **Handling & injection technique**
+    - Poor injection technique (wrong angle/zone) can cause injuries, stress, or variable results.
+    - Best practice (from Xenopus 1 experience):
+      - Needle at ~20° angle, parallel to the frog’s back.
+      - Injection ~1–1.5 cm anterior to the cloaca.
+    - AI should flag when images/descriptions suggest off-target injection areas.
 
-**Problem patterns:**
+12. **Light & disturbance**
+    - Frogs do not like intense, harsh light.
+    - We assume a **12/12 schedule** unless clearly stated otherwise – it usually isn’t the main problem.
+    - However, **too many room entries / constant disturbance** can compound other stressors.
 
-- pH readings swinging widely without documented interventions.
-- Apparent extreme pH with no calibration or cross-check of the meter.
-- Chronic low or high pH coupled with dull skin / poor feeding.
-
----
-
-## 4. Temperature
-
-**What:** Water temperature range and stability.
-
-**Why:**  
-- Temperature directly impacts metabolism, immune function, and
-  reproductive behavior.
-
-**Healthy pattern:**
-
-- Stable, appropriate temp band for Xenopus (often low 20s °C).
-- No rapid spikes or drops.
-- Seasonal or experimental deviations are deliberate and monitored.
-
-**Problem patterns:**
-
-- Frequent unexplained temp shifts.
-- Temperatures far outside the facility’s established normal band.
-
----
-
-## 5. Density (Stocking Level)
-
-**What:** Number of frogs per tank volume and shelter.
-
-**Why:**  
-- Density strongly shapes feeding behavior, competition, and overall
-  activity.
-- Too sparse → frogs may not sense food or compete.
-- Too dense → chronic fighting, injuries, and uneven access.
-
-**Healthy pattern:**
-
-- Moderate to high densities that:
-  - Encourage brisk, competitive feeding.
-  - Do not produce chronic injury or visible stress.
-- Density tailored to tank size, flow, and shelter configuration.
-
-**Problem patterns:**
-
-- Very low density (e.g. a single frog in a large tank) with poor feeding.
-- Overcrowded tanks with frequent lesions and obvious conflict.
+13. **Lesions, shelters, and fighting**
+    - Lesions may come from frogs fighting over limited PVC shelters or crowding.
+    - AI should ask:
+      - “Do you see frogs competing for tubes?”
+      - “Are lesions located where they could be rubbing or fighting?”
 
 ---
 
-## 6. Feeding Behavior (Event Quality)
+## 3. Density / feeding vigor / skin shine model
 
-**What:** How frogs respond during a structured 0–10 minute feeding event.
+Frog Social uses three simple observable signals as a **colony health lens**:
 
-**Why:**  
-- One of the strongest **positive health indicators**.
-- Integrates appetite, sensory function, and comfort in the environment.
+- **Density band**
+  - Low / Medium / High / Not sure
 
-**Healthy pattern:**
+- **Feeding vigor**
+  - Low – slow response, food ignored, little competition.
+  - Medium – most frogs respond, some slow.
+  - High – rapid, competitive feeding.
 
-- Food introduced in small increments until frogs visibly respond.
-- Slightly increased amounts while frogs remain actively feeding
-  for ~10 minutes.
-- Response matches density: vigorous, coordinated competition for food.
+- **Skin state**
+  - Shiny/smooth – generally good.
+  - Dull – concern for stress, water issues, or chronic underfeeding.
+  - Lesions/redness – concern for fighting, infection, or environmental insult.
 
-**Reference:**
+Patterns the AI should recognize:
 
-- Three benchmark videos:
-  - Low vigor / low density.
-  - Medium vigor / medium density.
-  - High vigor / high density.
-- User-submitted videos can be compared qualitatively to these.
+- Low density + low feeding → often **under-stimulation** rather than disease.
+- High density + high feeding + shiny skin → thriving baseline pattern.
+- High feeding but dull skin → check water chemistry, chronic stressors.
+- Any feeding pattern + lesions → check shelters, aggression, water quality.
 
-**Problem patterns:**
-
-- Slow, hesitant interest in food at otherwise reasonable density.
-- Food accumulating uneaten.
-- Only a minority of frogs participating while others remain withdrawn.
+Feeding videos (user uploads) will eventually be compared to internal reference clips to classify vigor more objectively.
 
 ---
 
-## 7. Water Flow & Turbulence (Nozzle Position)
+## 4. ROBUFFER concept (RO + salts + real buffering)
 
-**What:** Flow rate, direction, and turbulence at the water surface.
+Short rationale:
 
-**Why:**
+- RO/RO+DI water by itself is **too pure**:
+  - No calcium or magnesium → no hardness.
+  - No carbonate/bicarbonate → no buffering → pH swings.
+- When labs then add only NaCl/KCl or simple salt mixes, the water may still be:
+  - Too soft
+  - Poorly buffered
+  - Micronutrient-poor
 
-- Excess turbulence, splashing, or jet-like flows create noise and
-  vibration that can stress frogs.
-- Insufficient flow can lead to poor water quality.
+ROBUFFER-style mix:
 
-**Healthy pattern:**
+- Add Ca (e.g. CaCl₂·2H₂O), Mg (e.g. MgSO₄·7H₂O), and NaHCO₃ to:
+  - Raise GH (hardness) to a modest level.
+  - Raise KH (buffering) so pH is more stable.
+- Always used **in addition to** their standard Xenopus salt recipe, not instead of it.
 
-- Gentle, even flow across the tank.
-- Nozzle positioned to avoid loud splashing on the surface.
-- No obvious “blast zone” frogs constantly avoid.
+The AI should:
 
-**Problem patterns:**
-
-- Loud, splashing inflows near frogs’ resting areas.
-- Highly directional jets causing avoidance or abnormal swimming.
-
----
-
-## 8. Vibration / Hum / Ambient Noise
-
-**What:** Background vibration and noise from pumps, blowers, HVAC, etc.
-
-**Why:**
-
-- Frogs are vibration-sensitive. Constant hum or rattling is a major,
-  chronic stressor, often underestimated.
-
-**Healthy pattern:**
-
-- Racks and tanks feel mechanically quiet.
-- Equipment is secured and decoupled to minimize vibration.
-- No constant rattling or high-frequency hum dominating the room.
-
-**Problem patterns:**
-
-- Noticeable vibration on tank edges or lids.
-- Audible rattling or equipment hum in quiet periods.
+- Recognize when a facility is essentially using RO + minimal salts.
+- Gently suggest:
+  - A remineralization/buffer solution, or
+  - Blending RO with a “good” tap/well source, where appropriate.
 
 ---
 
-## 9. Room Disturbance Frequency
+## 5. How the AI should use this doc
 
-**What:** Human traffic, door slams, frequent handling, and general activity.
+When generating advice, the AI should:
 
-**Why:**
+- Treat this document as the **primary husbandry playbook**.
+- Always check:
+  - Water source & buffering.
+  - Density & feeding behavior.
+  - Vibration/flow.
+  - pH & meter calibration.
+- Only talk about pathogens after basic husbandry issues are considered.
 
-- Frequent disturbance compounds stress from other issues
-  (light, vibration, etc.).
-- Frogs never “settle” if the room is chaotic.
+The assistant remains:
 
-**Healthy pattern:**
-
-- Predictable, limited disturbance.
-- Handling clustered and deliberate.
-- Quiet periods in the daily cycle.
-
-**Problem patterns:**
-
-- Constant in-and-out traffic near racks.
-- Frequent movement of racks or noisy activities in the same room.
-
----
-
-## 10. Light Intensity & Schedule
-
-**What:** Light intensity and photoperiod.
-
-**Why:**
-
-- Frogs do not like intense light.
-- Photoperiod should be stable, not constantly shifting.
-
-**Healthy pattern:**
-
-- Soft, indirect light over tank surfaces.
-- Standard 12/12 light cycle (assumed; we do not micromanage this
-  unless clearly broken).
-- No glaring spotlights or frequent on/off cycling.
-
-**Problem patterns:**
-
-- Bright, direct lighting constantly on racks.
-- Erratic light schedules or frequent manual toggling.
-
----
-
-## 11. Skin Condition
-
-**What:** Shine, texture, presence of lesions or chronic dullness.
-
-**Why:**
-
-- Skin is a visible readout of systemic health, water quality,
-  and environmental stress.
-- “Shiny frog” is a positive indicator; dull or injured skin is a warning.
-
-**Healthy pattern:**
-
-- Shiny, smooth skin.
-- No chronic erythema, ulcers, or patchy sloughing.
-
-**Problem patterns:**
-
-- Chronic dull or gray appearance.
-- Frequent lesions, especially on backs/limbs.
-- Skin injuries linked to housing, shelter competition, or rough surfaces.
-
-**Note:**  
-Later, we aim to introduce **device-based or vision-based scoring** of
-skin “shininess” to reduce subjective variation between observers.
-
----
-
-## 12. Shelter / Space Configuration (PVC Tubes, etc.)
-
-**What:** Type and distribution of shelter; how frogs use it.
-
-**Why:**
-
-- Insufficient or poorly distributed shelter leads to fighting and injuries.
-- Shelter behavior interacts with density and feeding access.
-
-**Healthy pattern:**
-
-- Adequate number and distribution of PVC tubes or other shelter.
-- Minimal competition or fighting to access shelters.
-- Frogs look relaxed in resting positions.
-
-**Problem patterns:**
-
-- Visible fighting or scarring from PVC tube competition.
-- Only a few frogs monopolizing all shelter spaces.
-
----
-
-## 13. Recent Changes / Interventions
-
-**What:** Major changes in water, equipment, density, or diet within the
-last 1–2 weeks.
-
-**Why:**
-
-- Many “mystery” problems track directly to a recent system change.
-- If we don’t log changes, we miss obvious causal links.
-
-**Healthy pattern:**
-
-- Changes (new pumps, water source shifts, density adjustments, diet)
-  introduced deliberately and logged.
-- Outcomes observed and fed back into case history.
-
-**Problem patterns:**
-
-- Apparent “sudden” problems after undocumented changes.
-- Multiple variables altered at once with no record.
-
----
-
-## Usage in Frog Social
-
-- This document is the **authoritative reference** for husbandry logic.
-- Backend code should implement an `evaluateHusbandry(telemetry)` function
-  that:
-  - Evaluates each of these 13 points.
-  - Returns a set of `HusbandrySignal`s.
-- The AI agent:
-  - Must **not contradict** these signals.
-  - Should explain them in plain language.
-  - Should prioritize interventions based on these items before
-    jumping to pathogen-focused explanations or tests.
+- Non-diagnostic.
+- Focused on **real-world, performance-based** colony health.
+- Explicit about uncertainty and encourages vet consultation when needed.
