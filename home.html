@@ -5,101 +5,233 @@
   <title>Frog Social · Home</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    /* same basic theme as index */
+    * { box-sizing: border-box; }
     :root {
-      --bg: #f3f4f6;
-      --card-bg: #ffffff;
-      --accent: #0ea5e9;
-      --border-soft: #e5e7eb;
-      --text-main: #111827;
-      --text-muted: #6b7280;
+      --app-shell-bg: #050810;
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --card-border: #1F2937;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
+      --warning: #F97316;
+      --danger: #EF4444;
     }
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
-      background: radial-gradient(circle at top, #e0f2fe 0, var(--bg) 60%);
-      color: var(--text-main);
+      background: var(--app-body-bg);
+      color: var(--primary-text);
+      min-height: 100vh;
     }
-    .outer { min-height: 100vh; display:flex; justify-content:center; align-items:flex-start; }
-    .container { max-width: 1100px; width:100%; padding:24px; box-sizing:border-box; }
-    .card {
-      background:var(--card-bg);
-      border-radius:16px;
-      padding:22px;
-      box-shadow:0 18px 30px rgba(15,23,42,0.08),0 0 0 1px rgba(15,23,42,0.02);
-      border:1px solid var(--border-soft);
-      margin-bottom:20px;
+
+    /* Navigation */
+    .nav-bar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .top-nav {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:14px;
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
     }
-    .top-nav-title { font-weight:600; font-size:0.95rem; color:#0f172a; }
-    .top-nav-links a {
-      font-size:0.85rem;
-      color:#4b5563;
-      text-decoration:none;
-      margin-left:10px;
+    .nav-brand span { font-size: 1.25rem; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .top-nav-links a:hover { color:#0ea5e9; }
-    h1 { margin:4px 0 6px; font-size:1.7rem; letter-spacing:-0.02em; }
-    p { color:var(--text-muted); font-size:0.9rem; line-height:1.5; }
-    .grid {
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:16px;
-      margin-top:10px;
+    .nav-links a {
+      font-size: 0.875rem;
+      color: var(--secondary-text);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      transition: all 0.15s ease;
     }
-    .tile {
-      border-radius:14px;
-      border:1px solid #e5e7eb;
-      padding:14px;
-      background:#f9fafb;
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--primary-text);
     }
-    .tile h2 { font-size:1rem; margin:0 0 4px; }
-    .tile p { font-size:0.82rem; margin:0 0 6px; }
-    .tile a {
-      font-size:0.8rem;
-      color:#0369a1;
-      text-decoration:none;
-      font-weight:500;
+    .nav-links a.active {
+      color: #6EE7B7;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.4);
     }
-    .tile a:hover { text-decoration:underline; }
-    @media (max-width:800px) { .container{padding:14px;} }
+    .nav-signout {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .nav-signout:hover { background: #334155; }
+
+    /* Page container */
+    .page-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 32px;
+      text-align: center;
+    }
+
+    /* Hero */
+    .hero {
+      margin-bottom: 48px;
+    }
+    .hero-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: 2.5rem;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--secondary-text);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* Quick actions */
+    .quick-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 32px;
+    }
+    .btn-primary {
+      background: var(--accent-green);
+      color: #0F172A;
+      font-weight: 600;
+      padding: 14px 28px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
+      transition: transform 0.15s, background 0.15s;
+      text-decoration: none;
+    }
+    .btn-primary:hover {
+      background: #6EE7B7;
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+      padding: 14px 28px;
+      border-radius: 9999px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .btn-secondary:hover {
+      background: #334155;
+    }
+
+    /* Feature cards */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 64px;
+    }
+    @media (max-width: 800px) {
+      .features { grid-template-columns: 1fr; }
+    }
+    .feature {
+      background: rgba(17, 24, 39, 0.7);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 24px 20px;
+      text-align: left;
+    }
+    .feature-icon {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+    }
+    .feature h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+    }
+    .feature p {
+      font-size: 0.85rem;
+      color: var(--secondary-text);
+      margin: 0;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
-  <div class="outer">
-    <div class="container">
-      <div class="top-nav">
-        <div class="top-nav-title">Frog Social</div>
-        <div class="top-nav-links">
-          <a href="home.html">Home</a>
-          <a href="colony-register.html">Colonies</a>
-          <a href="case-intake.html">New Case</a>
-          <a href="case-history.html">Case History</a>
-          <a href="social.html">Social</a>
-          <a href="index.html">Sign out</a>
-        </div>
+  <!-- Navigation Bar -->
+  <nav class="nav-bar">
+    <div class="nav-brand">
+      <span>🐸</span>
+      Frog Social
+    </div>
+    <div class="nav-links">
+      <a href="case-intake.html">Describe a Problem</a>
+      <a href="case-history.html">Case History</a>
+      <a href="social.html">Social Feed</a>
+      <a href="account.html">Profile</a>
+      <a href="system-setup.html">New System Setup</a>
+    </div>
+    <a href="index.html" class="nav-signout">Sign Out</a>
+  </nav>
+
+  <div class="page-container">
+    <div class="hero">
+      <div class="hero-icon">🐸</div>
+      <h1>Colony Companion</h1>
+      <p>
+        Welcome to Frog Social. Describe problems, track cases, share observations with your community, and build institutional memory around what actually works in Xenopus husbandry.
+      </p>
+      <div class="quick-actions">
+        <a href="case-intake.html" class="btn-primary">Describe a Problem</a>
+        <a href="dashboard.html" class="btn-secondary">View Dashboard</a>
       </div>
+    </div>
 
-      <div class="card">
-        <h1>Colony Companion</h1>
-        <p>
-          Welcome to Frog Social. From here you can register your colony, have colony history saved here, describe problems, get solutions, review case histories, and participate in a husbandry-focused discussion stream.
-        </p>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">📋</div>
+        <h3>Husbandry-First Analysis</h3>
+        <p>Most Xenopus problems are husbandry, not pathogens. Get structured guidance focused on the 13 key points that matter.</p>
       </div>
-
-      <div class="top-nav-links">
-  <a href="index.html">Home</a>
-  <a href="colony-register.html">Colonies</a>
-  <a href="case-intake.html">New Case</a>
-  <a href="case-history.html">Case History</a>
-  <a href="social.html">Social</a>
-  <a href="account.html">Account</a>
-
+      <div class="feature">
+        <div class="feature-icon">💬</div>
+        <h3>Community Discussion</h3>
+        <p>Share observations, link posts to cases, and learn from how others have resolved similar issues.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">✓</div>
+        <h3>Resolution Tracking</h3>
+        <p>Mark cases resolved with notes on what worked. Build a searchable library of institutional knowledge.</p>
+      </div>
     </div>
   </div>
 </body>

@@ -2,117 +2,518 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Frog Social · Social Stream</title>
+  <title>Frog Social · Social Feed</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root { --bg:#f3f4f6; --card-bg:#ffffff; --accent:#0ea5e9; --border-soft:#e5e7eb; --text-main:#111827; --text-muted:#6b7280; }
+    * { box-sizing: border-box; }
+    :root {
+      --app-shell-bg: #050810;
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --card-border: #1F2937;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
+      --warning: #F97316;
+      --danger: #EF4444;
+    }
     body {
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      margin:0;
-      background:radial-gradient(circle at top,#e0f2fe 0,var(--bg) 60%);
-      color:var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: var(--app-body-bg);
+      color: var(--primary-text);
+      min-height: 100vh;
     }
-    .outer{min-height:100vh;display:flex;justify-content:center;align-items:flex-start;}
-    .container{max-width:1100px;width:100%;padding:24px;box-sizing:border-box;}
-    .card{
-      background:var(--card-bg);
-      border-radius:16px;
-      padding:22px;
-      box-shadow:0 18px 30px rgba(15,23,42,0.08),0 0 0 1px rgba(15,23,42,0.02);
-      border:1px solid var(--border-soft);
-      margin-bottom:20px;
+
+    /* Navigation */
+    .nav-bar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .top-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
-    .top-nav-title{font-weight:600;font-size:0.95rem;color:#0f172a;}
-    .top-nav-links a{font-size:0.85rem;color:#4b5563;text-decoration:none;margin-left:10px;}
-    .top-nav-links a:hover{color:#0ea5e9;}
-    h1{margin:4px 0 6px;font-size:1.6rem;}
-    p{color:var(--text-muted);font-size:0.9rem;line-height:1.5;}
-    .panel{
-      background:#f9fafb;
-      border-radius:12px;
-      border:1px solid var(--border-soft);
-      padding:10px 11px;
-      max-height:60vh;
-      overflow:auto;
-      font-size:0.8rem;
-      margin-top:10px;
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
     }
-    .social-input-row{display:flex;gap:6px;margin-top:10px;}
-    .social-input-row input{
-      flex:1;
-      padding:7px 9px;
-      border-radius:9px;
-      border:1px solid #d1d5db;
-      background:#f9fafb;
-      font-size:0.88rem;
+    .nav-brand span { font-size: 1.25rem; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    button{
-      padding:8px 14px;
-      border-radius:999px;
-      border:none;
-      font-size:0.85rem;
-      font-weight:550;
-      cursor:pointer;
-      background:var(--accent);
-      color:#f9fafb;
+    .nav-links a {
+      font-size: 0.875rem;
+      color: var(--secondary-text);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      transition: all 0.15s ease;
     }
-    button:hover{background:#0369a1;}
-    .social-message-meta{font-size:0.75rem;color:#6b7280;margin-bottom:2px;}
-    .social-message-text{font-size:0.8rem;color:#111827;margin-bottom:6px;}
-    hr{border:none;border-top:1px solid #e5e7eb;margin:6px 0;}
-    @media(max-width:800px){.container{padding:14px;}}
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--primary-text);
+    }
+    .nav-links a.active {
+      color: #6EE7B7;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .nav-signout {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .nav-signout:hover { background: #334155; }
+
+    /* Page container */
+    .page-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+    .page-header {
+      margin-bottom: 24px;
+    }
+    .page-header h1 {
+      font-size: 1.875rem;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+    }
+    .page-header p {
+      color: var(--secondary-text);
+      font-size: 0.9rem;
+      margin: 0;
+      max-width: 600px;
+    }
+
+    /* Two-column layout */
+    .split-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 1024px) {
+      .split-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    /* Message input */
+    .message-input-area {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .message-input-area input {
+      flex: 1;
+      background: #0F172A;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      color: var(--primary-text);
+    }
+    .message-input-area input::placeholder {
+      color: #6B7280;
+    }
+    .message-input-area input:focus {
+      outline: none;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+    }
+    .btn-primary {
+      background: var(--accent-green);
+      color: #0F172A;
+      font-weight: 600;
+      padding: 12px 20px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
+      transition: transform 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-primary:hover {
+      background: #6EE7B7;
+      transform: translateY(-1px);
+    }
+
+    /* Case link select */
+    .link-case-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .link-case-row label {
+      font-size: 0.8rem;
+      color: var(--secondary-text);
+      white-space: nowrap;
+    }
+    .link-case-row select {
+      flex: 1;
+      background: #0F172A;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      color: var(--primary-text);
+      cursor: pointer;
+    }
+
+    /* Message stream */
+    .message-stream {
+      max-height: 60vh;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+    .message {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 14px 18px;
+      margin-bottom: 12px;
+    }
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .message-author {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--primary-text);
+    }
+    .message-time {
+      font-size: 0.7rem;
+      color: #6B7280;
+    }
+    .message-content {
+      font-size: 0.875rem;
+      color: var(--primary-text);
+      line-height: 1.5;
+    }
+    .message-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--secondary-text);
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+    }
+    .tag.case-tag {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+      cursor: pointer;
+    }
+    .tag.case-tag:hover {
+      background: rgba(56, 189, 248, 0.25);
+    }
+
+    /* AI message style */
+    .message.ai-message {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .message.ai-message .message-author {
+      color: var(--accent-green);
+    }
+    .husbandry-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(52, 211, 153, 0.15);
+      color: #6EE7B7;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--secondary-text);
+    }
+    .empty-state .icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+    .empty-state p {
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    /* Right column - AI assistant */
+    .right-column {
+      position: sticky;
+      top: 80px;
+      align-self: start;
+    }
+    @media (max-width: 1024px) {
+      .right-column { position: static; }
+    }
+    .ai-panel {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    .ai-panel:last-child { margin-bottom: 0; }
+    .ai-panel-header {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--secondary-text);
+      margin-bottom: 12px;
+    }
+    .ai-panel-content {
+      font-size: 0.85rem;
+      color: var(--primary-text);
+      line-height: 1.6;
+    }
+    .ai-panel-content ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .ai-panel-content li {
+      margin-bottom: 8px;
+    }
+    .ai-panel-content a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+    }
+    .ai-panel-content a:hover {
+      text-decoration: underline;
+    }
+
+    /* Case summary card */
+    .case-summary {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .case-summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .case-summary-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+    }
+    .case-status {
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .case-status.open {
+      background: rgba(251, 146, 60, 0.2);
+      color: #FB923C;
+    }
+    .case-status.resolved {
+      background: rgba(52, 211, 153, 0.2);
+      color: var(--accent-green);
+    }
+    .case-summary-body {
+      font-size: 0.8rem;
+      color: var(--secondary-text);
+      line-height: 1.5;
+    }
+
+    /* Resolution insights section */
+    .insights-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .insight-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .insight-item:last-child { margin-bottom: 0; }
+    .insight-icon {
+      font-size: 1rem;
+      margin-top: 2px;
+    }
+    .insight-text {
+      font-size: 0.8rem;
+      color: var(--primary-text);
+      line-height: 1.5;
+    }
+    .insight-text strong {
+      color: var(--accent-green);
+    }
   </style>
 </head>
 <body>
-  <div class="outer">
-    <div class="container">
-      <div class="top-nav">
-        <div class="top-nav-title">Frog Social</div>
-        <div class="top-nav-links">
-          <a href="index.html">Home</a>
-          <a href="colony-register.html">Colonies</a>
-          <a href="case-intake.html">New Case</a>
-          <a href="case-history.html">Case History</a>
-          <a href="social.html">Social</a>
-          <a href="account.html">Account</a>
-          <a class="signout" href="index.html">Sign Out</a>
+  <!-- Navigation Bar -->
+  <nav class="nav-bar">
+    <div class="nav-brand">
+      <span>🐸</span>
+      Frog Social
+    </div>
+    <div class="nav-links">
+      <a href="case-intake.html">Describe a Problem</a>
+      <a href="case-history.html">Case History</a>
+      <a href="social.html" class="active">Social Feed</a>
+      <a href="account.html">Profile</a>
+      <a href="system-setup.html">New System Setup</a>
+    </div>
+    <a href="index.html" class="nav-signout">Sign Out</a>
+  </nav>
 
+  <div class="page-container">
+    <div class="page-header">
+      <h1>Social Feed</h1>
+      <p>Share observations, discuss cases, and learn from the community. Link posts to cases to build institutional memory.</p>
+    </div>
+
+    <div class="split-layout">
+      <!-- LEFT COLUMN: Feed -->
+      <div class="card">
+        <!-- Link to case -->
+        <div class="link-case-row">
+          <label for="linkCase">Link to case:</label>
+          <select id="linkCase">
+            <option value="">No case linked</option>
+          </select>
+        </div>
+
+        <!-- Message input -->
+        <div class="message-input-area">
+          <input type="text" id="messageInput" placeholder="Share an observation, note, or question..." />
+          <button class="btn-primary" id="postBtn">Post</button>
+        </div>
+
+        <!-- Message stream -->
+        <div class="message-stream" id="messageStream">
+          <div class="empty-state">
+            <div class="icon">💬</div>
+            <p>No messages yet. Be the first to post a note.</p>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h1>Frog Social Stream (local preview)</h1>
-        <p>
-          Local-only prototype of the social layer – notes linked to this browser.
-          In a future version this becomes a multi-user, permissioned discussion space.
-        </p>
-
-        <div class="social-input-row">
-          <input id="socialText" type="text" placeholder="Share an observation, note, or question..." />
-          <button type="button" id="socialPostBtn">Post</button>
+      <!-- RIGHT COLUMN: AI Assistant -->
+      <div class="right-column">
+        <!-- Linked case summary -->
+        <div class="ai-panel" id="linkedCasePanel" style="display: none;">
+          <div class="ai-panel-header">Linked Case</div>
+          <div class="case-summary" id="linkedCaseSummary">
+            <!-- Populated dynamically -->
+          </div>
         </div>
-        <p style="font-size:0.78rem;color:#6b7280;margin-top:6px;">
-          Messages here are stored only in this browser. They are not synced or shared yet.
-        </p>
 
-        <div id="socialStreamBox" class="panel">
-          No messages yet. Be the first to post a note.
+        <!-- AI discussion summary -->
+        <div class="ai-panel">
+          <div class="ai-panel-header">Discussion Summary</div>
+          <div class="ai-panel-content" id="discussionSummary">
+            <p style="color: var(--secondary-text); font-style: italic;">
+              As the conversation evolves, summaries of what's been discussed and what's been tried will appear here.
+            </p>
+          </div>
+        </div>
+
+        <!-- Husbandry hints -->
+        <div class="ai-panel">
+          <div class="ai-panel-header">Husbandry Hints</div>
+          <div class="ai-panel-content">
+            <ul>
+              <li>Most Xenopus problems are husbandry, not pathogens</li>
+              <li>Check water source, buffering, density, and feeding first</li>
+              <li>Low density + low feeding often = under-stimulation</li>
+              <li>pH readings need calibrated meters</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Resolution insights from past cases -->
+        <div class="ai-panel">
+          <div class="ai-panel-header">Insights from Past Cases</div>
+          <div class="ai-panel-content" id="resolutionInsights">
+            <p style="color: var(--secondary-text); font-style: italic;">
+              Patterns from resolved cases will appear here to help guide your troubleshooting.
+            </p>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="ai-panel">
+          <div class="ai-panel-header">Quick Actions</div>
+          <div class="ai-panel-content">
+            <p><a href="case-intake.html">→ Describe a new problem</a></p>
+            <p><a href="case-history.html">→ Review past cases</a></p>
+            <p><a href="robuffer.html">→ ROBUFFER guide</a></p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
+    // LocalStorage helpers
     function loadSocial() {
       try {
         const raw = localStorage.getItem("frogSocialStream");
         return raw ? JSON.parse(raw) : [];
       } catch { return []; }
     }
+
     function saveSocial(messages) {
       localStorage.setItem("frogSocialStream", JSON.stringify(messages));
     }
+
     function loadProfile() {
       try {
         const raw = localStorage.getItem("frogSocialProfile");
@@ -120,52 +521,209 @@
       } catch { return {}; }
     }
 
-    function renderSocial() {
-      const box = document.getElementById("socialStreamBox");
-      const messages = loadSocial();
-      if (!messages.length) {
-        box.textContent = "No messages yet. Be the first to post a note.";
-        return;
-      }
-      const chunks = messages.map(m => {
-        const when = m.createdAt ? new Date(m.createdAt).toLocaleString() : "";
-        const who = m.author || "local user";
-        return `
-<div class="social-message-meta">${when} · ${who}</div>
-<div class="social-message-text">${m.text}</div>
-`;
-      });
-      box.innerHTML = chunks.join("<hr/>");
+    function loadCases() {
+      try {
+        const raw = localStorage.getItem("frogSocialCases");
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
     }
 
-    const socialText = document.getElementById("socialText");
-    const socialPostBtn = document.getElementById("socialPostBtn");
+    // Populate case selector
+    function populateCaseSelector() {
+      const cases = loadCases();
+      const select = document.getElementById("linkCase");
+      
+      // Keep first option
+      select.innerHTML = '<option value="">No case linked</option>';
+      
+      cases.forEach(c => {
+        const option = document.createElement("option");
+        option.value = c.id;
+        const label = c.colonyName || "Unlabeled";
+        const status = c.status === "resolved" ? " ✓" : "";
+        option.textContent = `${label} - ${c.problemDescription?.slice(0, 40) || c.snippet?.slice(0, 40) || "No description"}...${status}`;
+        select.appendChild(option);
+      });
+    }
 
-    socialPostBtn.addEventListener("click", () => {
-      const text = socialText.value.trim();
+    // Show linked case summary
+    function showLinkedCase(caseId) {
+      const panel = document.getElementById("linkedCasePanel");
+      const summary = document.getElementById("linkedCaseSummary");
+      
+      if (!caseId) {
+        panel.style.display = "none";
+        return;
+      }
+
+      const cases = loadCases();
+      const linkedCase = cases.find(c => c.id == caseId);
+      
+      if (!linkedCase) {
+        panel.style.display = "none";
+        return;
+      }
+
+      panel.style.display = "block";
+      summary.innerHTML = `
+        <div class="case-summary-header">
+          <span class="case-summary-title">${linkedCase.colonyName || "Unlabeled"}</span>
+          <span class="case-status ${linkedCase.status || 'open'}">${linkedCase.status || 'open'}</span>
+        </div>
+        <div class="case-summary-body">
+          ${linkedCase.problemDescription || linkedCase.snippet || "No description"}
+        </div>
+      `;
+    }
+
+    // Format timestamp
+    function formatTime(isoString) {
+      const date = new Date(isoString);
+      const now = new Date();
+      const diff = now - date;
+      
+      if (diff < 60000) return "just now";
+      if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+      if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
+      return date.toLocaleDateString();
+    }
+
+    // Render messages
+    function renderMessages() {
+      const stream = document.getElementById("messageStream");
+      const messages = loadSocial();
+      const cases = loadCases();
+
+      if (!messages.length) {
+        stream.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">💬</div>
+            <p>No messages yet. Be the first to post a note.</p>
+          </div>
+        `;
+        return;
+      }
+
+      stream.innerHTML = messages.map(m => {
+        const linkedCase = m.linkedCaseId ? cases.find(c => c.id == m.linkedCaseId) : null;
+        const caseTag = linkedCase ? 
+          `<span class="tag case-tag" onclick="document.getElementById('linkCase').value='${m.linkedCaseId}'; showLinkedCase('${m.linkedCaseId}')">📋 ${linkedCase.colonyName || "Case"}</span>` : "";
+        
+        return `
+          <div class="message ${m.isAI ? 'ai-message' : ''}">
+            <div class="message-header">
+              <span class="message-author">${m.author || "Local user"}</span>
+              <span class="message-time">${formatTime(m.createdAt)}</span>
+            </div>
+            <div class="message-content">${escapeHtml(m.text)}</div>
+            ${caseTag ? `<div class="message-tags">${caseTag}</div>` : ""}
+          </div>
+        `;
+      }).join("");
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Generate resolution insights from resolved cases
+    function updateResolutionInsights() {
+      const cases = loadCases();
+      const resolved = cases.filter(c => c.status === "resolved" && c.resolution);
+      const container = document.getElementById("resolutionInsights");
+
+      if (!resolved.length) {
+        container.innerHTML = `<p style="color: var(--secondary-text); font-style: italic;">
+          No resolved cases yet. Resolution summaries will appear here to help future troubleshooting.
+        </p>`;
+        return;
+      }
+
+      // Show up to 3 recent resolutions
+      const recent = resolved.slice(0, 3);
+      container.innerHTML = `
+        <div class="insights-section">
+          ${recent.map(c => `
+            <div class="insight-item">
+              <span class="insight-icon">✓</span>
+              <div class="insight-text">
+                <strong>${c.colonyName || "Case"}</strong>: ${c.resolution}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+        <p style="margin-top: 12px;"><a href="case-history.html">→ View all ${resolved.length} resolved cases</a></p>
+      `;
+    }
+
+    // Post message
+    function postMessage() {
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
       if (!text) return;
 
       const profile = loadProfile();
+      const linkedCaseId = document.getElementById("linkCase").value;
+
       const submitBits = [];
       if (profile.name) submitBits.push(profile.name);
       if (profile.authorLabel) submitBits.push("(" + profile.authorLabel + ")");
       if (profile.institution) submitBits.push("· " + profile.institution);
-      const author = submitBits.length ? submitBits.join(" ") : "local user";
+      const author = submitBits.length ? submitBits.join(" ") : "Local user";
 
       const messages = loadSocial();
-      messages.unshift({
+      const newMessage = {
         id: Date.now(),
         text,
         author,
-        createdAt: new Date().toISOString()
-      });
+        createdAt: new Date().toISOString(),
+        linkedCaseId: linkedCaseId || null,
+        isAI: false
+      };
+      
+      messages.unshift(newMessage);
+
+      // If linked to a case, update the case's linked thread
+      if (linkedCaseId) {
+        const cases = loadCases();
+        const caseIndex = cases.findIndex(c => c.id == linkedCaseId);
+        if (caseIndex !== -1) {
+          cases[caseIndex].linkedThreadId = newMessage.id;
+          localStorage.setItem("frogSocialCases", JSON.stringify(cases));
+        }
+      }
+
       saveSocial(messages);
-      socialText.value = "";
-      renderSocial();
+      input.value = "";
+      renderMessages();
+    }
+
+    // Event listeners
+    document.getElementById("postBtn").addEventListener("click", postMessage);
+    document.getElementById("messageInput").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") postMessage();
+    });
+    document.getElementById("linkCase").addEventListener("change", (e) => {
+      showLinkedCase(e.target.value);
     });
 
-    renderSocial();
+    // Check for linked case from case-history navigation
+    function checkForLinkedCase() {
+      const linkedCaseId = sessionStorage.getItem("linkToCaseId");
+      if (linkedCaseId) {
+        document.getElementById("linkCase").value = linkedCaseId;
+        showLinkedCase(linkedCaseId);
+        sessionStorage.removeItem("linkToCaseId");
+      }
+    }
+
+    // Initialize
+    populateCaseSelector();
+    renderMessages();
+    updateResolutionInsights();
+    checkForLinkedCase();
   </script>
 </body>
 </html>
-

@@ -2,192 +2,634 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Frog Social · Case Intake</title>
+  <title>Frog Social · Describe a Problem</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root { --bg:#f3f4f6; --card-bg:#ffffff; --accent:#0ea5e9; --border-soft:#e5e7eb; --text-main:#111827; --text-muted:#6b7280; }
+    * { box-sizing: border-box; }
+    :root {
+      --app-shell-bg: #050810;
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --card-border: #1F2937;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
+      --warning: #F97316;
+      --danger: #EF4444;
+    }
     body {
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      margin:0;
-      background:radial-gradient(circle at top,#e0f2fe 0,var(--bg) 60%);
-      color:var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: var(--app-body-bg);
+      color: var(--primary-text);
+      min-height: 100vh;
     }
-    .outer{min-height:100vh;display:flex;justify-content:center;align-items:flex-start;}
-    .container{max-width:1100px;width:100%;padding:24px;box-sizing:border-box;}
-    .card{
-      background:var(--card-bg);
-      border-radius:16px;
-      padding:22px;
-      box-shadow:0 18px 30px rgba(15,23,42,0.08),0 0 0 1px rgba(15,23,42,0.02);
-      border:1px solid var(--border-soft);
-      margin-bottom:20px;
+
+    /* Navigation */
+    .nav-bar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .top-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
-    .top-nav-title{font-weight:600;font-size:0.95rem;color:#0f172a;}
-    .top-nav-links a{font-size:0.85rem;color:#4b5563;text-decoration:none;margin-left:10px;}
-    .top-nav-links a:hover{color:#0ea5e9;}
-    h1{margin:4px 0 6px;font-size:1.6rem;}
-    h2{font-size:1.1rem;margin:0.4rem 0 0.3rem;}
-    p{color:var(--text-muted);font-size:0.9rem;line-height:1.5;}
-    label{display:block;margin-top:9px;margin-bottom:3px;font-size:0.82rem;color:#374151;font-weight:500;}
-    input,textarea,select{
-      width:100%;
-      padding:7px 9px;
-      border-radius:9px;
-      border:1px solid #d1d5db;
-      background:#f9fafb;
-      color:var(--text-main);
-      box-sizing:border-box;
-      font-size:0.88rem;
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
     }
-    textarea{min-height:80px;resize:vertical;}
-    button{
-      margin-top:13px;
-      padding:9px 18px;
-      border-radius:999px;
-      border:none;
-      font-size:0.9rem;
-      font-weight:550;
-      cursor:pointer;
-      background:var(--accent);
-      color:#f9fafb;
+    .nav-brand span { font-size: 1.25rem; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    button:hover{background:#0369a1;}
-    .split{
-      display:grid;
-      grid-template-columns:minmax(0,1.05fr) minmax(0,1.35fr);
-      gap:22px;
-      margin-top:10px;
+    .nav-links a {
+      font-size: 0.875rem;
+      color: var(--secondary-text);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      transition: all 0.15s ease;
     }
-    .panel{
-      background:#f9fafb;
-      border-radius:12px;
-      border:1px solid var(--border-soft);
-      padding:10px 11px;
-      max-height:40vh;
-      overflow:auto;
-      font-size:0.8rem;
-      white-space:pre-wrap;
-      margin-bottom:9px;
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--primary-text);
     }
-    @media(max-width:900px){
-      .container{padding:14px;}
-      .split{grid-template-columns:minmax(0,1fr);}
-      .panel{max-height:none;}
+    .nav-links a.active {
+      color: #6EE7B7;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.4);
     }
-    .small{font-size:0.78rem;color:var(--text-muted);margin-top:6px;}
+    .nav-signout {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .nav-signout:hover { background: #334155; }
+
+    /* Page container */
+    .page-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+    .page-header {
+      margin-bottom: 24px;
+    }
+    .page-header h1 {
+      font-size: 1.875rem;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+    }
+    .page-header p {
+      color: var(--secondary-text);
+      font-size: 0.9rem;
+      margin: 0;
+      max-width: 600px;
+    }
+
+    /* Two-column layout */
+    .split-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 1024px) {
+      .split-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    /* Form sections */
+    .form-section {
+      margin-bottom: 28px;
+    }
+    .form-section:last-child { margin-bottom: 0; }
+    .form-section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
+      margin: 0 0 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .form-section-title .num {
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--accent-green);
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+    }
+
+    /* Form inputs */
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--secondary-text);
+      font-weight: 500;
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+    label:first-child { margin-top: 0; }
+    input, select, textarea {
+      width: 100%;
+      background: #0F172A;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.875rem;
+      color: var(--primary-text);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input::placeholder, textarea::placeholder {
+      color: #6B7280;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239CA3AF' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+
+    /* Helper text */
+    .helper-text {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      margin-top: 6px;
+    }
+    .helper-text a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+    }
+    .helper-text a:hover { text-decoration: underline; }
+
+    /* Field grid for selects */
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .field-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Video upload section */
+    .upload-zone {
+      border: 2px dashed rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      margin-top: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .upload-zone:hover {
+      border-color: var(--accent-green);
+      background: rgba(52, 211, 153, 0.05);
+    }
+    .upload-zone input[type="file"] {
+      display: none;
+    }
+    .upload-zone .icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+    .upload-zone .label {
+      font-size: 0.875rem;
+      color: var(--primary-text);
+      font-weight: 500;
+    }
+    .upload-zone .sub {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      margin-top: 4px;
+    }
+    .upload-preview {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      border-radius: 10px;
+      font-size: 0.8rem;
+      color: var(--accent-green);
+      display: none;
+    }
+    .upload-preview.active { display: block; }
+
+    /* Primary button */
+    .btn-primary {
+      background: var(--accent-green);
+      color: #0F172A;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 0.9rem;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
+      transition: transform 0.15s, background 0.15s;
+      margin-top: 20px;
+      width: 100%;
+    }
+    .btn-primary:hover {
+      background: #6EE7B7;
+      transform: translateY(-1px);
+    }
+
+    /* AI Output panels */
+    .ai-panel {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    .ai-panel:last-child { margin-bottom: 0; }
+    .ai-panel-header {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--secondary-text);
+      margin-bottom: 10px;
+    }
+    .ai-panel-content {
+      font-size: 0.875rem;
+      color: var(--primary-text);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .ai-panel-content.empty {
+      color: var(--secondary-text);
+      font-style: italic;
+    }
+    .ai-panel-content ul {
+      margin: 8px 0;
+      padding-left: 18px;
+    }
+    .ai-panel-content li {
+      margin-bottom: 6px;
+    }
+
+    /* Chip tags */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--accent-green);
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    /* Disclaimer */
+    .disclaimer {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    /* Right column sticky */
+    .right-column {
+      position: sticky;
+      top: 80px;
+      align-self: start;
+    }
+    @media (max-width: 1024px) {
+      .right-column { position: static; }
+    }
+
+    /* Loading state */
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--secondary-text);
+    }
+    .loading::before {
+      content: "";
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(52, 211, 153, 0.3);
+      border-top-color: var(--accent-green);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
-  <div class="outer">
-    <div class="container">
-      <div class="top-nav">
-        <div class="top-nav-title">Frog Social</div>
-        <div class="top-nav-links">
-          <a href="home.html">Home</a>
-          <a href="colony-register.html">Colonies</a>
-          <a href="case-intake.html">New Case</a>
-          <a href="case-history.html">Case History</a>
-          <a href="social.html">Social</a>
-          <a href="account.html">Account</a>
-          <a href="index.html">Sign out</a>
-        </div>
-      </div>
+  <!-- Navigation Bar -->
+  <nav class="nav-bar">
+    <div class="nav-brand">
+      <span>🐸</span>
+      Frog Social
+    </div>
+    <div class="nav-links">
+      <a href="case-intake.html" class="active">Describe a Problem</a>
+      <a href="case-history.html">Case History</a>
+      <a href="social.html">Social Feed</a>
+      <a href="account.html">Profile</a>
+      <a href="system-setup.html">New System Setup</a>
+    </div>
+    <a href="index.html" class="nav-signout">Sign Out</a>
+  </nav>
 
+  <div class="page-container">
+    <div class="page-header">
+      <h1>Describe a Problem</h1>
+      <p>Husbandry-first framing tool. Fill in what you can — the goal is to narrow potential stressors, not generate an exact diagnosis.</p>
+    </div>
+
+    <div class="split-layout">
+      <!-- LEFT COLUMN: Form -->
       <div class="card">
-        <h1>New Case · Situation Intake</h1>
-        <p class="small">
-          Husbandry-first framing tool. Fill in what you can. The goal is to narrow the potential stressors,
-          not generate an exact diagnosis.
-        </p>
+        <form id="intakeForm">
 
-        <div class="split">
-          <div>
-            <form id="caseForm">
-              <h2>1. Colony & system</h2>
+          <!-- Section 1: Colony & System -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">1</span> Colony & System
+            </h3>
+            <label for="colonyName">Colony / room name</label>
+            <input type="text" id="colonyName" placeholder="e.g., Room B-217, Rack 3" />
 
-              <label for="colonyName">Colony / room name (optional)</label>
-              <input id="colonyName" type="text" placeholder="e.g., Room B-217, Rack 3" />
+            <label for="institution">Institution / lab</label>
+            <input type="text" id="institution" placeholder="e.g., Vanderbilt, Dewar Lab" />
 
-              <label for="institution">Institution / lab (optional)</label>
-              <input id="institution" type="text" placeholder="e.g., Vanderbilt, Dewar Lab" />
+            <label for="systemType">System type</label>
+            <select id="systemType">
+              <option value="recirculating">Recirculating rack</option>
+              <option value="static">Static tanks (manual changes)</option>
+              <option value="flow_through">Flow-through / dump-and-fill</option>
+              <option value="other">Other / mixed</option>
+            </select>
 
-              <label for="systemType">System type</label>
-              <select id="systemType">
-                <option value="Recirculating">Recirculating rack</option>
-                <option value="Static">Static tanks (manual changes)</option>
-                <option value="Dump-fill">Dump-and-fill / flow-through</option>
-                <option value="Other">Other / mixed</option>
-              </select>
-
-              <label for="numFrogs">Approximate number of frogs</label>
-              <input id="numFrogs" type="number" min="0" placeholder="e.g., 120" />
-
-              <label for="waterTemp">Water temperature (°C)</label>
-              <input id="waterTemp" type="number" step="0.1" placeholder="e.g., 20.5" />
-
-              <label for="ph">pH</label>
-              <input id="ph" type="number" step="0.1" placeholder="e.g., 7.2" />
-
-              <label for="conductivity">Conductivity / salts (µS or ppm, optional)</label>
-              <input id="conductivity" type="text" placeholder="e.g., 600 µS, or 'not measured'" />
-<p class="muted">
-  Water help: <a href="/robuffer.html" target="_blank" rel="noopener">ROBUFFER formula & mixing guide</a>
-</p>
-              <label for="ammonia">Ammonia (NH3/NH4) status</label>
-              <select id="ammonia">
-                <option value="Unknown">Unknown / not tested</option>
-                <option value="Zero">Zero / near zero</option>
-                <option value="Borderline">Borderline / sometimes detectable</option>
-                <option value="High">High / consistently detectable</option>
-              </select>
-
-              <label for="recentChanges">Recent changes (last 2–4 weeks)</label>
-              <textarea id="recentChanges" placeholder="E.g., new rack, pump repair, new water source, new frogs, diet change, increased density..."></textarea>
-
-              <h2>2. Main concern</h2>
-
-              <label for="mainConcern">Main concern</label>
-              <select id="mainConcern">
-                <option value="Mortality">Mortality / sudden deaths</option>
-                <option value="Skin">Skin lesions / redness / fuzz</option>
-                <option value="Appetite">Reduced appetite / weight loss</option>
-                <option value="Behavior">Abnormal behavior / floating / hiding</option>
-                <option value="GreenWater">Green water / turbidity / cloudy</option>
-                <option value="Breeding">Breeding / egg quality issues</option>
-                <option value="Other">Other / mixed picture</option>
-              </select>
-
-              <label for="description">Describe what you are seeing</label>
-              <textarea id="description" placeholder="E.g., three sudden deaths in 48 hours, older females, system flushed last week, slightly cloudy water..."></textarea>
-              <button type="submit">Generate case view</button>
-              <div class="small">
-                All processing happens in your browser. Not medical advice. If animals are crashing,
-                escalate to veterinary support.
-              </div>
-            </form>
+            <label for="approxFrogCount">Approximate number of frogs</label>
+            <input type="number" id="approxFrogCount" min="0" placeholder="e.g., 120" />
           </div>
 
-          <div>
-            <h2>3. Situation summary</h2>
-            <div class="panel" id="summaryBox">
-              After you generate, a concise summary of the situation will appear here.
+          <!-- Section 2: Water Snapshot -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">2</span> Water Snapshot
+            </h3>
+            <div class="field-grid">
+              <div>
+                <label for="waterTemp">Water temperature (°C)</label>
+                <input type="number" id="waterTemp" step="0.1" placeholder="e.g., 20.5" />
+              </div>
+              <div>
+                <label for="ph">pH</label>
+                <input type="number" id="ph" step="0.1" placeholder="e.g., 7.2" />
+              </div>
             </div>
 
-            <h2>4. Husbandry focus areas</h2>
-            <div class="panel" id="focusBox">
-              Key husbandry levers likely worth attention for this pattern will appear here.
+            <label for="conductivity">Conductivity or TDS (µS or ppm)</label>
+            <input type="text" id="conductivity" placeholder="e.g., 600 µS, or 'not measured'" />
+
+            <label for="ammoniaStatus">Ammonia (NH₃/NH₄⁺) status</label>
+            <select id="ammoniaStatus">
+              <option value="unknown">Unknown / not tested</option>
+              <option value="ok">Within acceptable range</option>
+              <option value="elevated">Elevated / concerning</option>
+            </select>
+
+            <label for="waterSource">Water source</label>
+            <select id="waterSource">
+              <option value="ro">RO / RO+DI</option>
+              <option value="city">Treated city water</option>
+              <option value="well">Well water</option>
+              <option value="mixed">Mixed / not sure</option>
+            </select>
+
+            <p class="helper-text">
+              Need help with RO + buffering? See the <a href="robuffer.html">ROBUFFER guide</a>.
+            </p>
+          </div>
+
+          <!-- Section 3: Recent Changes -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">3</span> Recent Changes (last 2–4 weeks)
+            </h3>
+            <textarea id="recentChanges" placeholder="New water source, new salt mix, equipment moves, density changes, feeding regime changes, room renovation, staff changes..."></textarea>
+          </div>
+
+          <!-- Section 4: Husbandry Snapshot (NEW) -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">4</span> Husbandry Snapshot
+            </h3>
+
+            <div class="field-grid">
+              <div>
+                <label for="densityBand">Density in the tank</label>
+                <select id="densityBand">
+                  <option value="unknown">Not sure</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div>
+                <label for="feedingVigor">Feeding vigor (last few feedings)</label>
+                <select id="feedingVigor">
+                  <option value="unknown">Not sure</option>
+                  <option value="low">Low (slow, many frogs ignore food)</option>
+                  <option value="medium">Medium (most respond, some slow)</option>
+                  <option value="high">High (rapid, competitive feeding)</option>
+                </select>
+              </div>
             </div>
 
-            <h2>5. Suggested next steps</h2>
-            <div class="panel" id="stepsBox">
-              Practical, non-diagnostic next steps for the coming days will be listed here.
+            <div class="field-grid">
+              <div>
+                <label for="skinState">Skin condition</label>
+                <select id="skinState">
+                  <option value="unknown">Not sure</option>
+                  <option value="shiny">Shiny / smooth</option>
+                  <option value="dull">Dull</option>
+                  <option value="lesions">Lesions / redness</option>
+                </select>
+              </div>
+              <div>
+                <label for="vibration">Room vibration / noise</label>
+                <select id="vibration">
+                  <option value="unknown">Not sure</option>
+                  <option value="quiet">Quiet</option>
+                  <option value="some_hum">Some hum</option>
+                  <option value="loud">Loud / constant</option>
+                </select>
+              </div>
             </div>
 
-            <h2>6. When to escalate</h2>
-            <div class="panel" id="escalateBox">
-              General guidance on when to contact veterinary staff appears here.
+            <div class="field-grid">
+              <div>
+                <label for="flow">Flow & splash from inlets</label>
+                <select id="flow">
+                  <option value="unknown">Not sure</option>
+                  <option value="gentle">Gentle, no splash</option>
+                  <option value="splashy">Splashy / noisy</option>
+                </select>
+              </div>
+              <div>
+                <label for="disturbanceLevel">Room disturbance</label>
+                <select id="disturbanceLevel">
+                  <option value="unknown">Not sure</option>
+                  <option value="rare">Rare (few entries per day)</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="constant">Constant traffic</option>
+                </select>
+              </div>
             </div>
+
+            <label for="phMeterCalibrated">pH meter calibration</label>
+            <select id="phMeterCalibrated">
+              <option value="unknown">Not sure</option>
+              <option value="yes">Recently calibrated</option>
+              <option value="no">Not calibrated recently</option>
+            </select>
+          </div>
+
+          <!-- Section 5: Feeding Behavior Video (NEW) -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">5</span> Feeding Behavior Video (optional)
+            </h3>
+            
+            <label for="feedingVideo" class="upload-zone" id="uploadZone">
+              <input type="file" id="feedingVideo" accept="video/mp4,video/quicktime,video/webm" />
+              <div class="icon">🎬</div>
+              <div class="label">Upload short feeding clip (30–60 seconds)</div>
+              <div class="sub">MP4, MOV, or WebM accepted</div>
+            </label>
+            <div class="upload-preview" id="uploadPreview">
+              <span id="uploadFileName"></span>
+            </div>
+            <p class="helper-text">
+              This helps compare your feeding response to internal reference videos. Start recording, add food, and keep filming until frogs either lose interest or food is gone.
+            </p>
+
+            <div class="field-grid">
+              <div>
+                <label for="timeSinceLastFeeding">Time since last feeding</label>
+                <select id="timeSinceLastFeeding">
+                  <option value="unknown">Not sure</option>
+                  <option value="12_24h">12–24 hours</option>
+                  <option value="24_48h">24–48 hours</option>
+                  <option value="gt_48h">>48 hours</option>
+                </select>
+              </div>
+              <div>
+                <label for="densityForVideo">Density in this tank (for video)</label>
+                <select id="densityForVideo">
+                  <option value="unknown">Not sure</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+
+            <label for="cameraPosition">Camera position</label>
+            <select id="cameraPosition">
+              <option value="unknown">Not sure</option>
+              <option value="top">Top</option>
+              <option value="side">Side</option>
+              <option value="angled">Angled</option>
+            </select>
+          </div>
+
+          <!-- Section 6: Problem Description -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">6</span> Describe the Problem
+            </h3>
+            <label for="problemDescription">Describe the problem in your own words</label>
+            <textarea id="problemDescription" placeholder="e.g., Frogs stopped eating after water change, redness on legs after moving to new rack, green water appeared suddenly..."></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary" id="analyzeBtn">
+            Analyze with AI
+          </button>
+          <p class="disclaimer">
+            All processing happens in your browser. Not medical advice. If animals are crashing, escalate to veterinary support.
+          </p>
+        </form>
+      </div>
+
+      <!-- RIGHT COLUMN: AI Output -->
+      <div class="right-column">
+        <div class="ai-panel">
+          <div class="ai-panel-header">Situation Summary</div>
+          <div class="ai-panel-content empty" id="summaryPanel">
+            After you submit, a concise summary of the situation will appear here.
+          </div>
+        </div>
+
+        <div class="ai-panel">
+          <div class="ai-panel-header">Husbandry Focus Areas</div>
+          <div class="ai-panel-content empty" id="focusPanel">
+            Key husbandry levers likely worth attention will appear here.
+          </div>
+        </div>
+
+        <div class="ai-panel">
+          <div class="ai-panel-header">Suggested Next Steps</div>
+          <div class="ai-panel-content empty" id="stepsPanel">
+            Practical, non-diagnostic next steps for the coming days will be listed here.
+          </div>
+        </div>
+
+        <div class="ai-panel">
+          <div class="ai-panel-header">When to Escalate</div>
+          <div class="ai-panel-content empty" id="escalatePanel">
+            General guidance on when to contact veterinary staff appears here.
           </div>
         </div>
       </div>
@@ -195,261 +637,348 @@
   </div>
 
   <script>
-    <script>
-  function loadProfile() {
-    try {
-      const raw = localStorage.getItem("frogSocialProfile");
-      return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
-  }
-
-  function loadCases() {
-    try {
-      const raw = localStorage.getItem("frogSocialCases");
-      return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
-  }
-  function saveCases(list) {
-    localStorage.setItem("frogSocialCases", JSON.stringify(list));
-  }
-
-  function makeSummary(data, profile) {
-    const colonyLine = data.colonyName || "Unlabeled colony";
-    const instLine = data.institution ? ` at ${data.institution}` : "";
-    const temp = data.waterTemp ? `${data.waterTemp} °C` : "not reported";
-    const ph = data.ph ? `${data.ph}` : "not reported";
-    const frogs = data.numFrogs ? `${data.numFrogs}` : "not reported";
-
-    let submittedBy = "";
-    const name = profile.name || "";
-    const label = profile.authorLabel || "";
-    const profInst = profile.institution || "";
-
-    if (name || label || profInst) {
-      const pieces = [];
-      if (name) pieces.push(name);
-      if (label) pieces.push(`(${label})`);
-      if (profInst) pieces.push(`· ${profInst}`);
-      submittedBy = "\n\nSubmitted by: " + pieces.join(" ");
+    // LocalStorage helpers
+    function loadProfile() {
+      try {
+        const raw = localStorage.getItem("frogSocialProfile");
+        return raw ? JSON.parse(raw) : {};
+      } catch { return {}; }
     }
 
-    let concernLabel = data.mainConcern;
-    if (data.mainConcern === "Extract") concernLabel = "Extract performance issues";
-    if (data.mainConcern === "Oocyte") concernLabel = "Oocyte ion channel / electrophysiology issues";
+    function loadCases() {
+      try {
+        const raw = localStorage.getItem("frogSocialCases");
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
 
-    return `
-Colony: ${colonyLine}${instLine}
-System type: ${data.systemType}
-Approximate number of frogs: ${frogs}
+    function saveCases(list) {
+      localStorage.setItem("frogSocialCases", JSON.stringify(list));
+    }
 
-Water snapshot:
-- Temperature: ${temp}
-- pH: ${ph}
-- Conductivity / salts: ${data.conductivity || "not reported"}
-- Ammonia status: ${data.ammonia}
+    // Video upload handling
+    const feedingVideoInput = document.getElementById("feedingVideo");
+    const uploadZone = document.getElementById("uploadZone");
+    const uploadPreview = document.getElementById("uploadPreview");
+    const uploadFileName = document.getElementById("uploadFileName");
 
-Recent changes:
-${data.recentChanges || "(none described)"}
-
-Main concern:
-- Pattern: ${concernLabel}
-- Description: ${data.description || "(no detailed description yet)"}${submittedBy}
-    `.trim();
-  }
-
-  function makeFocus(data) {
-    const items = [];
-
-    // Temperature
-    if (data.waterTemp) {
-      const t = parseFloat(data.waterTemp);
-      if (!isNaN(t)) {
-        if (t < 18) items.push("Water temperature appears on the cool side (<18 °C). Rapid or unplanned cooling can stress Xenopus, but for extract/oocyte work many problems are dominated by lab handling and timing.");
-        else if (t > 24) items.push("Water temperature appears on the warm side (>24 °C). Warmer water increases metabolic demand and lowers dissolved oxygen; still, for extract and oocytes, protocol timing and buffer handling are usually higher-yield places to look first.");
-        else items.push("Water temperature is within a typical Xenopus range (~18–24 °C); for performance problems, stability over days matters more than a single reading.");
+    feedingVideoInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        uploadFileName.textContent = `✓ ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`;
+        uploadPreview.classList.add("active");
+      } else {
+        uploadPreview.classList.remove("active");
       }
-    } else {
-      items.push("Water temperature not reported. Confirm current range and whether it has drifted, but keep lab-side protocol details front and center for extract and oocyte issues.");
-    }
-
-    // pH
-    if (data.ph) {
-      const p = parseFloat(data.ph);
-      if (!isNaN(p)) {
-        if (p < 6.5) items.push("System pH appears on the acidic side (<6.5). Note it, but be careful not to over-interpret this without looking at precise pH control in your experimental buffers.");
-        else if (p > 8.2) items.push("System pH appears on the alkaline side (>8.2). Again, note it, but extract and oocyte performance are usually more sensitive to the pH of cysteine, MMR, storage solutions, and recording buffers.");
-        else items.push("System pH is mid-range (~6.5–8.2). For extract and oocyte problems, focus more on lab buffer pH and calibration than on this value alone.");
-      }
-    } else {
-      items.push("System pH not reported. For extract and oocyte problems, accurate pH of lab solutions (cysteine, ND96, recording buffers) is often more critical than rack pH per se.");
-    }
-
-    // Ammonia – still worth tracking, but not front-line for extract/oocyte
-    if (data.ammonia === "High") {
-      items.push("Ammonia is reported as high. That’s a welfare red flag and should be addressed, but extract and oocyte performance usually hinge first on lab preparation, not ammonia alone.");
-    } else if (data.ammonia === "Borderline") {
-      items.push("Ammonia is borderline. Fix if you can, but keep lab-side variables at the center of your extract or electrophysiology troubleshooting.");
-    } else if (data.ammonia === "Zero") {
-      items.push("Ammonia reported as zero/near zero. Good from a welfare standpoint; for extract and oocyte issues, move your attention to lab protocols and solutions.");
-    } else {
-      items.push("Ammonia status unknown. For unexplained morbidity, test it; for pure extract or oocyte performance issues in otherwise healthy animals, it’s usually secondary.");
-    }
-
-    // System type – context, not primary driver here
-    if (data.systemType === "Recirculating") {
-      items.push("Recirculating rack: note filter health and maintenance timing, but for extract and oocyte issues, lab-side handling and solutions typically dominate the outcome.");
-    } else if (data.systemType === "Static") {
-      items.push("Static tanks: be aware of extremes (poor water change schedules), yet for extract and oocyte performance the immediate lab protocol is often the main lever.");
-    } else if (data.systemType === "Dump-fill") {
-      items.push("Dump-and-fill / flow-through: good to log any major water-source changes, but stay focused on lab procedures for extract and oocyte troubleshooting.");
-    } else {
-      items.push("System marked 'Other / mixed'; treat it as background context. For this case type, protocol-level review in the lab is generally higher yield.");
-    }
-
-    // Main concern–specific focus
-    if (data.mainConcern === "GreenWater") {
-      items.push("Green / cloudy water often reflects light + nutrients + time: consider algae blooms, overfeeding, or insufficient solids removal.");
-    } else if (data.mainConcern === "Mortality") {
-      items.push("Mortality clusters point toward acute stress, water-quality events, or procedure-related factors. Age distribution of deaths matters.");
-    } else if (data.mainConcern === "Skin") {
-      items.push("Skin lesions or fuzz can reflect chronic stress plus opportunists. Environment and immune robustness are central, not just pathogen labels.");
-    } else if (data.mainConcern === "Appetite") {
-      items.push("Reduced appetite may signal chronic stress, suboptimal water, social pressure, or temperature misalignment.");
-    } else if (data.mainConcern === "Behavior") {
-      items.push("Abnormal behavior (floating, lethargy, hiding, gasping) often tracks with oxygen, vibration, flow, or abrupt changes.");
-    } else if (data.mainConcern === "Breeding") {
-      items.push("Breeding / egg quality issues often reflect body condition, temperature/light cycles, and handling between attempts, not just 'protocol correctness'.");
-    } else if (data.mainConcern === "Extract") {
-      items.push("Extract performance issues are usually dominated by lab procedure: timing from ovulation to collection, temperature stability during collection and spins, cysteine and MMR recipes and pH, and how vigorously you mix or shear the preparation.");
-      items.push("Focus on: egg handling steps, centrifugation conditions, buffer components and suppliers, ATP/energy mix, supplements, and whether you changed more than one variable between a 'good' batch and a 'bad' one.");
-      items.push("If protocols have been stable and multiple frogs/rounds give poor extract, then it can be worth asking whether overall frog condition and feeding have slipped in the weeks leading up to collection.");
-    } else if (data.mainConcern === "Oocyte") {
-      items.push("Oocyte ion channel / electrophysiology issues are most often driven by oocyte handling and storage, solution composition, pH, use of antibiotics, and RNA/injection quality.");
-      items.push("Focus on: defolliculation conditions (collagenase lot/time and mixing), storage buffer (e.g., ND96) composition and pH, whether antibiotics are used and how often solutions are changed, and how aggressively you remove dead or unhealthy oocytes from the dish.");
-      items.push("mRNA or cRNA quality (integrity, concentration, storage conditions) and injection volume/technique are also key; many channel 'failures' trace back to construct and injection variables rather than frog or rack environment.");
-    }
-
-    return items.join("\n\n");
-  }
-
-  function makeSteps(data) {
-    const lines = [];
-    lines.push("0. Document the baseline:");
-    lines.push("- Note current water parameters (temperature, pH, ammonia, nitrite/nitrate if available).");
-    lines.push("- Note densities (frogs per tank) and any visibly high-load tanks.");
-    lines.push("- Record changes in the last 2–4 weeks (equipment, water, diet, personnel, procedures).");
-
-    lines.push("\n1. Stabilize and de-intensify where possible:");
-    lines.push("- Avoid multiple simultaneous changes; pick 1–2 high-yield adjustments.");
-    lines.push("- Reduce obvious overcrowding if practical.");
-    lines.push("- Simplify feeding; avoid overfeeding and remove uneaten food promptly for welfare-related issues.");
-
-    if (data.mainConcern === "GreenWater") {
-      lines.push("\n2. For green / cloudy water:");
-      lines.push("- Increase mechanical solids removal (pre-filters, sponge rinses, siphoning).");
-      lines.push("- Reduce light on tanks if algae is intense.");
-      lines.push("- Check whether new food/supplements/enrichment were added recently.");
-    } else if (data.mainConcern === "Mortality") {
-      lines.push("\n2. For mortality clusters:");
-      lines.push("- If possible, move a small subset into a 'clean, quiet' reference environment.");
-      lines.push("- Provide strong aeration and stable water in that subset as a comparison.");
-    } else if (data.mainConcern === "Skin") {
-      lines.push("\n2. For skin/lesion concerns:");
-      lines.push("- Gently photograph representative lesions for tracking.");
-      lines.push("- Review abrasive surfaces, tank materials, and handling methods.");
-    } else if (data.mainConcern === "Extract") {
-      lines.push("\n2. For extract performance issues (lab focus):");
-      lines.push("- Write down your full protocol as actually practiced: times, temperatures, pH targets, centrifuge settings, and mixing steps.");
-      lines.push("- Compare the last 'good' extract and the current 'bad' one: which buffers, lots, and timings changed? Avoid changing more than one variable in the next attempt.");
-      lines.push("- Pay special attention to cysteine solution prep (pH adjustment), MMR recipe, and how long eggs sit between ovulation, stripping, dejellying, and extract preparation.");
-      lines.push("- If possible, do a controlled side-by-side with a slightly adjusted protocol (e.g., shorter warm exposure, gentler mixing) while holding frogs and buffers constant.");
-    } else if (data.mainConcern === "Oocyte") {
-      lines.push("\n2. For oocyte ion channel / electrophysiology issues (lab focus):");
-      lines.push("- Document defolliculation conditions: enzyme lot, concentration, duration, temperature, and how vigorously oocytes are mixed.");
-      lines.push("- Standardize storage: buffer composition and pH, temperature, whether antibiotics are present, and how often you change the solution (e.g., daily or more often).");
-      lines.push("- Make it routine to remove dead or unhealthy oocytes promptly; they can foul the dish and affect neighbors.");
-      lines.push("- Review RNA/cRNA handling: integrity checks, storage (freeze/thaw), and injection volume/technique, before concluding that the colony or system is at fault.");
-    }
-
-    lines.push("\n3. Create a short observation or experiment log (3–7 days or a few preps):");
-    lines.push("- For each attempt, note frog identity, broad system context, and the exact protocol details and outcomes (extract quality, oocyte currents, etc.).");
-    lines.push("- Look for patterns tied to procedure, timing, and solutions rather than a single 'bad' day.");
-
-    lines.push("\n4. Step back and ask:");
-    lines.push("- Did a 'big change' happen right before this started (buffer supplier, enzyme lot, RNA source, person doing the procedure, timing, equipment)?");
-    lines.push("- Can one or two reversible lab-side changes be trialed and tracked before declaring the colony 'failed' or changing husbandry in a major way?");
-
-    return lines.join("\n");
-  }
-
-  function makeEscalation() {
-    const lines = [];
-    lines.push("This tool cannot diagnose disease. These are prompts, not rules.");
-    lines.push("\nConsider contacting your veterinarian or institutional veterinary staff promptly if:");
-    lines.push("- Mortality is rapidly escalating or animals are severely compromised.");
-    lines.push("- Frogs show severe lethargy, loss of righting reflex, or gasping at the surface.");
-    lines.push("- Lesions are widespread, ulcerative, or associated with systemic signs.");
-    lines.push("- A large fraction of the colony is affected, not just one tank.");
-    lines.push("- You suspect chemical exposure, water failure, or equipment malfunction.");
-    lines.push("\nFor extract or oocyte performance issues in otherwise healthy animals, veterinary escalation is usually not first-line unless there are clear welfare concerns.");
-    lines.push("\nWhat helps the vet help you:");
-    lines.push("- A simple one-page summary like this case view.");
-    lines.push("- Photos or short videos of representative animals and system layout when health is in question.");
-    lines.push("- Actual measured water parameters, not just 'seems fine'.");
-    lines.push("- A brief timeline of when problems started relative to specific changes.");
-    return lines.join("\n");
-  }
-
-  const form = document.getElementById("caseForm");
-  const summaryBox = document.getElementById("summaryBox");
-  const focusBox = document.getElementById("focusBox");
-  const stepsBox = document.getElementById("stepsBox");
-  const escalateBox = document.getElementById("escalateBox");
-
-  form.addEventListener("submit", e => {
-    e.preventDefault();
-    const profile = loadProfile();
-
-    const data = {
-      colonyName: document.getElementById("colonyName").value.trim(),
-      institution: document.getElementById("institution").value.trim(),
-      systemType: document.getElementById("systemType").value,
-      numFrogs: document.getElementById("numFrogs").value.trim(),
-      waterTemp: document.getElementById("waterTemp").value.trim(),
-      ph: document.getElementById("ph").value.trim(),
-      conductivity: document.getElementById("conductivity").value.trim(),
-      ammonia: document.getElementById("ammonia").value,
-      recentChanges: document.getElementById("recentChanges").value.trim(),
-      mainConcern: document.getElementById("mainConcern").value,
-      description: document.getElementById("description").value.trim()
-    };
-
-    const summary = makeSummary(data, profile);
-    const focus = makeFocus(data);
-    const steps = makeSteps(data);
-    const escalate = makeEscalation();
-
-    summaryBox.textContent = summary;
-    focusBox.textContent = focus;
-    stepsBox.textContent = steps;
-    escalateBox.textContent = escalate;
-
-    const cases = loadCases();
-    cases.unshift({
-      id: Date.now(),
-      colonyName: data.colonyName || "",
-      institution: data.institution || "",
-      mainConcern: data.mainConcern,
-      snippet: data.description ? data.description.slice(0, 140) : "",
-      createdAt: new Date().toISOString(),
-      summary,
-      submittedByName: profile.name || "",
-      submittedByLabel: profile.authorLabel || "",
-      submittedByInstitution: profile.institution || ""
     });
-    saveCases(cases);
-  });
-</script>
+
+    // Collect form data
+    function collectFormData() {
+      return {
+        // Colony & system
+        colonyName: document.getElementById("colonyName").value.trim(),
+        institution: document.getElementById("institution").value.trim(),
+        systemType: document.getElementById("systemType").value,
+        approxFrogCount: document.getElementById("approxFrogCount").value.trim(),
+        
+        // Water snapshot
+        waterTempC: document.getElementById("waterTemp").value.trim(),
+        ph: document.getElementById("ph").value.trim(),
+        conductivity: document.getElementById("conductivity").value.trim(),
+        ammoniaStatus: document.getElementById("ammoniaStatus").value,
+        waterSource: document.getElementById("waterSource").value,
+        
+        // Recent changes
+        recentChanges: document.getElementById("recentChanges").value.trim(),
+        
+        // Husbandry snapshot
+        husbandrySnapshot: {
+          densityBand: document.getElementById("densityBand").value,
+          feedingVigor: document.getElementById("feedingVigor").value,
+          skinState: document.getElementById("skinState").value,
+          vibration: document.getElementById("vibration").value,
+          flow: document.getElementById("flow").value,
+          disturbanceLevel: document.getElementById("disturbanceLevel").value,
+          phMeterCalibrated: document.getElementById("phMeterCalibrated").value
+        },
+        
+        // Feeding video metadata
+        feedingVideoMeta: {
+          feedingVideoUrl: feedingVideoInput.files[0] ? URL.createObjectURL(feedingVideoInput.files[0]) : null,
+          timeSinceLastFeeding: document.getElementById("timeSinceLastFeeding").value,
+          densityForVideo: document.getElementById("densityForVideo").value,
+          cameraPosition: document.getElementById("cameraPosition").value
+        },
+        
+        // Problem description
+        problemDescription: document.getElementById("problemDescription").value.trim()
+      };
+    }
+
+    // Generate situation summary
+    function makeSummary(data, profile) {
+      const lines = [];
+      
+      lines.push(`Colony: ${data.colonyName || "Unlabeled colony"}${data.institution ? ` at ${data.institution}` : ""}`);
+      lines.push(`System: ${formatSystemType(data.systemType)}`);
+      lines.push(`Approximate frogs: ${data.approxFrogCount || "not reported"}`);
+      lines.push("");
+      lines.push("Water snapshot:");
+      lines.push(`  • Temperature: ${data.waterTempC ? data.waterTempC + " °C" : "not reported"}`);
+      lines.push(`  • pH: ${data.ph || "not reported"}`);
+      lines.push(`  • Conductivity: ${data.conductivity || "not reported"}`);
+      lines.push(`  • Ammonia: ${formatAmmonia(data.ammoniaStatus)}`);
+      lines.push(`  • Source: ${formatWaterSource(data.waterSource)}`);
+      lines.push("");
+      lines.push("Husbandry snapshot:");
+      lines.push(`  • Density: ${formatValue(data.husbandrySnapshot.densityBand)}`);
+      lines.push(`  • Feeding vigor: ${formatValue(data.husbandrySnapshot.feedingVigor)}`);
+      lines.push(`  • Skin: ${formatValue(data.husbandrySnapshot.skinState)}`);
+      lines.push(`  • Vibration: ${formatValue(data.husbandrySnapshot.vibration)}`);
+      lines.push(`  • Flow: ${formatValue(data.husbandrySnapshot.flow)}`);
+      lines.push(`  • Disturbance: ${formatValue(data.husbandrySnapshot.disturbanceLevel)}`);
+      lines.push(`  • pH meter calibrated: ${formatValue(data.husbandrySnapshot.phMeterCalibrated)}`);
+      
+      if (data.recentChanges) {
+        lines.push("");
+        lines.push("Recent changes:");
+        lines.push(data.recentChanges);
+      }
+      
+      if (data.problemDescription) {
+        lines.push("");
+        lines.push("Problem description:");
+        lines.push(data.problemDescription);
+      }
+      
+      // Add submitter info
+      const submitBits = [];
+      if (profile.name) submitBits.push(profile.name);
+      if (profile.authorLabel) submitBits.push(`(${profile.authorLabel})`);
+      if (profile.institution) submitBits.push(`· ${profile.institution}`);
+      if (submitBits.length) {
+        lines.push("");
+        lines.push(`Submitted by: ${submitBits.join(" ")}`);
+      }
+      
+      return lines.join("\n");
+    }
+
+    // Generate focus areas based on husbandry master key
+    function makeFocusAreas(data) {
+      const items = [];
+      const hs = data.husbandrySnapshot;
+      
+      // Water source & buffering
+      if (data.waterSource === "ro") {
+        items.push("⚠️ Water source is RO/RO+DI — check that Ca/Mg and buffering (GH/KH) are being added. Pure RO can be too soft and unbuffered.");
+      }
+      
+      // pH calibration
+      if (hs.phMeterCalibrated === "no" || hs.phMeterCalibrated === "unknown") {
+        items.push("⚠️ pH meter calibration status uncertain. pH readings are unreliable without recent calibration.");
+      }
+      
+      // Temperature
+      if (data.waterTempC) {
+        const t = parseFloat(data.waterTempC);
+        if (t < 18) items.push("🌡️ Water temperature appears on the cool side (<18°C). Check for recent swings.");
+        else if (t > 24) items.push("🌡️ Water temperature is on the warm side (>24°C). Higher temps increase metabolic demand.");
+      }
+      
+      // Density + feeding pattern
+      if (hs.densityBand === "low" && hs.feedingVigor === "low") {
+        items.push("📊 Low density + low feeding often indicates under-stimulation rather than disease. Frogs take longer to find food when sparse.");
+      }
+      if (hs.densityBand === "high" && hs.feedingVigor === "high" && hs.skinState === "shiny") {
+        items.push("✓ High density + high feeding + shiny skin is a thriving baseline pattern.");
+      }
+      
+      // Skin condition
+      if (hs.skinState === "dull") {
+        items.push("👁️ Dull skin can indicate chronic stress, water quality issues, or underfeeding.");
+      }
+      if (hs.skinState === "lesions") {
+        items.push("🔴 Lesions/redness present — check for fighting over shelters, crowding, or water quality insults.");
+      }
+      
+      // Vibration & flow
+      if (hs.vibration === "loud") {
+        items.push("🔊 Loud/constant room vibration is a significant stressor even when chemistry is perfect.");
+      }
+      if (hs.flow === "splashy") {
+        items.push("💧 Splashy/noisy inlets can stress frogs. Consider adjusting nozzle distance or flow rate.");
+      }
+      
+      // Disturbance
+      if (hs.disturbanceLevel === "constant") {
+        items.push("🚪 Constant room traffic compounds other stressors. Consider limiting entries.");
+      }
+      
+      // Ammonia
+      if (data.ammoniaStatus === "elevated") {
+        items.push("⚠️ Elevated ammonia is a welfare red flag — address promptly via water changes and filter review.");
+      }
+      
+      if (items.length === 0) {
+        items.push("No major husbandry flags identified based on reported values. Continue monitoring.");
+      }
+      
+      return items.join("\n\n");
+    }
+
+    // Generate next steps
+    function makeNextSteps(data) {
+      const steps = [];
+      const hs = data.husbandrySnapshot;
+      
+      steps.push("1. Document baseline");
+      steps.push("   • Confirm current water parameters (temp, pH, ammonia)");
+      steps.push("   • Note densities and any high-load tanks");
+      steps.push("   • Record any changes in last 2–4 weeks");
+      steps.push("");
+      
+      steps.push("2. Stabilize environment");
+      steps.push("   • Avoid multiple simultaneous changes");
+      steps.push("   • Pick 1–2 high-yield adjustments at most");
+      
+      if (hs.phMeterCalibrated !== "yes") {
+        steps.push("   • Calibrate pH meter before trusting readings");
+      }
+      
+      if (data.waterSource === "ro") {
+        steps.push("   • Verify GH/KH buffering is adequate for RO water");
+      }
+      
+      steps.push("");
+      steps.push("3. Observe feeding behavior");
+      steps.push("   • Watch frogs eat (don't just toss food and leave)");
+      steps.push("   • Feed incrementally over ~10 minutes");
+      steps.push("   • Remove uneaten food promptly");
+      steps.push("");
+      
+      steps.push("4. Create a 3–7 day observation log");
+      steps.push("   • Track feeding response daily");
+      steps.push("   • Note any changes in behavior or appearance");
+      steps.push("   • Look for patterns before concluding");
+      
+      return steps.join("\n");
+    }
+
+    // Generate escalation guidance
+    function makeEscalation() {
+      const lines = [];
+      lines.push("This tool cannot diagnose disease. Consider contacting veterinary staff promptly if:");
+      lines.push("");
+      lines.push("• Mortality is rapidly escalating or animals are severely compromised");
+      lines.push("• Frogs show severe lethargy, loss of righting reflex, or gasping");
+      lines.push("• Lesions are widespread, ulcerative, or associated with systemic signs");
+      lines.push("• A large fraction of the colony is affected, not just one tank");
+      lines.push("• You suspect chemical exposure or equipment malfunction");
+      lines.push("");
+      lines.push("What helps the vet help you:");
+      lines.push("• A summary like this case view");
+      lines.push("• Photos/videos of representative animals");
+      lines.push("• Actual measured water parameters");
+      lines.push("• Timeline of when problems started vs. changes made");
+      return lines.join("\n");
+    }
+
+    // Formatting helpers
+    function formatSystemType(val) {
+      const map = {
+        recirculating: "Recirculating rack",
+        static: "Static tanks",
+        flow_through: "Flow-through",
+        other: "Other/mixed"
+      };
+      return map[val] || val;
+    }
+
+    function formatAmmonia(val) {
+      const map = {
+        unknown: "Unknown",
+        ok: "Within range",
+        elevated: "Elevated"
+      };
+      return map[val] || val;
+    }
+
+    function formatWaterSource(val) {
+      const map = {
+        ro: "RO/RO+DI",
+        city: "Treated city water",
+        well: "Well water",
+        mixed: "Mixed/unknown"
+      };
+      return map[val] || val;
+    }
+
+    function formatValue(val) {
+      if (val === "unknown") return "Not sure";
+      return val.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    // Form submission
+    const form = document.getElementById("intakeForm");
+    const summaryPanel = document.getElementById("summaryPanel");
+    const focusPanel = document.getElementById("focusPanel");
+    const stepsPanel = document.getElementById("stepsPanel");
+    const escalatePanel = document.getElementById("escalatePanel");
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      const profile = loadProfile();
+      const data = collectFormData();
+      
+      // Generate AI output
+      const summary = makeSummary(data, profile);
+      const focus = makeFocusAreas(data);
+      const steps = makeNextSteps(data);
+      const escalate = makeEscalation();
+      
+      // Update panels
+      summaryPanel.textContent = summary;
+      summaryPanel.classList.remove("empty");
+      
+      focusPanel.textContent = focus;
+      focusPanel.classList.remove("empty");
+      
+      stepsPanel.textContent = steps;
+      stepsPanel.classList.remove("empty");
+      
+      escalatePanel.textContent = escalate;
+      escalatePanel.classList.remove("empty");
+      
+      // Save case to localStorage
+      const caseId = Date.now();
+      const cases = loadCases();
+      cases.unshift({
+        id: caseId,
+        colonyName: data.colonyName || "",
+        institution: data.institution || "",
+        systemType: data.systemType,
+        problemDescription: data.problemDescription,
+        snippet: data.problemDescription ? data.problemDescription.slice(0, 140) : "",
+        createdAt: new Date().toISOString(),
+        summary,
+        status: "open",
+        resolution: null,
+        followUp: null,
+        linkedThreadId: null,
+        submittedByName: profile.name || "",
+        submittedByLabel: profile.authorLabel || "",
+        submittedByInstitution: profile.institution || "",
+        intakePayload: data
+      });
+      saveCases(cases);
+      
+      // Scroll to results on mobile
+      if (window.innerWidth < 1024) {
+        summaryPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
   </script>
 </body>
 </html>

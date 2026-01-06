@@ -2,184 +2,333 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Frog Social · Account</title>
+  <title>Frog Social · Profile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    * { box-sizing: border-box; }
     :root {
-      --bg: #f3f4f6;
-      --card-bg: #ffffff;
-      --accent: #0ea5e9;
-      --border-soft: #e5e7eb;
-      --text-main: #111827;
-      --text-muted: #6b7280;
+      --app-shell-bg: #050810;
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --card-border: #1F2937;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
+      --warning: #F97316;
+      --danger: #EF4444;
     }
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
-      background: radial-gradient(circle at top, #e0f2fe 0, var(--bg) 60%);
-      color: var(--text-main);
-    }
-    .outer {
+      background: var(--app-body-bg);
+      color: var(--primary-text);
       min-height: 100vh;
+    }
+
+    /* Navigation */
+    .nav-bar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 32px;
       display: flex;
-      justify-content: center;
-      align-items: flex-start;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .container {
-      max-width: 900px;
-      width: 100%;
-      padding: 24px;
-      box-sizing: border-box;
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
     }
+    .nav-brand span { font-size: 1.25rem; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-links a {
+      font-size: 0.875rem;
+      color: var(--secondary-text);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      transition: all 0.15s ease;
+    }
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--primary-text);
+    }
+    .nav-links a.active {
+      color: #6EE7B7;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .nav-signout {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .nav-signout:hover { background: #334155; }
+
+    /* Page container */
+    .page-container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+    .page-header {
+      margin-bottom: 24px;
+    }
+    .page-header h1 {
+      font-size: 1.875rem;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+    }
+    .page-header p {
+      color: var(--secondary-text);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    /* Cards */
     .card {
-      background: var(--card-bg);
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05);
       border-radius: 16px;
-      padding: 22px;
-      box-shadow:
-        0 18px 30px rgba(15, 23, 42, 0.08),
-        0 0 0 1px rgba(15, 23, 42, 0.02);
-      border: 1px solid var(--border-soft);
+      padding: 24px 28px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
       margin-bottom: 20px;
     }
-    .top-nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-    .top-nav-title {
+    .card-title {
+      font-size: 1.1rem;
       font-weight: 600;
-      font-size: 0.95rem;
-      color: #0f172a;
+      color: var(--primary-text);
+      margin: 0 0 20px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    .top-nav-links a {
-      font-size: 0.85rem;
-      color: #4b5563;
-      text-decoration: none;
-      margin-left: 10px;
+    .card-title .icon {
+      font-size: 1.25rem;
     }
-    .top-nav-links a:hover {
-      color: #0ea5e9;
-    }
-    h1 {
-      margin: 4px 0 6px;
-      font-size: 1.6rem;
-    }
-    p {
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      line-height: 1.5;
-    }
+
+    /* Form inputs */
     label {
       display: block;
-      margin-top: 9px;
-      margin-bottom: 3px;
-      font-size: 0.82rem;
-      color: #374151;
+      font-size: 0.8rem;
+      color: var(--secondary-text);
       font-weight: 500;
+      margin-bottom: 6px;
+      margin-top: 16px;
     }
+    label:first-of-type { margin-top: 0; }
     input, textarea {
       width: 100%;
-      padding: 7px 9px;
-      border-radius: 9px;
-      border: 1px solid #d1d5db;
-      background: #f9fafb;
-      color: var(--text-main);
-      box-sizing: border-box;
-      font-size: 0.88rem;
+      background: #0F172A;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      color: var(--primary-text);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input::placeholder, textarea::placeholder {
+      color: #6B7280;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
     }
     textarea {
-      min-height: 70px;
+      min-height: 100px;
       resize: vertical;
     }
-    button {
-      margin-top: 13px;
-      padding: 9px 18px;
-      border-radius: 999px;
+
+    /* Primary button */
+    .btn-primary {
+      background: var(--accent-green);
+      color: #0F172A;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 9999px;
       border: none;
       font-size: 0.9rem;
-      font-weight: 550;
       cursor: pointer;
-      background: var(--accent);
-      color: #f9fafb;
+      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
+      transition: transform 0.15s, background 0.15s;
+      margin-top: 20px;
+      width: 100%;
     }
-    button:hover {
-      background: #0369a1;
+    .btn-primary:hover {
+      background: #6EE7B7;
+      transform: translateY(-1px);
     }
-    .small {
-      font-size: 0.78rem;
-      color: var(--text-muted);
+
+    /* Success message */
+    .success-message {
+      background: rgba(52, 211, 153, 0.15);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: var(--accent-green);
+      margin-top: 16px;
+      display: none;
+    }
+    .success-message.active {
+      display: block;
+    }
+
+    /* Stats section */
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .stat-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--primary-text);
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--secondary-text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4px;
+    }
+
+    /* Helper text */
+    .helper-text {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
       margin-top: 6px;
-    }
-    @media (max-width: 800px) {
-      .container { padding: 14px; }
     }
   </style>
 </head>
 <body>
- <div class="top-nav">
-  <div class="top-nav-title">Frog Social</div>
-  <div class="top-nav-links">
-    <a href="index.html">Home</a>
-    <a href="colony-register.html">Colonies</a>
-    <a href="case-intake.html">New Case</a>
-    <a href="case-history.html">Case History</a>
-    <a href="social.html">Social</a>
-    <a href="account.html">Account</a>
-    <a class="signout" href="index.html">Sign Out</a>
-  </div>
-</div>
+  <!-- Navigation Bar -->
+  <nav class="nav-bar">
+    <div class="nav-brand">
+      <span>🐸</span>
+      Frog Social
+    </div>
+    <div class="nav-links">
+      <a href="case-intake.html">Describe a Problem</a>
+      <a href="case-history.html">Case History</a>
+      <a href="social.html">Social Feed</a>
+      <a href="account.html" class="active">Profile</a>
+      <a href="system-setup.html">New System Setup</a>
+    </div>
+    <a href="index.html" class="nav-signout">Sign Out</a>
+  </nav>
 
-      <!-- ACCOUNT CARD -->
-      <div class="card">
-        <h1>Account & Profile</h1>
-        <p>
-          These details stay in this browser for now. In a future version they’ll be tied to
-          a real authenticated account and used for case summaries and the Frog Social stream.
-        </p>
+  <div class="page-container">
+    <div class="page-header">
+      <h1>Profile</h1>
+      <p>Your profile information is used for case attribution and social posts.</p>
+    </div>
 
-        <form id="accountForm">
-          <label for="accName">Display name</label>
-          <input id="accName" type="text" placeholder="e.g., Robert Weymouth" />
+    <!-- Profile Form -->
+    <div class="card">
+      <h2 class="card-title"><span class="icon">👤</span> Account Details</h2>
+      
+      <form id="profileForm">
+        <label for="accName">Display name</label>
+        <input type="text" id="accName" placeholder="e.g., Robert Weymouth" />
 
-          <label for="accInstitution">Institution / facility</label>
-          <input id="accInstitution" type="text" placeholder="e.g., Vanderbilt University / Xenopus facility" />
+        <label for="accInstitution">Institution / facility</label>
+        <input type="text" id="accInstitution" placeholder="e.g., Vanderbilt University / Xenopus facility" />
 
-          <label for="accRole">Role (optional)</label>
-          <input id="accRole" type="text" placeholder="e.g., Colony manager, PI, postdoc, vet..." />
+        <label for="accRole">Role</label>
+        <input type="text" id="accRole" placeholder="e.g., Colony manager, PI, postdoc, vet..." />
 
-          <label for="accAuthorLabel">Default author label</label>
-          <input id="accAuthorLabel" type="text" placeholder="e.g., Dewar Lab husbandry steward" />
+        <label for="accAuthorLabel">Default author label</label>
+        <input type="text" id="accAuthorLabel" placeholder="e.g., Dewar Lab husbandry steward" />
+        <p class="helper-text">This label appears with your name on cases and social posts.</p>
 
-          <label for="accNotes">Notes (private)</label>
-          <textarea id="accNotes" placeholder="Any notes about your colony context or how you use Frog Social."></textarea>
+        <label for="accNotes">Notes (private)</label>
+        <textarea id="accNotes" placeholder="Any notes about your colony context or how you use Frog Social."></textarea>
 
-          <button type="submit">Save profile</button>
-          <div class="small" id="statusText"></div>
-        </form>
+        <button type="submit" class="btn-primary">Save Profile</button>
+        <div class="success-message" id="successMessage">
+          ✓ Profile saved successfully
+        </div>
+      </form>
+    </div>
+
+    <!-- Activity Stats -->
+    <div class="card">
+      <h2 class="card-title"><span class="icon">📊</span> Your Activity</h2>
+      <div class="profile-stats">
+        <div class="stat-box">
+          <div class="stat-value" id="statCases">0</div>
+          <div class="stat-label">Cases Created</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="statResolved">0</div>
+          <div class="stat-label">Resolved</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="statPosts">0</div>
+          <div class="stat-label">Social Posts</div>
+        </div>
       </div>
-
     </div>
   </div>
 
   <script>
+    // LocalStorage helpers
     function loadProfile() {
       try {
         const raw = localStorage.getItem("frogSocialProfile");
         return raw ? JSON.parse(raw) : {};
-      } catch {
-        return {};
-      }
+      } catch { return {}; }
     }
 
     function saveProfile(profile) {
       localStorage.setItem("frogSocialProfile", JSON.stringify(profile));
     }
 
-    const form = document.getElementById("accountForm");
-    const statusText = document.getElementById("statusText");
+    function loadCases() {
+      try {
+        const raw = localStorage.getItem("frogSocialCases");
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
 
-    function populateFromProfile() {
+    function loadSocial() {
+      try {
+        const raw = localStorage.getItem("frogSocialStream");
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+
+    // Populate form with existing profile
+    function populateForm() {
       const p = loadProfile();
       document.getElementById("accName").value = p.name || "";
       document.getElementById("accInstitution").value = p.institution || "";
@@ -188,7 +337,25 @@
       document.getElementById("accNotes").value = p.notes || "";
     }
 
-    form.addEventListener("submit", function (e) {
+    // Update activity stats
+    function updateStats() {
+      const cases = loadCases();
+      const social = loadSocial();
+      const profile = loadProfile();
+      
+      // Count cases and posts by this user (simple name match)
+      const userName = profile.name || "";
+      
+      document.getElementById("statCases").textContent = cases.length;
+      document.getElementById("statResolved").textContent = cases.filter(c => c.status === "resolved").length;
+      document.getElementById("statPosts").textContent = social.length;
+    }
+
+    // Form submission
+    const form = document.getElementById("profileForm");
+    const successMessage = document.getElementById("successMessage");
+
+    form.addEventListener("submit", (e) => {
       e.preventDefault();
 
       const profile = {
@@ -201,14 +368,17 @@
       };
 
       saveProfile(profile);
-      statusText.textContent = "Profile saved locally.";
-      setTimeout(function () {
-        statusText.textContent = "";
-      }, 2500);
+      
+      // Show success message
+      successMessage.classList.add("active");
+      setTimeout(() => {
+        successMessage.classList.remove("active");
+      }, 3000);
     });
 
-    populateFromProfile();
+    // Initialize
+    populateForm();
+    updateStats();
   </script>
 </body>
 </html>
-
