@@ -236,6 +236,15 @@
       line-height: 1.5;
       margin-bottom: 16px;
     }
+    .case-detail-hint {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      margin-top: -6px;
+      margin-bottom: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
 
     /* Resolution section */
     .resolution-section {
@@ -384,6 +393,36 @@
     .tag.social {
       background: rgba(251, 146, 60, 0.15);
       color: var(--warning);
+    }
+    .tag.paste {
+      background: rgba(148, 163, 184, 0.2);
+      color: #CBD5F5;
+    }
+
+    .case-detail {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-top: 14px;
+      display: none;
+    }
+    .case-detail-header {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--secondary-text);
+      margin-bottom: 8px;
+    }
+    .case-detail-body {
+      font-size: 0.85rem;
+      color: var(--primary-text);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .case-card.expanded .case-detail {
+      display: block;
     }
 
     /* Empty state */
@@ -559,6 +598,12 @@
         if (linkedCount > 0) {
           tags += `<span class="tag social">💬 ${linkedCount} message${linkedCount > 1 ? 's' : ''}</span>`;
         }
+        if (c.mode === "paste") {
+          tags += `<span class="tag paste">Full Paste</span>`;
+        }
+
+        const descriptionText = c.problemDescription || c.snippet || (!c.summary && c.raw_case_text ? c.raw_case_text.slice(0, 140) : "");
+        const detailText = c.raw_case_text || c.summary || c.problemDescription || c.snippet || "";
 
         // Resolution section
         let resolutionHtml = '';
@@ -581,35 +626,35 @@
         let actionsHtml = '';
         if (c.status !== "resolved") {
           actionsHtml = `
-            <div class="case-actions">
-              <button class="btn-resolve" onclick="toggleResolutionForm('${c.id}')">Mark Resolved</button>
-              <button class="btn-secondary" onclick="viewOnSocial('${c.id}')">Discuss on Social</button>
+            <div class="case-actions" onclick="event.stopPropagation();">
+              <button class="btn-resolve" onclick="toggleResolutionForm('${c.id}'); event.stopPropagation();">Mark Resolved</button>
+              <button class="btn-secondary" onclick="viewOnSocial('${c.id}'); event.stopPropagation();">Discuss on Social</button>
             </div>
-            <div class="resolution-form" id="resolution-form-${c.id}">
+            <div class="resolution-form" id="resolution-form-${c.id}" onclick="event.stopPropagation();">
               <label>What resolved the issue?</label>
               <textarea id="resolution-text-${c.id}" placeholder="e.g., Increased density, adjusted ROBUFFER, calmed vibration; appetite returned within 3 days."></textarea>
               <label>Follow-up notes (optional)</label>
               <textarea id="followup-text-${c.id}" placeholder="e.g., Frogs returned to spawning after 2 weeks, body condition improved."></textarea>
               <div class="resolution-form-actions">
-                <button class="btn-resolve" onclick="saveResolution('${c.id}')">Save Resolution</button>
-                <button class="btn-secondary" onclick="toggleResolutionForm('${c.id}')">Cancel</button>
+                <button class="btn-resolve" onclick="saveResolution('${c.id}'); event.stopPropagation();">Save Resolution</button>
+                <button class="btn-secondary" onclick="toggleResolutionForm('${c.id}'); event.stopPropagation();">Cancel</button>
               </div>
             </div>
           `;
         } else {
           actionsHtml = `
-            <div class="case-actions">
-              <button class="btn-secondary" onclick="viewOnSocial('${c.id}')">View on Social</button>
-              <button class="btn-secondary" onclick="reopenCase('${c.id}')">Re-open Case</button>
+            <div class="case-actions" onclick="event.stopPropagation();">
+              <button class="btn-secondary" onclick="viewOnSocial('${c.id}'); event.stopPropagation();">View on Social</button>
+              <button class="btn-secondary" onclick="reopenCase('${c.id}'); event.stopPropagation();">Re-open Case</button>
             </div>
           `;
         }
 
         return `
-          <div class="case-card ${statusClass}">
+          <div class="case-card ${statusClass}" id="case-card-${c.id}" onclick="toggleCaseDetail('${c.id}')">
             <div class="case-header">
               <div>
-                <h3 class="case-title">${escapeHtml(c.colonyName) || "Unlabeled Colony"}${c.institution ? ` @ ${escapeHtml(c.institution)}` : ''}</h3>
+                <h3 class="case-title">${escapeHtml(c.title || c.colonyName) || "Unlabeled Case"}${c.institution ? ` @ ${escapeHtml(c.institution)}` : ''}</h3>
                 <div class="case-meta">
                   Created ${formatDate(c.createdAt)}
                   ${c.submittedByName ? ` · by ${escapeHtml(c.submittedByName)}` : ''}
@@ -619,9 +664,16 @@
             </div>
             ${tags ? `<div class="case-tags">${tags}</div>` : ''}
             <div class="case-description">
-              ${escapeHtml(c.problemDescription || c.snippet || "No description provided")}
+              ${escapeHtml(descriptionText || "No description provided")}
             </div>
+            <div class="case-detail-hint">View details</div>
             ${resolutionHtml}
+            ${detailText ? `
+              <div class="case-detail">
+                <div class="case-detail-header">Case detail</div>
+                <div class="case-detail-body">${escapeHtml(detailText)}</div>
+              </div>
+            ` : ''}
             ${actionsHtml}
           </div>
         `;
@@ -649,6 +701,13 @@
     window.toggleResolutionForm = function(caseId) {
       const form = document.getElementById(`resolution-form-${caseId}`);
       form.classList.toggle("active");
+    };
+
+    window.toggleCaseDetail = function(caseId) {
+      const card = document.getElementById(`case-card-${caseId}`);
+      if (card) {
+        card.classList.toggle("expanded");
+      }
     };
 
     // Save resolution

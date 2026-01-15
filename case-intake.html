@@ -199,6 +199,11 @@
       text-decoration: none;
     }
     .helper-text a:hover { text-decoration: underline; }
+    .status-line {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      margin-top: 8px;
+    }
 
     /* Field grid for selects */
     .field-grid {
@@ -331,6 +336,33 @@
       text-align: center;
     }
 
+    /* Intake mode toggle */
+    .mode-toggle {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 9999px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .mode-toggle input {
+      display: none;
+    }
+    .mode-toggle label {
+      margin: 0;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      color: var(--secondary-text);
+      transition: all 0.15s ease;
+    }
+    .mode-toggle input:checked + label {
+      background: rgba(52, 211, 153, 0.2);
+      color: var(--accent-green);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+
     /* Right column sticky */
     .right-column {
       position: sticky;
@@ -390,6 +422,72 @@
       <div class="card">
         <form id="intakeForm">
 
+          <!-- Intake Mode -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">Mode</span> Intake mode
+            </h3>
+            <div class="mode-toggle" role="group" aria-label="Intake mode">
+              <input type="radio" id="modeGuided" name="intakeMode" value="guided" checked />
+              <label for="modeGuided">Guided Intake</label>
+              <input type="radio" id="modePaste" name="intakeMode" value="paste" />
+              <label for="modePaste">Paste Full Case History</label>
+            </div>
+            <p class="helper-text">Use structured guidance for step-by-step fields, or paste existing notes.</p>
+          </div>
+
+          <!-- Paste Full Case History -->
+          <div id="pasteIntake" style="display: none;">
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <span class="num">1</span> Case Summary
+              </h3>
+              <label for="pasteTitle">Title</label>
+              <input type="text" id="pasteTitle" placeholder="e.g., Mid-rack appetite drop after filter swap" />
+
+              <label for="pasteDateRange">Date range (optional)</label>
+              <input type="text" id="pasteDateRange" placeholder="e.g., Nov 12–Dec 3, 2025" />
+
+              <div class="field-grid">
+                <div>
+                  <label for="pasteSpecies">Species (optional)</label>
+                  <select id="pasteSpecies">
+                    <option value="">Select species</option>
+                    <option value="x_laevis">Xenopus laevis</option>
+                    <option value="x_tropicalis">Xenopus tropicalis</option>
+                    <option value="other">Other / not sure</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="pasteSystemType">System type (optional)</label>
+                  <select id="pasteSystemType">
+                    <option value="">Select system type</option>
+                    <option value="recirculating">Recirculating rack</option>
+                    <option value="static">Static tanks (manual changes)</option>
+                    <option value="flow_through">Flow-through / dump-and-fill</option>
+                    <option value="other">Other / mixed</option>
+                  </select>
+                </div>
+              </div>
+
+              <label for="pasteSymptomTags">Symptom tags (optional)</label>
+              <input type="text" id="pasteSymptomTags" placeholder="e.g., not eating, dull skin, redness" />
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <span class="num">2</span> Full Case History
+              </h3>
+              <label for="rawCaseText">Paste full case history (notes/email/Slack thread)</label>
+              <textarea id="rawCaseText" placeholder="Paste the full narrative here..."></textarea>
+              <label for="pasteFile">Upload .docx or .pdf (optional)</label>
+              <input type="file" id="pasteFile" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+              <p class="helper-text">We extract text locally; file is not uploaded.</p>
+              <div class="status-line" id="pasteFileStatus"></div>
+            </div>
+          </div>
+
+          <div id="guidedIntake">
           <!-- Section 1: Colony & System -->
           <div class="form-section">
             <h3 class="form-section-title">
@@ -593,9 +691,10 @@
             <label for="problemDescription">Describe the problem in your own words</label>
             <textarea id="problemDescription" placeholder="e.g., Frogs stopped eating after water change, redness on legs after moving to new rack, green water appeared suddenly..."></textarea>
           </div>
+          </div>
 
           <button type="submit" class="btn-primary" id="analyzeBtn">
-            Analyze with AI
+            Submit intake
           </button>
           <p class="disclaimer">
             All processing happens in your browser. Not medical advice. If animals are crashing, escalate to veterinary support.
@@ -636,6 +735,8 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.4.21/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     // LocalStorage helpers
     function loadProfile() {
@@ -661,6 +762,37 @@
     const uploadZone = document.getElementById("uploadZone");
     const uploadPreview = document.getElementById("uploadPreview");
     const uploadFileName = document.getElementById("uploadFileName");
+    const guidedIntake = document.getElementById("guidedIntake");
+    const pasteIntake = document.getElementById("pasteIntake");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const pasteFileInput = document.getElementById("pasteFile");
+    const pasteFileStatus = document.getElementById("pasteFileStatus");
+    const rawCaseText = document.getElementById("rawCaseText");
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    function setIntakeMode(mode) {
+      const isPaste = mode === "paste";
+      guidedIntake.style.display = isPaste ? "none" : "block";
+      pasteIntake.style.display = isPaste ? "block" : "none";
+
+      guidedIntake.querySelectorAll("input, select, textarea").forEach(el => {
+        el.disabled = isPaste;
+      });
+      pasteIntake.querySelectorAll("input, select, textarea").forEach(el => {
+        el.disabled = !isPaste;
+      });
+
+      analyzeBtn.textContent = isPaste ? "Submit full case history" : "Submit intake";
+    }
+
+    document.querySelectorAll("input[name='intakeMode']").forEach(radio => {
+      radio.addEventListener("change", (e) => {
+        setIntakeMode(e.target.value);
+      });
+    });
+
+    setIntakeMode("guided");
 
     feedingVideoInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
@@ -672,13 +804,78 @@
       }
     });
 
+    function setPasteStatus(message) {
+      pasteFileStatus.textContent = message;
+    }
+
+    async function extractDocxText(arrayBuffer) {
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return result.value || "";
+    }
+
+    async function extractPdfText(arrayBuffer) {
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pages = [];
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum += 1) {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+        const pageText = content.items.map(item => item.str).join(" ");
+        pages.push(pageText.trim());
+      }
+      return pages.filter(Boolean).join("\n\n");
+    }
+
+    pasteFileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) {
+        setPasteStatus("");
+        return;
+      }
+
+      setPasteStatus("Extracting…");
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const ext = file.name.split(".").pop().toLowerCase();
+        let text = "";
+
+        if (ext === "docx") {
+          text = await extractDocxText(arrayBuffer);
+        } else if (ext === "pdf") {
+          text = await extractPdfText(arrayBuffer);
+        } else {
+          throw new Error("Unsupported file type");
+        }
+
+        if (!text.trim()) {
+          throw new Error("Empty extraction");
+        }
+
+        rawCaseText.value = text.trim();
+        setPasteStatus(`Loaded from ${file.name}`);
+      } catch (err) {
+        setPasteStatus("Couldn’t read that file. Please paste text instead.");
+      }
+    });
+
     // Collect form data
     function collectFormData() {
+      const mode = document.querySelector("input[name='intakeMode']:checked").value;
+      const systemTypeValue = mode === "paste"
+        ? document.getElementById("pasteSystemType").value
+        : document.getElementById("systemType").value;
+
       return {
+        mode,
+        title: document.getElementById("pasteTitle").value.trim(),
+        dateRange: document.getElementById("pasteDateRange").value.trim(),
+        species: document.getElementById("pasteSpecies").value,
+        symptomTags: document.getElementById("pasteSymptomTags").value.trim(),
+        rawCaseText: document.getElementById("rawCaseText").value.trim(),
+
         // Colony & system
         colonyName: document.getElementById("colonyName").value.trim(),
         institution: document.getElementById("institution").value.trim(),
-        systemType: document.getElementById("systemType").value,
+        systemType: systemTypeValue,
         approxFrogCount: document.getElementById("approxFrogCount").value.trim(),
         
         // Water snapshot
@@ -954,15 +1151,19 @@
       // Save case to localStorage
       const caseId = Date.now();
       const cases = loadCases();
+      const snippetSource = data.mode === "paste" ? data.rawCaseText : data.problemDescription;
       cases.unshift({
         id: caseId,
+        mode: data.mode,
+        title: data.title,
         colonyName: data.colonyName || "",
         institution: data.institution || "",
         systemType: data.systemType,
         problemDescription: data.problemDescription,
-        snippet: data.problemDescription ? data.problemDescription.slice(0, 140) : "",
+        snippet: snippetSource ? snippetSource.slice(0, 140) : "",
+        raw_case_text: data.rawCaseText,
         createdAt: new Date().toISOString(),
-        summary,
+        summary: data.mode === "paste" ? "" : summary,
         status: "open",
         resolution: null,
         followUp: null,
