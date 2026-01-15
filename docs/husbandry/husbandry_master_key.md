@@ -6,6 +6,11 @@ Frog Social should always foreground environment, water, density/feeding, and ha
 The AI is **non-diagnostic** and **husbandry-first**.
 
 ---
+## 0. Frog Social templates
+
+- [Frog Social AI Intake Sheet](../social/frog_social_ai_intake_sheet.md)
+
+---
 
 ## 1. Base variables to check every time
 
