@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · Social Stream</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#f3f4f6; --card-bg:#ffffff; --accent:#0ea5e9; --border-soft:#e5e7eb; --text-main:#111827; --text-muted:#6b7280; }
+    body {
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      margin:0;
+      background:radial-gradient(circle at top,#e0f2fe 0,var(--bg) 60%);
+      color:var(--text-main);
+    }
+    .outer{min-height:100vh;display:flex;justify-content:center;align-items:flex-start;}
+    .container{max-width:1100px;width:100%;padding:24px;box-sizing:border-box;}
+    .card{
+      background:var(--card-bg);
+      border-radius:16px;
+      padding:22px;
+      box-shadow:0 18px 30px rgba(15,23,42,0.08),0 0 0 1px rgba(15,23,42,0.02);
+      border:1px solid var(--border-soft);
+      margin-bottom:20px;
+    }
+    .top-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+    .top-nav-title{font-weight:600;font-size:0.95rem;color:#0f172a;}
+    .top-nav-links a{font-size:0.85rem;color:#4b5563;text-decoration:none;margin-left:10px;}
+    .top-nav-links a:hover{color:#0ea5e9;}
+    h1{margin:4px 0 6px;font-size:1.6rem;}
+    p{color:var(--text-muted);font-size:0.9rem;line-height:1.5;}
+    .panel{
+      background:#f9fafb;
+      border-radius:12px;
+      border:1px solid var(--border-soft);
+      padding:10px 11px;
+      max-height:60vh;
+      overflow:auto;
+      font-size:0.8rem;
+      margin-top:10px;
+    }
+    .social-input-row{display:flex;gap:6px;margin-top:10px;}
+    .social-input-row input{
+      flex:1;
+      padding:7px 9px;
+      border-radius:9px;
+      border:1px solid #d1d5db;
+      background:#f9fafb;
+      font-size:0.88rem;
+    }
+    button{
+      padding:8px 14px;
+      border-radius:999px;
+      border:none;
+      font-size:0.85rem;
+      font-weight:550;
+      cursor:pointer;
+      background:var(--accent);
+      color:#f9fafb;
+    }
+    button:hover{background:#0369a1;}
+    .social-message-meta{font-size:0.75rem;color:#6b7280;margin-bottom:2px;}
+    .social-message-text{font-size:0.8rem;color:#111827;margin-bottom:6px;}
+    hr{border:none;border-top:1px solid #e5e7eb;margin:6px 0;}
+    @media(max-width:800px){.container{padding:14px;}}
+  </style>
+</head>
+<body>
+  <div class="outer">
+    <div class="container">
+      <div class="top-nav">
+        <div class="top-nav-title">Frog Social</div>
+        <div class="top-nav-links">
+          <a href="index.html">Home</a>
+          <a href="colony-register.html">Colonies</a>
+          <a href="case-intake.html">New Case</a>
+          <a href="case-history.html">Case History</a>
+          <a href="social.html">Social</a>
+          <a href="account.html">Account</a>
+          <a class="signout" href="index.html">Sign Out</a>
+
+        </div>
+      </div>
+
+      <div class="card">
+        <h1>Frog Social Stream (local preview)</h1>
+        <p>
+          Local-only prototype of the social layer – notes linked to this browser.
+          In a future version this becomes a multi-user, permissioned discussion space.
+        </p>
+
+        <div class="social-input-row">
+          <input id="socialText" type="text" placeholder="Share an observation, note, or question..." />
+          <button type="button" id="socialPostBtn">Post</button>
+        </div>
+        <p style="font-size:0.78rem;color:#6b7280;margin-top:6px;">
+          Messages here are stored only in this browser. They are not synced or shared yet.
+        </p>
+
+        <div id="socialStreamBox" class="panel">
+          No messages yet. Be the first to post a note.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function loadSocial() {
+      try {
+        const raw = localStorage.getItem("frogSocialStream");
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+    function saveSocial(messages) {
+      localStorage.setItem("frogSocialStream", JSON.stringify(messages));
+    }
+    function loadProfile() {
+      try {
+        const raw = localStorage.getItem("frogSocialProfile");
+        return raw ? JSON.parse(raw) : {};
+      } catch { return {}; }
+    }
+
+    function renderSocial() {
+      const box = document.getElementById("socialStreamBox");
+      const messages = loadSocial();
+      if (!messages.length) {
+        box.textContent = "No messages yet. Be the first to post a note.";
+        return;
+      }
+      const chunks = messages.map(m => {
+        const when = m.createdAt ? new Date(m.createdAt).toLocaleString() : "";
+        const who = m.author || "local user";
+        return `
+<div class="social-message-meta">${when} · ${who}</div>
+<div class="social-message-text">${m.text}</div>
+`;
+      });
+      box.innerHTML = chunks.join("<hr/>");
+    }
+
+    const socialText = document.getElementById("socialText");
+    const socialPostBtn = document.getElementById("socialPostBtn");
+
+    socialPostBtn.addEventListener("click", () => {
+      const text = socialText.value.trim();
+      if (!text) return;
+
+      const profile = loadProfile();
+      const submitBits = [];
+      if (profile.name) submitBits.push(profile.name);
+      if (profile.authorLabel) submitBits.push("(" + profile.authorLabel + ")");
+      if (profile.institution) submitBits.push("· " + profile.institution);
+      const author = submitBits.length ? submitBits.join(" ") : "local user";
+
+      const messages = loadSocial();
+      messages.unshift({
+        id: Date.now(),
+        text,
+        author,
+        createdAt: new Date().toISOString()
+      });
+      saveSocial(messages);
+      socialText.value = "";
+      renderSocial();
+    });
+
+    renderSocial();
+  </script>
+</body>
+</html>
+

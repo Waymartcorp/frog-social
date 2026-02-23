@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LabWorks · Xenopus Bench Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: #f3f4f6;
+      color: #111827;
+    }
+    .nav {
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 12px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-left { font-weight: 600; font-size: 0.95rem; }
+    .nav-links a {
+      margin-left: 14px;
+      text-decoration: none;
+      color: #4b5563;
+      font-size: 0.9rem;
+    }
+    .nav-links a:hover { color: #0ea5e9; }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .card {
+      background: white;
+      padding: 24px;
+      margin-top: 16px;
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+    }
+    h1 { margin-top: 4px; font-size: 1.7rem; }
+    h2 { margin-top: 28px; font-size: 1.3rem; }
+    h3 { margin-top: 16px; font-size: 1.05rem; }
+    p, li {
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: #374151;
+    }
+    .tag {
+      display: inline-flex;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #0f172a;
+      padding: 3px 10px;
+      font-size: 0.78rem;
+      margin-bottom: 8px;
+    }
+    .small-note {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .toc {
+      background: #f9fafb;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      padding: 12px 14px;
+      margin-top: 12px;
+    }
+    .toc-title {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .toc ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    .toc li {
+      margin: 2px 0;
+      font-size: 0.86rem;
+    }
+    a { color: #0ea5e9; }
+    a:hover { text-decoration: underline; }
+
+    .section-box {
+      background: #f9fafb;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      padding: 12px 14px;
+      margin-top: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      margin-bottom: 6px;
+      font-size: 0.88rem;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 4px 6px;
+      text-align: left;
+    }
+    th {
+      background: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+ <div class="nav">
+  <div class="nav-left">LabWorks</div>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="colony-register.html">Colonies</a>
+    <a href="/">Dashboard</a>
+    <a href="case-intake.html">New Case</a>
+    <a href="case-history.html">Case History</a>
+    <a href="social.html">Social</a>
+    <a href="account.html">Account</a>
+    <a class="signout" href="index.html">Sign Out</a>
+  </div>
+</div>
+
+  <div class="container">
+    <div class="card">
+      <span class="tag">Bench Protocol Companion</span>
+      <h1>LabWorks · Xenopus Bench Notes</h1>
+      <p>
+        LabWorks is a <em>bench-side appendix</em> to Frog Social: focused on in vitro
+        fertilization, frozen sperm, oocytes and ion channels, extract preparation, early
+        embryology, and advanced work like nuclear transfer. This page is a scaffold for
+        shared, evolving best practices — not a formal protocol book, though labs are invited to have their protocols hosted here.
+      </p>
+      <p class="small-note">
+        Always cross-check with your institutional protocols and published methods. Values
+        below are typical starting points, not a substitute for local optimization.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Sections</div>
+        <ul>
+          <li><a href="#solutions">Solution Recipes (working starting points)</a></li>
+          <li><a href="#oocyte-storage">Oocyte Storage & Care</a></li>
+          <li><a href="#extracts">Cell-Cycle Extract Preparation (troubleshooting view)</a></li>
+          <li><a href="#ivf">In Vitro Fertilization</a></li>
+          <li><a href="#frozen-sperm">Frozen Sperm Protocols</a></li>
+          <li><a href="#priming">Priming & Hormone Use</a></li>
+          <li><a href="#embryology">Early Embryology & Tadpole Development</a></li>
+          <li><a href="#nuclear-transfer">Nuclear Transfer & Advanced Manipulations</a></li>
+        </ul>
+      </div>
+
+      <!-- Solutions -->
+      <h2 id="solutions">Solution Recipes (working starting points)</h2>
+      <p class="small-note">
+        Exact formulations vary across labs. These are “typical” versions — document your local variants and measured pH/osmolarity.
+      </p>
+
+      <div class="section-box">
+        <h3>Barth’s / Modified Barth’s (example 10× stock)</h3>
+        <p>10× Barth’s stock (dissolved in distilled water, pH adjusted to ~7.4–7.8):</p>
+        <table>
+          <thead>
+            <tr><th>Component</th><th>Approx. concentration (10×)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>NaCl</td><td>880 mM</td></tr>
+            <tr><td>KCl</td><td>10 mM</td></tr>
+            <tr><td>MgSO₄·7H₂O</td><td>25 mM</td></tr>
+            <tr><td>Ca(NO₃)₂·4H₂O</td><td>8 mM</td></tr>
+            <tr><td>CaCl₂·6H₂O</td><td>10 mM</td></tr>
+            <tr><td>NaHCO₃</td><td>250 mM</td></tr>
+            <tr><td>HEPES</td><td>100 mM</td></tr>
+          </tbody>
+        </table>
+        <p>
+          <strong>Working Barth’s / MBS:</strong> dilute 1:10 with distilled water for 1×.
+          Re-check pH after dilution. Many labs add antibiotics or tweak osmolarity — if you do, write it down.
+        </p>
+      </div>
+
+      <div class="section-box">
+        <h3>0.1× MMR (common embryo medium)</h3>
+        <table>
+          <thead>
+            <tr><th>Component</th><th>Approx. concentration (0.1×)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>NaCl</td><td>10 mM</td></tr>
+            <tr><td>KCl</td><td>0.2 mM</td></tr>
+            <tr><td>MgSO₄</td><td>0.1 mM</td></tr>
+            <tr><td>CaCl₂</td><td>0.1 mM</td></tr>
+            <tr><td>HEPES</td><td>5 mM (pH ~7.8–7.9)</td></tr>
+          </tbody>
+        </table>
+        <p>
+          Often prepared as a 10× stock and diluted 1:10. Record which recipe you used, the pH, and any additives.
+        </p>
+      </div>
+
+      <div class="section-box">
+        <h3>ND96 (typical oocyte recording buffer)</h3>
+        <table>
+          <thead>
+            <tr><th>Component</th><th>Approx. concentration</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>NaCl</td><td>96 mM</td></tr>
+            <tr><td>KCl</td><td>2 mM</td></tr>
+            <tr><td>CaCl₂</td><td>1.8 mM</td></tr>
+            <tr><td>MgCl₂</td><td>1 mM</td></tr>
+            <tr><td>HEPES</td><td>5 mM (pH ~7.5)</td></tr>
+          </tbody>
+        </table>
+        <p>
+          Variants include antibiotics or modified divalents. For troubleshooting, log which variant you used, pH, and change frequency.
+        </p>
+      </div>
+
+      <!-- Oocyte storage -->
+      <h2 id="oocyte-storage">Oocyte Storage & Care</h2>
+      <div class="section-box">
+        <p>
+          “Bad oocytes” often come from subtle storage issues: solution pH drift,
+          temperature instability, infrequent changes, or poor hygiene.
+        </p>
+        <h3>Checklist for storage conditions</h3>
+        <ul>
+          <li><strong>Solution:</strong> ND96 variant, additives (antibiotics? serum?), target pH.</li>
+          <li><strong>Temperature:</strong> actual °C (measured), not just “room temp”.</li>
+          <li><strong>Change frequency:</strong> e.g. full change daily vs every 2 days.</li>
+          <li><strong>Dish density:</strong> number of oocytes per dish and volume of medium.</li>
+          <li><strong>Hygiene:</strong> how often dead/degenerating oocytes are removed.</li>
+        </ul>
+        <h3>Visual checks</h3>
+        <ul>
+          <li>Spherical, not collapsed or irregular.</li>
+          <li>Even animal/vegetal polarity; no darkened patches.</li>
+          <li>No fungal fuzz, debris, or surface film.</li>
+        </ul>
+      </div>
+
+      <!-- Extracts -->
+      <h2 id="extracts">Cell-Cycle Extract Preparation (troubleshooting view)</h2>
+      <div class="section-box">
+        <p>
+          Extract quality is extremely sensitive to timing, temperature, pH, and shear.
+          This section emphasizes <em>variables to record</em> whenever performance changes.
+        </p>
+        <h3>Key timing points</h3>
+        <ul>
+          <li>Hormone injection → egg laying (hours, temperature).</li>
+          <li>Egg collection → dejellying (minutes).</li>
+          <li>Dejellying → first spin / extract processing (minutes).</li>
+        </ul>
+
+        <h3>Cysteine & handling</h3>
+        <ul>
+          <li>Cysteine concentration and exact pH (e.g. 2% w/v, pH 7.8–8.0).</li>
+          <li>Duration of exposure and mixing intensity.</li>
+          <li>Buffer formulation and temperature during egg handling.</li>
+        </ul>
+
+        <h3>Mechanics & centrifugation</h3>
+        <ul>
+          <li>Egg pack conditions (g-force, time, rotor type).</li>
+          <li>How aggressively extracts are triturated or mixed.</li>
+          <li>Which steps are cold vs room temp, and how that is enforced.</li>
+        </ul>
+      </div>
+
+      <!-- IVF -->
+      <h2 id="ivf">In Vitro Fertilization</h2>
+      <div class="section-box">
+        <p>
+          IVF outcomes depend on egg quality, sperm handling, medium, and temperature.
+          LabWorks is a place to capture how your “good days” differ from “bad days.”
+        </p>
+        <h3>Domains to log</h3>
+        <ul>
+          <li>Time from stripping eggs to sperm exposure.</li>
+          <li>Fertilization medium (Barth’s / MMR variant) and measured pH.</li>
+          <li>Temperature at fertilization and early cleavages.</li>
+          <li>Method: “mash cloud” vs prepared sperm suspension.</li>
+          <li>Age/condition of males and females.</li>
+        </ul>
+      </div>
+
+      <!-- Frozen sperm -->
+      <h2 id="frozen-sperm">Frozen Sperm Protocols</h2>
+      <div class="section-box">
+        <p>
+          Frozen sperm is unforgiving of temperature and timing mistakes. This section
+          is about making thaw and use conditions explicit.
+        </p>
+        <h3>Checklist ideas</h3>
+        <ul>
+          <li>Cryoprotectant and freezing schedule (high level).</li>
+          <li>Thaw temperature and duration (actual numbers, not “quickly”).</li>
+          <li>Dilution buffer composition and time before contacting eggs.</li>
+          <li>Expected fertilization rate window when things are working.</li>
+        </ul>
+      </div>
+
+      <!-- Priming -->
+      <h2 id="priming">Priming & Hormone Use</h2>
+      <div class="section-box">
+        <p>
+          Priming schedules differ substantially between labs. Here the goal is to record
+          what you actually do and how animals look/perform, not to impose one recipe.
+        </p>
+        <ul>
+          <li>Hormone type, dose, route (e.g. hCG, GnRH analogs).</li>
+          <li>Interval from priming → booster → collection.</li>
+          <li>Differences between under- and over-primed animals.</li>
+          <li>Patterns in long-term fertility after repeated priming.</li>
+        </ul>
+      </div>
+
+      <!-- Early embryology -->
+      <h2 id="embryology">Early Embryology & Tadpole Development</h2>
+      <div class="section-box">
+        <p>
+          Connect bench decisions (media, pH, temperature, handling) to developmental
+          windows where embryos most often get into trouble.
+        </p>
+        <h3>Common failure windows</h3>
+        <ul>
+          <li><strong>0–12 hours:</strong> fertilization failure, polyspermy, extreme pH/osmolarity.</li>
+          <li><strong>Gastrulation / neurulation:</strong> pH drift, temperature shifts, disturbance.</li>
+          <li><strong>Later larvae:</strong> food type/size, underfeeding, poor oxygenation, waste buildup.</li>
+        </ul>
+      </div>
+
+      <!-- Nuclear transfer -->
+      <h2 id="nuclear-transfer">Nuclear Transfer & Advanced Manipulations</h2>
+      <div class="section-box">
+        <p>
+          Nuclear transfer and related micromanipulations are high-skill domains. Rather
+          than a full protocol, this section highlights process checkpoints worth logging.
+        </p>
+        <ul>
+          <li>Enucleation method and how success is verified.</li>
+          <li>Donor nucleus handling: medium, temperature, and time.</li>
+          <li>Micromanipulator calibration and ergonomics (drift, backlash).</li>
+          <li>Culture conditions post-transfer and survival benchmarks by stage.</li>
+        </ul>
+      </div>
+
+      <p class="small-note">
+        LabWorks is intentionally a “fun added bones” layer: a place to grow collective
+        protocol intelligence without confusing it with welfare endpoints or formal
+        veterinary guidance.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+

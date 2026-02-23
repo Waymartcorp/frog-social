@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · Case Intake</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#f3f4f6; --card-bg:#ffffff; --accent:#0ea5e9; --border-soft:#e5e7eb; --text-main:#111827; --text-muted:#6b7280; }
+    body {
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      margin:0;
+      background:radial-gradient(circle at top,#e0f2fe 0,var(--bg) 60%);
+      color:var(--text-main);
+    }
+    .outer{min-height:100vh;display:flex;justify-content:center;align-items:flex-start;}
+    .container{max-width:1100px;width:100%;padding:24px;box-sizing:border-box;}
+    .card{
+      background:var(--card-bg);
+      border-radius:16px;
+      padding:22px;
+      box-shadow:0 18px 30px rgba(15,23,42,0.08),0 0 0 1px rgba(15,23,42,0.02);
+      border:1px solid var(--border-soft);
+      margin-bottom:20px;
+    }
+    .top-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+    .top-nav-title{font-weight:600;font-size:0.95rem;color:#0f172a;}
+    .top-nav-links a{font-size:0.85rem;color:#4b5563;text-decoration:none;margin-left:10px;}
+    .top-nav-links a:hover{color:#0ea5e9;}
+    h1{margin:4px 0 6px;font-size:1.6rem;}
+    h2{font-size:1.1rem;margin:0.4rem 0 0.3rem;}
+    p{color:var(--text-muted);font-size:0.9rem;line-height:1.5;}
+    label{display:block;margin-top:9px;margin-bottom:3px;font-size:0.82rem;color:#374151;font-weight:500;}
+    input,textarea,select{
+      width:100%;
+      padding:7px 9px;
+      border-radius:9px;
+      border:1px solid #d1d5db;
+      background:#f9fafb;
+      color:var(--text-main);
+      box-sizing:border-box;
+      font-size:0.88rem;
+    }
+    textarea{min-height:80px;resize:vertical;}
+    button{
+      margin-top:13px;
+      padding:9px 18px;
+      border-radius:999px;
+      border:none;
+      font-size:0.9rem;
+      font-weight:550;
+      cursor:pointer;
+      background:var(--accent);
+      color:#f9fafb;
+    }
+    button:hover{background:#0369a1;}
+    .split{
+      display:grid;
+      grid-template-columns:minmax(0,1.05fr) minmax(0,1.35fr);
+      gap:22px;
+      margin-top:10px;
+    }
+    .panel{
+      background:#f9fafb;
+      border-radius:12px;
+      border:1px solid var(--border-soft);
+      padding:10px 11px;
+      max-height:40vh;
+      overflow:auto;
+      font-size:0.8rem;
+      white-space:pre-wrap;
+      margin-bottom:9px;
+    }
+    @media(max-width:900px){
+      .container{padding:14px;}
+      .split{grid-template-columns:minmax(0,1fr);}
+      .panel{max-height:none;}
+    }
+    .small{font-size:0.78rem;color:var(--text-muted);margin-top:6px;}
+  </style>
+</head>
+<body>
+  <div class="outer">
+    <div class="container">
+      <div class="top-nav">
+        <div class="top-nav-title">Frog Social</div>
+        <div class="top-nav-links">
+          <a href="home.html">Home</a>
+          <a href="colony-register.html">Colonies</a>
+          <a href="case-intake.html">New Case</a>
+          <a href="case-history.html">Case History</a>
+          <a href="social.html">Social</a>
+          <a href="account.html">Account</a>
+          <a href="index.html">Sign out</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h1>New Case · Situation Intake</h1>
+        <p class="small">
+          Husbandry-first framing tool. Fill in what you can. The goal is to clarify thinking,
+          not generate a diagnosis.
+        </p>
+
+        <div class="split">
+          <div>
+            <form id="caseForm">
+              <h2>1. Colony & system</h2>
+
+              <label for="colonyName">Colony / room name (optional)</label>
+              <input id="colonyName" type="text" placeholder="e.g., Room B-217, Rack 3" />
+
+              <label for="institution">Institution / lab (optional)</label>
+              <input id="institution" type="text" placeholder="e.g., Vanderbilt, Dewar Lab" />
+
+              <label for="systemType">System type</label>
+              <select id="systemType">
+                <option value="Recirculating">Recirculating rack</option>
+                <option value="Static">Static tanks (manual changes)</option>
+                <option value="Dump-fill">Dump-and-fill / flow-through</option>
+                <option value="Other">Other / mixed</option>
+              </select>
+
+              <label for="numFrogs">Approximate number of frogs</label>
+              <input id="numFrogs" type="number" min="0" placeholder="e.g., 120" />
+
+              <label for="waterTemp">Water temperature (°C)</label>
+              <input id="waterTemp" type="number" step="0.1" placeholder="e.g., 20.5" />
+
+              <label for="ph">pH</label>
+              <input id="ph" type="number" step="0.1" placeholder="e.g., 7.2" />
+
+              <label for="conductivity">Conductivity / salts (µS or ppm, optional)</label>
+              <input id="conductivity" type="text" placeholder="e.g., 600 µS, or 'not measured'" />
+
+              <label for="ammonia">Ammonia (NH3/NH4) status</label>
+              <select id="ammonia">
+                <option value="Unknown">Unknown / not tested</option>
+                <option value="Zero">Zero / near zero</option>
+                <option value="Borderline">Borderline / sometimes detectable</option>
+                <option value="High">High / consistently detectable</option>
+              </select>
+
+              <label for="recentChanges">Recent changes (last 2–4 weeks)</label>
+              <textarea id="recentChanges" placeholder="E.g., new rack, pump repair, new water source, new frogs, diet change, increased density..."></textarea>
+
+              <h2>2. Main concern</h2>
+
+              <label for="mainConcern">Main concern</label>
+              <select id="mainConcern">
+                <option value="Mortality">Mortality / sudden deaths</option>
+                <option value="Skin">Skin lesions / redness / fuzz</option>
+                <option value="Appetite">Reduced appetite / weight loss</option>
+                <option value="Behavior">Abnormal behavior / floating / hiding</option>
+                <option value="GreenWater">Green water / turbidity / cloudy</option>
+                <option value="Breeding">Breeding / egg quality issues</option>
+                <option value="Other">Other / mixed picture</option>
+              </select>
+
+              <label for="description">Describe what you are seeing</label>
+              <textarea id="description" placeholder="E.g., three sudden deaths in 48 hours, older females, system flushed last week, slightly cloudy water..."></textarea>
+
+              <button type="submit">Generate case view</button>
+              <div class="small">
+                All processing happens in your browser. Not medical advice. If animals are crashing,
+                escalate to veterinary support.
+              </div>
+            </form>
+          </div>
+
+          <div>
+            <h2>3. Situation summary</h2>
+            <div class="panel" id="summaryBox">
+              After you generate, a concise summary of the situation will appear here.
+            </div>
+
+            <h2>4. Husbandry focus areas</h2>
+            <div class="panel" id="focusBox">
+              Key husbandry levers likely worth attention for this pattern will appear here.
+            </div>
+
+            <h2>5. Suggested next steps</h2>
+            <div class="panel" id="stepsBox">
+              Practical, non-diagnostic next steps for the coming days will be listed here.
+            </div>
+
+            <h2>6. When to escalate</h2>
+            <div class="panel" id="escalateBox">
+              General guidance on when to contact veterinary staff appears here.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    <script>
+  function loadProfile() {
+    try {
+      const raw = localStorage.getItem("frogSocialProfile");
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  }
+
+  function loadCases() {
+    try {
+      const raw = localStorage.getItem("frogSocialCases");
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+  function saveCases(list) {
+    localStorage.setItem("frogSocialCases", JSON.stringify(list));
+  }
+
+  function makeSummary(data, profile) {
+    const colonyLine = data.colonyName || "Unlabeled colony";
+    const instLine = data.institution ? ` at ${data.institution}` : "";
+    const temp = data.waterTemp ? `${data.waterTemp} °C` : "not reported";
+    const ph = data.ph ? `${data.ph}` : "not reported";
+    const frogs = data.numFrogs ? `${data.numFrogs}` : "not reported";
+
+    let submittedBy = "";
+    const name = profile.name || "";
+    const label = profile.authorLabel || "";
+    const profInst = profile.institution || "";
+
+    if (name || label || profInst) {
+      const pieces = [];
+      if (name) pieces.push(name);
+      if (label) pieces.push(`(${label})`);
+      if (profInst) pieces.push(`· ${profInst}`);
+      submittedBy = "\n\nSubmitted by: " + pieces.join(" ");
+    }
+
+    let concernLabel = data.mainConcern;
+    if (data.mainConcern === "Extract") concernLabel = "Extract performance issues";
+    if (data.mainConcern === "Oocyte") concernLabel = "Oocyte ion channel / electrophysiology issues";
+
+    return `
+Colony: ${colonyLine}${instLine}
+System type: ${data.systemType}
+Approximate number of frogs: ${frogs}
+
+Water snapshot:
+- Temperature: ${temp}
+- pH: ${ph}
+- Conductivity / salts: ${data.conductivity || "not reported"}
+- Ammonia status: ${data.ammonia}
+
+Recent changes:
+${data.recentChanges || "(none described)"}
+
+Main concern:
+- Pattern: ${concernLabel}
+- Description: ${data.description || "(no detailed description yet)"}${submittedBy}
+    `.trim();
+  }
+
+  function makeFocus(data) {
+    const items = [];
+
+    // Temperature
+    if (data.waterTemp) {
+      const t = parseFloat(data.waterTemp);
+      if (!isNaN(t)) {
+        if (t < 18) items.push("Water temperature appears on the cool side (<18 °C). Rapid or unplanned cooling can stress Xenopus, but for extract/oocyte work many problems are dominated by lab handling and timing.");
+        else if (t > 24) items.push("Water temperature appears on the warm side (>24 °C). Warmer water increases metabolic demand and lowers dissolved oxygen; still, for extract and oocytes, protocol timing and buffer handling are usually higher-yield places to look first.");
+        else items.push("Water temperature is within a typical Xenopus range (~18–24 °C); for performance problems, stability over days matters more than a single reading.");
+      }
+    } else {
+      items.push("Water temperature not reported. Confirm current range and whether it has drifted, but keep lab-side protocol details front and center for extract and oocyte issues.");
+    }
+
+    // pH
+    if (data.ph) {
+      const p = parseFloat(data.ph);
+      if (!isNaN(p)) {
+        if (p < 6.5) items.push("System pH appears on the acidic side (<6.5). Note it, but be careful not to over-interpret this without looking at precise pH control in your experimental buffers.");
+        else if (p > 8.2) items.push("System pH appears on the alkaline side (>8.2). Again, note it, but extract and oocyte performance are usually more sensitive to the pH of cysteine, MMR, storage solutions, and recording buffers.");
+        else items.push("System pH is mid-range (~6.5–8.2). For extract and oocyte problems, focus more on lab buffer pH and calibration than on this value alone.");
+      }
+    } else {
+      items.push("System pH not reported. For extract and oocyte problems, accurate pH of lab solutions (cysteine, ND96, recording buffers) is often more critical than rack pH per se.");
+    }
+
+    // Ammonia – still worth tracking, but not front-line for extract/oocyte
+    if (data.ammonia === "High") {
+      items.push("Ammonia is reported as high. That’s a welfare red flag and should be addressed, but extract and oocyte performance usually hinge first on lab preparation, not ammonia alone.");
+    } else if (data.ammonia === "Borderline") {
+      items.push("Ammonia is borderline. Fix if you can, but keep lab-side variables at the center of your extract or electrophysiology troubleshooting.");
+    } else if (data.ammonia === "Zero") {
+      items.push("Ammonia reported as zero/near zero. Good from a welfare standpoint; for extract and oocyte issues, move your attention to lab protocols and solutions.");
+    } else {
+      items.push("Ammonia status unknown. For unexplained morbidity, test it; for pure extract or oocyte performance issues in otherwise healthy animals, it’s usually secondary.");
+    }
+
+    // System type – context, not primary driver here
+    if (data.systemType === "Recirculating") {
+      items.push("Recirculating rack: note filter health and maintenance timing, but for extract and oocyte issues, lab-side handling and solutions typically dominate the outcome.");
+    } else if (data.systemType === "Static") {
+      items.push("Static tanks: be aware of extremes (poor water change schedules), yet for extract and oocyte performance the immediate lab protocol is often the main lever.");
+    } else if (data.systemType === "Dump-fill") {
+      items.push("Dump-and-fill / flow-through: good to log any major water-source changes, but stay focused on lab procedures for extract and oocyte troubleshooting.");
+    } else {
+      items.push("System marked 'Other / mixed'; treat it as background context. For this case type, protocol-level review in the lab is generally higher yield.");
+    }
+
+    // Main concern–specific focus
+    if (data.mainConcern === "GreenWater") {
+      items.push("Green / cloudy water often reflects light + nutrients + time: consider algae blooms, overfeeding, or insufficient solids removal.");
+    } else if (data.mainConcern === "Mortality") {
+      items.push("Mortality clusters point toward acute stress, water-quality events, or procedure-related factors. Age distribution of deaths matters.");
+    } else if (data.mainConcern === "Skin") {
+      items.push("Skin lesions or fuzz can reflect chronic stress plus opportunists. Environment and immune robustness are central, not just pathogen labels.");
+    } else if (data.mainConcern === "Appetite") {
+      items.push("Reduced appetite may signal chronic stress, suboptimal water, social pressure, or temperature misalignment.");
+    } else if (data.mainConcern === "Behavior") {
+      items.push("Abnormal behavior (floating, lethargy, hiding, gasping) often tracks with oxygen, vibration, flow, or abrupt changes.");
+    } else if (data.mainConcern === "Breeding") {
+      items.push("Breeding / egg quality issues often reflect body condition, temperature/light cycles, and handling between attempts, not just 'protocol correctness'.");
+    } else if (data.mainConcern === "Extract") {
+      items.push("Extract performance issues are usually dominated by lab procedure: timing from ovulation to collection, temperature stability during collection and spins, cysteine and MMR recipes and pH, and how vigorously you mix or shear the preparation.");
+      items.push("Focus on: egg handling steps, centrifugation conditions, buffer components and suppliers, ATP/energy mix, supplements, and whether you changed more than one variable between a 'good' batch and a 'bad' one.");
+      items.push("If protocols have been stable and multiple frogs/rounds give poor extract, then it can be worth asking whether overall frog condition and feeding have slipped in the weeks leading up to collection.");
+    } else if (data.mainConcern === "Oocyte") {
+      items.push("Oocyte ion channel / electrophysiology issues are most often driven by oocyte handling and storage, solution composition, pH, use of antibiotics, and RNA/injection quality.");
+      items.push("Focus on: defolliculation conditions (collagenase lot/time and mixing), storage buffer (e.g., ND96) composition and pH, whether antibiotics are used and how often solutions are changed, and how aggressively you remove dead or unhealthy oocytes from the dish.");
+      items.push("mRNA or cRNA quality (integrity, concentration, storage conditions) and injection volume/technique are also key; many channel 'failures' trace back to construct and injection variables rather than frog or rack environment.");
+    }
+
+    return items.join("\n\n");
+  }
+
+  function makeSteps(data) {
+    const lines = [];
+    lines.push("0. Document the baseline:");
+    lines.push("- Note current water parameters (temperature, pH, ammonia, nitrite/nitrate if available).");
+    lines.push("- Note densities (frogs per tank) and any visibly high-load tanks.");
+    lines.push("- Record changes in the last 2–4 weeks (equipment, water, diet, personnel, procedures).");
+
+    lines.push("\n1. Stabilize and de-intensify where possible:");
+    lines.push("- Avoid multiple simultaneous changes; pick 1–2 high-yield adjustments.");
+    lines.push("- Reduce obvious overcrowding if practical.");
+    lines.push("- Simplify feeding; avoid overfeeding and remove uneaten food promptly for welfare-related issues.");
+
+    if (data.mainConcern === "GreenWater") {
+      lines.push("\n2. For green / cloudy water:");
+      lines.push("- Increase mechanical solids removal (pre-filters, sponge rinses, siphoning).");
+      lines.push("- Reduce light on tanks if algae is intense.");
+      lines.push("- Check whether new food/supplements/enrichment were added recently.");
+    } else if (data.mainConcern === "Mortality") {
+      lines.push("\n2. For mortality clusters:");
+      lines.push("- If possible, move a small subset into a 'clean, quiet' reference environment.");
+      lines.push("- Provide strong aeration and stable water in that subset as a comparison.");
+    } else if (data.mainConcern === "Skin") {
+      lines.push("\n2. For skin/lesion concerns:");
+      lines.push("- Gently photograph representative lesions for tracking.");
+      lines.push("- Review abrasive surfaces, tank materials, and handling methods.");
+    } else if (data.mainConcern === "Extract") {
+      lines.push("\n2. For extract performance issues (lab focus):");
+      lines.push("- Write down your full protocol as actually practiced: times, temperatures, pH targets, centrifuge settings, and mixing steps.");
+      lines.push("- Compare the last 'good' extract and the current 'bad' one: which buffers, lots, and timings changed? Avoid changing more than one variable in the next attempt.");
+      lines.push("- Pay special attention to cysteine solution prep (pH adjustment), MMR recipe, and how long eggs sit between ovulation, stripping, dejellying, and extract preparation.");
+      lines.push("- If possible, do a controlled side-by-side with a slightly adjusted protocol (e.g., shorter warm exposure, gentler mixing) while holding frogs and buffers constant.");
+    } else if (data.mainConcern === "Oocyte") {
+      lines.push("\n2. For oocyte ion channel / electrophysiology issues (lab focus):");
+      lines.push("- Document defolliculation conditions: enzyme lot, concentration, duration, temperature, and how vigorously oocytes are mixed.");
+      lines.push("- Standardize storage: buffer composition and pH, temperature, whether antibiotics are present, and how often you change the solution (e.g., daily or more often).");
+      lines.push("- Make it routine to remove dead or unhealthy oocytes promptly; they can foul the dish and affect neighbors.");
+      lines.push("- Review RNA/cRNA handling: integrity checks, storage (freeze/thaw), and injection volume/technique, before concluding that the colony or system is at fault.");
+    }
+
+    lines.push("\n3. Create a short observation or experiment log (3–7 days or a few preps):");
+    lines.push("- For each attempt, note frog identity, broad system context, and the exact protocol details and outcomes (extract quality, oocyte currents, etc.).");
+    lines.push("- Look for patterns tied to procedure, timing, and solutions rather than a single 'bad' day.");
+
+    lines.push("\n4. Step back and ask:");
+    lines.push("- Did a 'big change' happen right before this started (buffer supplier, enzyme lot, RNA source, person doing the procedure, timing, equipment)?");
+    lines.push("- Can one or two reversible lab-side changes be trialed and tracked before declaring the colony 'failed' or changing husbandry in a major way?");
+
+    return lines.join("\n");
+  }
+
+  function makeEscalation() {
+    const lines = [];
+    lines.push("This tool cannot diagnose disease. These are prompts, not rules.");
+    lines.push("\nConsider contacting your veterinarian or institutional veterinary staff promptly if:");
+    lines.push("- Mortality is rapidly escalating or animals are severely compromised.");
+    lines.push("- Frogs show severe lethargy, loss of righting reflex, or gasping at the surface.");
+    lines.push("- Lesions are widespread, ulcerative, or associated with systemic signs.");
+    lines.push("- A large fraction of the colony is affected, not just one tank.");
+    lines.push("- You suspect chemical exposure, water failure, or equipment malfunction.");
+    lines.push("\nFor extract or oocyte performance issues in otherwise healthy animals, veterinary escalation is usually not first-line unless there are clear welfare concerns.");
+    lines.push("\nWhat helps the vet help you:");
+    lines.push("- A simple one-page summary like this case view.");
+    lines.push("- Photos or short videos of representative animals and system layout when health is in question.");
+    lines.push("- Actual measured water parameters, not just 'seems fine'.");
+    lines.push("- A brief timeline of when problems started relative to specific changes.");
+    return lines.join("\n");
+  }
+
+  const form = document.getElementById("caseForm");
+  const summaryBox = document.getElementById("summaryBox");
+  const focusBox = document.getElementById("focusBox");
+  const stepsBox = document.getElementById("stepsBox");
+  const escalateBox = document.getElementById("escalateBox");
+
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const profile = loadProfile();
+
+    const data = {
+      colonyName: document.getElementById("colonyName").value.trim(),
+      institution: document.getElementById("institution").value.trim(),
+      systemType: document.getElementById("systemType").value,
+      numFrogs: document.getElementById("numFrogs").value.trim(),
+      waterTemp: document.getElementById("waterTemp").value.trim(),
+      ph: document.getElementById("ph").value.trim(),
+      conductivity: document.getElementById("conductivity").value.trim(),
+      ammonia: document.getElementById("ammonia").value,
+      recentChanges: document.getElementById("recentChanges").value.trim(),
+      mainConcern: document.getElementById("mainConcern").value,
+      description: document.getElementById("description").value.trim()
+    };
+
+    const summary = makeSummary(data, profile);
+    const focus = makeFocus(data);
+    const steps = makeSteps(data);
+    const escalate = makeEscalation();
+
+    summaryBox.textContent = summary;
+    focusBox.textContent = focus;
+    stepsBox.textContent = steps;
+    escalateBox.textContent = escalate;
+
+    const cases = loadCases();
+    cases.unshift({
+      id: Date.now(),
+      colonyName: data.colonyName || "",
+      institution: data.institution || "",
+      mainConcern: data.mainConcern,
+      snippet: data.description ? data.description.slice(0, 140) : "",
+      createdAt: new Date().toISOString(),
+      summary,
+      submittedByName: profile.name || "",
+      submittedByLabel: profile.authorLabel || "",
+      submittedByInstitution: profile.institution || ""
+    });
+    saveCases(cases);
+  });
+</script>
+  </script>
+</body>
+</html>

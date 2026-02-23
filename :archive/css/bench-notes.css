@@ -1,0 +1,26 @@
+body {
+    font-family: "Inter", sans-serif;
+    background: #fafafa;
+    color: #222;
+    margin: 40px;
+    line-height: 1.6;
+}
+
+h1, h2, h3 {
+    font-weight: 600;
+    margin-top: 2rem;
+}
+
+pre, code {
+    background: #f0f0f0;
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+
+.note-section {
+    background: white;
+    border: 1px solid #eee;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+}

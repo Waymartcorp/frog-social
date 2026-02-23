@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card-bg: #ffffff;
+      --accent: #0ea5e9;
+      --border-soft: #e5e7eb;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: radial-gradient(circle at top, #e0f2fe 0, var(--bg) 60%);
+      color: var(--text-main);
+    }
+    .outer {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .container {
+      max-width: 1100px;
+      width: 100%;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow:
+        0 18px 30px rgba(15, 23, 42, 0.08),
+        0 0 0 1px rgba(15, 23, 42, 0.02);
+      border: 1px solid var(--border-soft);
+      margin-bottom: 20px;
+    }
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-logo { height: 32px; width: auto; } /* Adjusted size for nav bar */
+    
+    .top-nav-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #0f172a;
+    }
+    .top-nav-links a {
+      font-size: 0.85rem;
+      color: #4b5563;
+      text-decoration: none;
+      margin-left: 10px;
+    }
+    .top-nav-links a:hover {
+      color: var(--accent);
+    }
+    h1 {
+      margin: 4px 0 6px;
+      font-size: 1.7rem;
+    }
+    p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .tile {
+      border-radius: 14px;
+      border: 1px solid var(--border-soft);
+      padding: 14px 14px 16px;
+      background: #f9fafb;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, border-color 0.08s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-decoration: none;
+      color: inherit;
+    }
+    .tile:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 24px rgba(15, 23, 42, 0.08);
+      border-color: #d1d5db;
+    }
+    .tile-title {
+      font-size: 0.98rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #0f172a;
+    }
+    .tile-text {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .tile-link {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--accent);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 0.72rem;
+      background: #e0f2fe;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+    .small {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+    @media (max-width: 900px) {
+      .container { padding: 14px; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="outer">
+    <div class="container">
+      <div class="top-nav">
+        <div class="brand">
+          <img src="images/frog-social-logo.png" alt="Logo" class="brand-logo" onerror="this.style.display='none'">
+          <div class="top-nav-title">Frog Social</div>
+        </div>
+        <div class="top-nav-links">
+          <a href="dashboard.html">Home</a>
+          <a href="colony-register.html">Colonies</a>
+          <a href="case-intake.html">New Case</a>
+          <a href="case-history.html">Case History</a>
+          <a href="social.html">Social</a>
+          <a href="account.html">Account</a>
+          <a href="index.html">Sign out</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h1>Frog Social Dashboard</h1>
+        <p>
+          A shared, husbandry-aware companion for Xenopus colonies and bench work.
+          Start by describing a problem, or jump to your cases, social stream,
+          colony register, LabWorks, or system setup.
+        </p>
+
+        <div class="grid">
+          <a class="tile" href="case-intake.html">
+            <div>
+              <div class="pill">Core workflow</div>
+              <div class="tile-title">Describe a Problem</div>
+              <div class="tile-text">
+                Describe any Xenopus issue: colony health, water/system questions, feeding behavior.
+                Get a structured, rapid response.
+              </div>
+            </div>
+            <div class="tile-link">Open case intake →</div>
+          </a>
+
+          <a class="tile" href="case-history.html">
+            <div>
+              <div class="pill">Case archive</div>
+              <div class="tile-title">Review Past Cases</div>
+              <div class="tile-text">
+                Browse cases submitted from this browser: summaries, concerns, and timelines.
+                Mark cases as resolved.
+              </div>
+            </div>
+            <div class="tile-link">View case history →</div>
+          </a>
+
+          <a class="tile" href="social.html">
+            <div>
+              <div class="pill">Discussion</div>
+              <div class="tile-title">Join the Social Feed</div>
+              <div class="tile-text">
+                Prototype of the Frog Social stream: notes, observations, and troubleshooting
+                conversations tied back to real colony contexts.
+              </div>
+            </div>
+            <div class="tile-link">Open social stream →</div>
+          </a>
+
+          <a class="tile" href="account.html">
+            <div>
+              <div class="pill">Identity</div>
+              <div class="tile-title">My Profile</div>
+              <div class="tile-text">
+                Set your name, role, institution, and author label. Future shared versions will use
+                this to attribute cases and resolutions.
+              </div>
+            </div>
+            <div class="tile-link">Edit profile →</div>
+          </a>
+
+          <a class="tile" href="colony-register.html">
+            <div>
+              <div class="pill">Colony map</div>
+              <div class="tile-title">Colony Registration</div>
+              <div class="tile-text">
+                Register rooms, racks, and systems so case histories and social discussions
+                can be anchored to real, named colonies.
+              </div>
+            </div>
+            <div class="tile-link">Register / view colonies →</div>
+          </a>
+
+          <a class="tile" href="labworks.html">
+            <div>
+              <div class="pill">Bench protocols</div>
+              <div class="tile-title">LabWorks · Bench Notes</div>
+              <div class="tile-text">
+                Bench-side notes on IVF, frozen sperm, oocytes, ion channels,
+                extract preparation, early embryology, and nuclear transfer.
+              </div>
+            </div>
+            <div class="tile-link">Open LabWorks →</div>
+          </a>
+
+          <a class="tile" href="system-setup.html">
+            <div>
+              <div class="pill">New systems</div>
+              <div class="tile-title">New System Setup</div>
+              <div class="tile-text">
+                Space for step-by-step checklists on new Xenopus system setup, cycling,
+                stocking strategy, and first 90 days.
+              </div>
+            </div>
+            <div class="tile-link">View setup guide →</div>
+          </a>
+        </div>
+
+        <p class="small">
+          Prototype note: right now, all data is stored locally in your browser. Future
+          versions can add secure accounts, institutional views, and shared case archives.
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Simple check: if no profile exists, maybe nudge them to login (optional)
+    const profile = localStorage.getItem("frogSocialProfile");
+    if (!profile) {
+      console.log("No user profile found. They might be visiting directly.");
+    }
+  </script>
+</body>
+</html>
