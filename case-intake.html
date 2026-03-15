@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · Describe a Problem</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --app-shell-bg: #050810;
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --card-border: #1F2937;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
+      --warning: #F97316;
+      --danger: #EF4444;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: var(--app-body-bg);
+      color: var(--primary-text);
+      min-height: 100vh;
+    }
+
+    /* Navigation */
+    .nav-bar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
+    }
+    .nav-brand span { font-size: 1.25rem; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-links a {
+      font-size: 0.875rem;
+      color: var(--secondary-text);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      transition: all 0.15s ease;
+    }
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--primary-text);
+    }
+    .nav-links a.active {
+      color: #6EE7B7;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .nav-signout {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .nav-signout:hover { background: #334155; }
+
+    /* Page container */
+    .page-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+    .page-header {
+      margin-bottom: 24px;
+    }
+    .page-header h1 {
+      font-size: 1.875rem;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+    }
+    .page-header p {
+      color: var(--secondary-text);
+      font-size: 0.9rem;
+      margin: 0;
+      max-width: 600px;
+    }
+
+    /* Two-column layout */
+    .split-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 1024px) {
+      .split-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    /* Form sections */
+    .form-section {
+      margin-bottom: 28px;
+    }
+    .form-section:last-child { margin-bottom: 0; }
+    .form-section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
+      margin: 0 0 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .form-section-title .num {
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--accent-green);
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+    }
+
+    /* Form inputs */
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--secondary-text);
+      font-weight: 500;
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+    label:first-child { margin-top: 0; }
+    input, select, textarea {
+      width: 100%;
+      background: #0F172A;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.875rem;
+      color: var(--primary-text);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input::placeholder, textarea::placeholder {
+      color: #6B7280;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239CA3AF' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+
+    /* Helper text */
+    .helper-text {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      margin-top: 6px;
+    }
+    .helper-text a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+    }
+    .helper-text a:hover { text-decoration: underline; }
+    .status-line {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      margin-top: 8px;
+    }
+
+    /* Field grid for selects */
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .field-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Video upload section */
+    .upload-zone {
+      border: 2px dashed rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      margin-top: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .upload-zone:hover {
+      border-color: var(--accent-green);
+      background: rgba(52, 211, 153, 0.05);
+    }
+    .upload-zone input[type="file"] {
+      display: none;
+    }
+    .upload-zone .icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+    .upload-zone .label {
+      font-size: 0.875rem;
+      color: var(--primary-text);
+      font-weight: 500;
+    }
+    .upload-zone .sub {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      margin-top: 4px;
+    }
+    .upload-preview {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      border-radius: 10px;
+      font-size: 0.8rem;
+      color: var(--accent-green);
+      display: none;
+    }
+    .upload-preview.active { display: block; }
+
+    /* Primary button */
+    .btn-primary {
+      background: var(--accent-green);
+      color: #0F172A;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 0.9rem;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
+      transition: transform 0.15s, background 0.15s;
+      margin-top: 20px;
+      width: 100%;
+    }
+    .btn-primary:hover {
+      background: #6EE7B7;
+      transform: translateY(-1px);
+    }
+
+    /* AI Output panels */
+    .ai-panel {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    .ai-panel:last-child { margin-bottom: 0; }
+    .ai-panel-header {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--secondary-text);
+      margin-bottom: 10px;
+    }
+    .ai-panel-content {
+      font-size: 0.875rem;
+      color: var(--primary-text);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .ai-panel-content.empty {
+      color: var(--secondary-text);
+      font-style: italic;
+    }
+    .ai-panel-content ul {
+      margin: 8px 0;
+      padding-left: 18px;
+    }
+    .ai-panel-content li {
+      margin-bottom: 6px;
+    }
+
+    /* Chip tags */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--accent-green);
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    /* Disclaimer */
+    .disclaimer {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    /* Intake mode toggle */
+    .mode-toggle {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 9999px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .mode-toggle input {
+      display: none;
+    }
+    .mode-toggle label {
+      margin: 0;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      color: var(--secondary-text);
+      transition: all 0.15s ease;
+    }
+    .mode-toggle input:checked + label {
+      background: rgba(52, 211, 153, 0.2);
+      color: var(--accent-green);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+
+    /* Right column sticky */
+    .right-column {
+      position: sticky;
+      top: 80px;
+      align-self: start;
+    }
+    @media (max-width: 1024px) {
+      .right-column { position: static; }
+    }
+
+    /* Loading state */
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--secondary-text);
+    }
+    .loading::before {
+      content: "";
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(52, 211, 153, 0.3);
+      border-top-color: var(--accent-green);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="nav-bar">
+    <div class="nav-brand">
+      <span>🐸</span>
+      Frog Social
+    </div>
+    <div class="nav-links">
+      <a href="case-intake.html" class="active">Describe a Problem</a>
+      <a href="case-history.html">Case History</a>
+      <a href="social.html">Social Feed</a>
+      <a href="account.html">Profile</a>
+      <a href="system-setup.html">New System Setup</a>
+    </div>
+    <a href="index.html" class="nav-signout">Sign Out</a>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-header">
+      <h1>Describe a Problem</h1>
+      <p>Husbandry-first framing tool. Fill in what you can — the goal is to narrow potential stressors, not generate an exact diagnosis.</p>
+    </div>
+
+    <div class="split-layout">
+      <!-- LEFT COLUMN: Form -->
+      <div class="card">
+        <form id="intakeForm">
+
+          <!-- Intake Mode -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">Mode</span> Intake mode
+            </h3>
+            <div class="mode-toggle" role="group" aria-label="Intake mode">
+              <input type="radio" id="modeGuided" name="intakeMode" value="guided" checked />
+              <label for="modeGuided">Guided Intake</label>
+              <input type="radio" id="modePaste" name="intakeMode" value="paste" />
+              <label for="modePaste">Paste Full Case History</label>
+            </div>
+            <p class="helper-text">Use structured guidance for step-by-step fields, or paste existing notes.</p>
+          </div>
+
+          <!-- Paste Full Case History -->
+          <div id="pasteIntake" style="display: none;">
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <span class="num">1</span> Case Summary
+              </h3>
+              <label for="pasteTitle">Title</label>
+              <input type="text" id="pasteTitle" placeholder="e.g., Mid-rack appetite drop after filter swap" />
+
+              <label for="pasteDateRange">Date range (optional)</label>
+              <input type="text" id="pasteDateRange" placeholder="e.g., Nov 12–Dec 3, 2025" />
+
+              <div class="field-grid">
+                <div>
+                  <label for="pasteSpecies">Species (optional)</label>
+                  <select id="pasteSpecies">
+                    <option value="">Select species</option>
+                    <option value="x_laevis">Xenopus laevis</option>
+                    <option value="x_tropicalis">Xenopus tropicalis</option>
+                    <option value="other">Other / not sure</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="pasteSystemType">System type (optional)</label>
+                  <select id="pasteSystemType">
+                    <option value="">Select system type</option>
+                    <option value="recirculating">Recirculating rack</option>
+                    <option value="static">Static tanks (manual changes)</option>
+                    <option value="flow_through">Flow-through / dump-and-fill</option>
+                    <option value="other">Other / mixed</option>
+                  </select>
+                </div>
+              </div>
+
+              <label for="pasteSymptomTags">Symptom tags (optional)</label>
+              <input type="text" id="pasteSymptomTags" placeholder="e.g., not eating, dull skin, redness" />
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <span class="num">2</span> Full Case History
+              </h3>
+              <label for="rawCaseText">Paste full case history (notes/email/Slack thread)</label>
+              <textarea id="rawCaseText" placeholder="Paste the full narrative here..."></textarea>
+              <label for="pasteFile">Upload .docx or .pdf (optional)</label>
+              <input type="file" id="pasteFile" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+              <p class="helper-text">We extract text locally; file is not uploaded.</p>
+              <div class="status-line" id="pasteFileStatus"></div>
+            </div>
+          </div>
+
+          <div id="guidedIntake">
+          <!-- Section 1: Colony & System -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">1</span> Colony & System
+            </h3>
+            <label for="colonyName">Colony / room name</label>
+            <input type="text" id="colonyName" placeholder="e.g., Room B-217, Rack 3" />
+
+            <label for="institution">Institution / lab</label>
+            <input type="text" id="institution" placeholder="e.g., Vanderbilt, Dewar Lab" />
+
+            <label for="systemType">System type</label>
+            <select id="systemType">
+              <option value="recirculating">Recirculating rack</option>
+              <option value="static">Static tanks (manual changes)</option>
+              <option value="flow_through">Flow-through / dump-and-fill</option>
+              <option value="other">Other / mixed</option>
+            </select>
+
+            <label for="approxFrogCount">Approximate number of frogs</label>
+            <input type="number" id="approxFrogCount" min="0" placeholder="e.g., 120" />
+          </div>
+
+          <!-- Section 2: Water Snapshot -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">2</span> Water Snapshot
+            </h3>
+            <div class="field-grid">
+              <div>
+                <label for="waterTemp">Water temperature (°C)</label>
+                <input type="number" id="waterTemp" step="0.1" placeholder="e.g., 20.5" />
+              </div>
+              <div>
+                <label for="ph">pH</label>
+                <input type="number" id="ph" step="0.1" placeholder="e.g., 7.2" />
+              </div>
+            </div>
+
+            <label for="conductivity">Conductivity or TDS (µS or ppm)</label>
+            <input type="text" id="conductivity" placeholder="e.g., 600 µS, or 'not measured'" />
+
+            <label for="ammoniaStatus">Ammonia (NH₃/NH₄⁺) status</label>
+            <select id="ammoniaStatus">
+              <option value="unknown">Unknown / not tested</option>
+              <option value="ok">Within acceptable range</option>
+              <option value="elevated">Elevated / concerning</option>
+            </select>
+
+            <label for="waterSource">Water source</label>
+            <select id="waterSource">
+              <option value="ro">RO / RO+DI</option>
+              <option value="city">Treated city water</option>
+              <option value="well">Well water</option>
+              <option value="mixed">Mixed / not sure</option>
+            </select>
+
+            <p class="helper-text">
+              Need help with RO + buffering? See the <a href="robuffer.html">ROBUFFER guide</a>.
+            </p>
+          </div>
+
+          <!-- Section 3: Recent Changes -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">3</span> Recent Changes (last 2–4 weeks)
+            </h3>
+            <textarea id="recentChanges" placeholder="New water source, new salt mix, equipment moves, density changes, feeding regime changes, room renovation, staff changes..."></textarea>
+          </div>
+
+          <!-- Section 4: Husbandry Snapshot (NEW) -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">4</span> Husbandry Snapshot
+            </h3>
+
+            <div class="field-grid">
+              <div>
+                <label for="densityBand">Density in the tank</label>
+                <select id="densityBand">
+                  <option value="unknown">Not sure</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div>
+                <label for="feedingVigor">Feeding vigor (last few feedings)</label>
+                <select id="feedingVigor">
+                  <option value="unknown">Not sure</option>
+                  <option value="low">Low (slow, many frogs ignore food)</option>
+                  <option value="medium">Medium (most respond, some slow)</option>
+                  <option value="high">High (rapid, competitive feeding)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <div>
+                <label for="skinState">Skin condition</label>
+                <select id="skinState">
+                  <option value="unknown">Not sure</option>
+                  <option value="shiny">Shiny / smooth</option>
+                  <option value="dull">Dull</option>
+                  <option value="lesions">Lesions / redness</option>
+                </select>
+              </div>
+              <div>
+                <label for="vibration">Room vibration / noise</label>
+                <select id="vibration">
+                  <option value="unknown">Not sure</option>
+                  <option value="quiet">Quiet</option>
+                  <option value="some_hum">Some hum</option>
+                  <option value="loud">Loud / constant</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <div>
+                <label for="flow">Flow & splash from inlets</label>
+                <select id="flow">
+                  <option value="unknown">Not sure</option>
+                  <option value="gentle">Gentle, no splash</option>
+                  <option value="splashy">Splashy / noisy</option>
+                </select>
+              </div>
+              <div>
+                <label for="disturbanceLevel">Room disturbance</label>
+                <select id="disturbanceLevel">
+                  <option value="unknown">Not sure</option>
+                  <option value="rare">Rare (few entries per day)</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="constant">Constant traffic</option>
+                </select>
+              </div>
+            </div>
+
+            <label for="phMeterCalibrated">pH meter calibration</label>
+            <select id="phMeterCalibrated">
+              <option value="unknown">Not sure</option>
+              <option value="yes">Recently calibrated</option>
+              <option value="no">Not calibrated recently</option>
+            </select>
+          </div>
+
+          <!-- Section 5: Feeding Behavior Video (NEW) -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">5</span> Feeding Behavior Video (optional)
+            </h3>
+            
+            <label for="feedingVideo" class="upload-zone" id="uploadZone">
+              <input type="file" id="feedingVideo" accept="video/mp4,video/quicktime,video/webm" />
+              <div class="icon">🎬</div>
+              <div class="label">Upload short feeding clip (30–60 seconds)</div>
+              <div class="sub">MP4, MOV, or WebM accepted</div>
+            </label>
+            <div class="upload-preview" id="uploadPreview">
+              <span id="uploadFileName"></span>
+            </div>
+            <p class="helper-text">
+              This helps compare your feeding response to internal reference videos. Start recording, add food, and keep filming until frogs either lose interest or food is gone.
+            </p>
+
+            <div class="field-grid">
+              <div>
+                <label for="timeSinceLastFeeding">Time since last feeding</label>
+                <select id="timeSinceLastFeeding">
+                  <option value="unknown">Not sure</option>
+                  <option value="12_24h">12–24 hours</option>
+                  <option value="24_48h">24–48 hours</option>
+                  <option value="gt_48h">>48 hours</option>
+                </select>
+              </div>
+              <div>
+                <label for="densityForVideo">Density in this tank (for video)</label>
+                <select id="densityForVideo">
+                  <option value="unknown">Not sure</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+
+            <label for="cameraPosition">Camera position</label>
+            <select id="cameraPosition">
+              <option value="unknown">Not sure</option>
+              <option value="top">Top</option>
+              <option value="side">Side</option>
+              <option value="angled">Angled</option>
+            </select>
+          </div>
+
+          <!-- Section 6: Problem Description -->
+          <div class="form-section">
+            <h3 class="form-section-title">
+              <span class="num">6</span> Describe the Problem
+            </h3>
+            <label for="problemDescription">Describe the problem in your own words</label>
+            <textarea id="problemDescription" placeholder="e.g., Frogs stopped eating after water change, redness on legs after moving to new rack, green water appeared suddenly..."></textarea>
+          </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="analyzeBtn">
+            Submit intake
+          </button>
+          <p class="disclaimer">
+            All processing happens in your browser. Not medical advice. If animals are crashing, escalate to veterinary support.
+          </p>
+        </form>
+      </div>
+
+      <!-- RIGHT COLUMN: AI Output -->
+      <div class="right-column">
+        <div class="ai-panel">
+          <div class="ai-panel-header">Situation Summary</div>
+          <div class="ai-panel-content empty" id="summaryPanel">
+            After you submit, a concise summary of the situation will appear here.
+          </div>
+        </div>
+
+        <div class="ai-panel">
+          <div class="ai-panel-header">Husbandry Focus Areas</div>
+          <div class="ai-panel-content empty" id="focusPanel">
+            Key husbandry levers likely worth attention will appear here.
+          </div>
+        </div>
+
+        <div class="ai-panel">
+          <div class="ai-panel-header">Suggested Next Steps</div>
+          <div class="ai-panel-content empty" id="stepsPanel">
+            Practical, non-diagnostic next steps for the coming days will be listed here.
+          </div>
+        </div>
+
+        <div class="ai-panel">
+          <div class="ai-panel-header">When to Escalate</div>
+          <div class="ai-panel-content empty" id="escalatePanel">
+            General guidance on when to contact veterinary staff appears here.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.4.21/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    // LocalStorage helpers
+    function loadProfile() {
+      try {
+        const raw = localStorage.getItem("frogSocialProfile");
+        return raw ? JSON.parse(raw) : {};
+      } catch { return {}; }
+    }
+
+    function loadCases() {
+      try {
+        const raw = localStorage.getItem("frogSocialCases");
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+
+    function saveCases(list) {
+      localStorage.setItem("frogSocialCases", JSON.stringify(list));
+    }
+
+    // Video upload handling
+    const feedingVideoInput = document.getElementById("feedingVideo");
+    const uploadZone = document.getElementById("uploadZone");
+    const uploadPreview = document.getElementById("uploadPreview");
+    const uploadFileName = document.getElementById("uploadFileName");
+    const guidedIntake = document.getElementById("guidedIntake");
+    const pasteIntake = document.getElementById("pasteIntake");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const pasteFileInput = document.getElementById("pasteFile");
+    const pasteFileStatus = document.getElementById("pasteFileStatus");
+    const rawCaseText = document.getElementById("rawCaseText");
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    function setIntakeMode(mode) {
+      const isPaste = mode === "paste";
+      guidedIntake.style.display = isPaste ? "none" : "block";
+      pasteIntake.style.display = isPaste ? "block" : "none";
+
+      guidedIntake.querySelectorAll("input, select, textarea").forEach(el => {
+        el.disabled = isPaste;
+      });
+      pasteIntake.querySelectorAll("input, select, textarea").forEach(el => {
+        el.disabled = !isPaste;
+      });
+
+      analyzeBtn.textContent = isPaste ? "Submit full case history" : "Submit intake";
+    }
+
+    document.querySelectorAll("input[name='intakeMode']").forEach(radio => {
+      radio.addEventListener("change", (e) => {
+        setIntakeMode(e.target.value);
+      });
+    });
+
+    setIntakeMode("guided");
+
+    feedingVideoInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        uploadFileName.textContent = `✓ ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`;
+        uploadPreview.classList.add("active");
+      } else {
+        uploadPreview.classList.remove("active");
+      }
+    });
+
+    function setPasteStatus(message) {
+      pasteFileStatus.textContent = message;
+    }
+
+    async function extractDocxText(arrayBuffer) {
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return result.value || "";
+    }
+
+    async function extractPdfText(arrayBuffer) {
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pages = [];
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum += 1) {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+        const pageText = content.items.map(item => item.str).join(" ");
+        pages.push(pageText.trim());
+      }
+      return pages.filter(Boolean).join("\n\n");
+    }
+
+    pasteFileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) {
+        setPasteStatus("");
+        return;
+      }
+
+      setPasteStatus("Extracting…");
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const ext = file.name.split(".").pop().toLowerCase();
+        let text = "";
+
+        if (ext === "docx") {
+          text = await extractDocxText(arrayBuffer);
+        } else if (ext === "pdf") {
+          text = await extractPdfText(arrayBuffer);
+        } else {
+          throw new Error("Unsupported file type");
+        }
+
+        if (!text.trim()) {
+          throw new Error("Empty extraction");
+        }
+
+        rawCaseText.value = text.trim();
+        setPasteStatus(`Loaded from ${file.name}`);
+      } catch (err) {
+        setPasteStatus("Couldn’t read that file. Please paste text instead.");
+      }
+    });
+
+    // Collect form data
+    function collectFormData() {
+      const mode = document.querySelector("input[name='intakeMode']:checked").value;
+      const systemTypeValue = mode === "paste"
+        ? document.getElementById("pasteSystemType").value
+        : document.getElementById("systemType").value;
+
+      return {
+        mode,
+        title: document.getElementById("pasteTitle").value.trim(),
+        dateRange: document.getElementById("pasteDateRange").value.trim(),
+        species: document.getElementById("pasteSpecies").value,
+        symptomTags: document.getElementById("pasteSymptomTags").value.trim(),
+        rawCaseText: document.getElementById("rawCaseText").value.trim(),
+
+        // Colony & system
+        colonyName: document.getElementById("colonyName").value.trim(),
+        institution: document.getElementById("institution").value.trim(),
+        systemType: systemTypeValue,
+        approxFrogCount: document.getElementById("approxFrogCount").value.trim(),
+        
+        // Water snapshot
+        waterTempC: document.getElementById("waterTemp").value.trim(),
+        ph: document.getElementById("ph").value.trim(),
+        conductivity: document.getElementById("conductivity").value.trim(),
+        ammoniaStatus: document.getElementById("ammoniaStatus").value,
+        waterSource: document.getElementById("waterSource").value,
+        
+        // Recent changes
+        recentChanges: document.getElementById("recentChanges").value.trim(),
+        
+        // Husbandry snapshot
+        husbandrySnapshot: {
+          densityBand: document.getElementById("densityBand").value,
+          feedingVigor: document.getElementById("feedingVigor").value,
+          skinState: document.getElementById("skinState").value,
+          vibration: document.getElementById("vibration").value,
+          flow: document.getElementById("flow").value,
+          disturbanceLevel: document.getElementById("disturbanceLevel").value,
+          phMeterCalibrated: document.getElementById("phMeterCalibrated").value
+        },
+        
+        // Feeding video metadata
+        feedingVideoMeta: {
+          feedingVideoUrl: feedingVideoInput.files[0] ? URL.createObjectURL(feedingVideoInput.files[0]) : null,
+          timeSinceLastFeeding: document.getElementById("timeSinceLastFeeding").value,
+          densityForVideo: document.getElementById("densityForVideo").value,
+          cameraPosition: document.getElementById("cameraPosition").value
+        },
+        
+        // Problem description
+        problemDescription: document.getElementById("problemDescription").value.trim()
+      };
+    }
+
+    // Generate situation summary
+    function makeSummary(data, profile) {
+      const lines = [];
+      
+      lines.push(`Colony: ${data.colonyName || "Unlabeled colony"}${data.institution ? ` at ${data.institution}` : ""}`);
+      lines.push(`System: ${formatSystemType(data.systemType)}`);
+      lines.push(`Approximate frogs: ${data.approxFrogCount || "not reported"}`);
+      lines.push("");
+      lines.push("Water snapshot:");
+      lines.push(`  • Temperature: ${data.waterTempC ? data.waterTempC + " °C" : "not reported"}`);
+      lines.push(`  • pH: ${data.ph || "not reported"}`);
+      lines.push(`  • Conductivity: ${data.conductivity || "not reported"}`);
+      lines.push(`  • Ammonia: ${formatAmmonia(data.ammoniaStatus)}`);
+      lines.push(`  • Source: ${formatWaterSource(data.waterSource)}`);
+      lines.push("");
+      lines.push("Husbandry snapshot:");
+      lines.push(`  • Density: ${formatValue(data.husbandrySnapshot.densityBand)}`);
+      lines.push(`  • Feeding vigor: ${formatValue(data.husbandrySnapshot.feedingVigor)}`);
+      lines.push(`  • Skin: ${formatValue(data.husbandrySnapshot.skinState)}`);
+      lines.push(`  • Vibration: ${formatValue(data.husbandrySnapshot.vibration)}`);
+      lines.push(`  • Flow: ${formatValue(data.husbandrySnapshot.flow)}`);
+      lines.push(`  • Disturbance: ${formatValue(data.husbandrySnapshot.disturbanceLevel)}`);
+      lines.push(`  • pH meter calibrated: ${formatValue(data.husbandrySnapshot.phMeterCalibrated)}`);
+      
+      if (data.recentChanges) {
+        lines.push("");
+        lines.push("Recent changes:");
+        lines.push(data.recentChanges);
+      }
+      
+      if (data.problemDescription) {
+        lines.push("");
+        lines.push("Problem description:");
+        lines.push(data.problemDescription);
+      }
+      
+      // Add submitter info
+      const submitBits = [];
+      if (profile.name) submitBits.push(profile.name);
+      if (profile.authorLabel) submitBits.push(`(${profile.authorLabel})`);
+      if (profile.institution) submitBits.push(`· ${profile.institution}`);
+      if (submitBits.length) {
+        lines.push("");
+        lines.push(`Submitted by: ${submitBits.join(" ")}`);
+      }
+      
+      return lines.join("\n");
+    }
+
+    // Generate focus areas based on husbandry master key
+    function makeFocusAreas(data) {
+      const items = [];
+      const hs = data.husbandrySnapshot;
+      
+      // Water source & buffering
+      if (data.waterSource === "ro") {
+        items.push("⚠️ Water source is RO/RO+DI — check that Ca/Mg and buffering (GH/KH) are being added. Pure RO can be too soft and unbuffered.");
+      }
+      
+      // pH calibration
+      if (hs.phMeterCalibrated === "no" || hs.phMeterCalibrated === "unknown") {
+        items.push("⚠️ pH meter calibration status uncertain. pH readings are unreliable without recent calibration.");
+      }
+      
+      // Temperature
+      if (data.waterTempC) {
+        const t = parseFloat(data.waterTempC);
+        if (t < 18) items.push("🌡️ Water temperature appears on the cool side (<18°C). Check for recent swings.");
+        else if (t > 24) items.push("🌡️ Water temperature is on the warm side (>24°C). Higher temps increase metabolic demand.");
+      }
+      
+      // Density + feeding pattern
+      if (hs.densityBand === "low" && hs.feedingVigor === "low") {
+        items.push("📊 Low density + low feeding often indicates under-stimulation rather than disease. Frogs take longer to find food when sparse.");
+      }
+      if (hs.densityBand === "high" && hs.feedingVigor === "high" && hs.skinState === "shiny") {
+        items.push("✓ High density + high feeding + shiny skin is a thriving baseline pattern.");
+      }
+      
+      // Skin condition
+      if (hs.skinState === "dull") {
+        items.push("👁️ Dull skin can indicate chronic stress, water quality issues, or underfeeding.");
+      }
+      if (hs.skinState === "lesions") {
+        items.push("🔴 Lesions/redness present — check for fighting over shelters, crowding, or water quality insults.");
+      }
+      
+      // Vibration & flow
+      if (hs.vibration === "loud") {
+        items.push("🔊 Loud/constant room vibration is a significant stressor even when chemistry is perfect.");
+      }
+      if (hs.flow === "splashy") {
+        items.push("💧 Splashy/noisy inlets can stress frogs. Consider adjusting nozzle distance or flow rate.");
+      }
+      
+      // Disturbance
+      if (hs.disturbanceLevel === "constant") {
+        items.push("🚪 Constant room traffic compounds other stressors. Consider limiting entries.");
+      }
+      
+      // Ammonia
+      if (data.ammoniaStatus === "elevated") {
+        items.push("⚠️ Elevated ammonia is a welfare red flag — address promptly via water changes and filter review.");
+      }
+      
+      if (items.length === 0) {
+        items.push("No major husbandry flags identified based on reported values. Continue monitoring.");
+      }
+      
+      return items.join("\n\n");
+    }
+
+    // Generate next steps
+    function makeNextSteps(data) {
+      const steps = [];
+      const hs = data.husbandrySnapshot;
+      
+      steps.push("1. Document baseline");
+      steps.push("   • Confirm current water parameters (temp, pH, ammonia)");
+      steps.push("   • Note densities and any high-load tanks");
+      steps.push("   • Record any changes in last 2–4 weeks");
+      steps.push("");
+      
+      steps.push("2. Stabilize environment");
+      steps.push("   • Avoid multiple simultaneous changes");
+      steps.push("   • Pick 1–2 high-yield adjustments at most");
+      
+      if (hs.phMeterCalibrated !== "yes") {
+        steps.push("   • Calibrate pH meter before trusting readings");
+      }
+      
+      if (data.waterSource === "ro") {
+        steps.push("   • Verify GH/KH buffering is adequate for RO water");
+      }
+      
+      steps.push("");
+      steps.push("3. Observe feeding behavior");
+      steps.push("   • Watch frogs eat (don't just toss food and leave)");
+      steps.push("   • Feed incrementally over ~10 minutes");
+      steps.push("   • Remove uneaten food promptly");
+      steps.push("");
+      
+      steps.push("4. Create a 3–7 day observation log");
+      steps.push("   • Track feeding response daily");
+      steps.push("   • Note any changes in behavior or appearance");
+      steps.push("   • Look for patterns before concluding");
+      
+      return steps.join("\n");
+    }
+
+    // Generate escalation guidance
+    function makeEscalation() {
+      const lines = [];
+      lines.push("This tool cannot diagnose disease. Consider contacting veterinary staff promptly if:");
+      lines.push("");
+      lines.push("• Mortality is rapidly escalating or animals are severely compromised");
+      lines.push("• Frogs show severe lethargy, loss of righting reflex, or gasping");
+      lines.push("• Lesions are widespread, ulcerative, or associated with systemic signs");
+      lines.push("• A large fraction of the colony is affected, not just one tank");
+      lines.push("• You suspect chemical exposure or equipment malfunction");
+      lines.push("");
+      lines.push("What helps the vet help you:");
+      lines.push("• A summary like this case view");
+      lines.push("• Photos/videos of representative animals");
+      lines.push("• Actual measured water parameters");
+      lines.push("• Timeline of when problems started vs. changes made");
+      return lines.join("\n");
+    }
+
+    // Formatting helpers
+    function formatSystemType(val) {
+      const map = {
+        recirculating: "Recirculating rack",
+        static: "Static tanks",
+        flow_through: "Flow-through",
+        other: "Other/mixed"
+      };
+      return map[val] || val;
+    }
+
+    function formatAmmonia(val) {
+      const map = {
+        unknown: "Unknown",
+        ok: "Within range",
+        elevated: "Elevated"
+      };
+      return map[val] || val;
+    }
+
+    function formatWaterSource(val) {
+      const map = {
+        ro: "RO/RO+DI",
+        city: "Treated city water",
+        well: "Well water",
+        mixed: "Mixed/unknown"
+      };
+      return map[val] || val;
+    }
+
+    function formatValue(val) {
+      if (val === "unknown") return "Not sure";
+      return val.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    // Form submission
+    const form = document.getElementById("intakeForm");
+    const summaryPanel = document.getElementById("summaryPanel");
+    const focusPanel = document.getElementById("focusPanel");
+    const stepsPanel = document.getElementById("stepsPanel");
+    const escalatePanel = document.getElementById("escalatePanel");
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      const profile = loadProfile();
+      const data = collectFormData();
+      
+      // Generate AI output
+      const summary = makeSummary(data, profile);
+      const focus = makeFocusAreas(data);
+      const steps = makeNextSteps(data);
+      const escalate = makeEscalation();
+      
+      // Update panels
+      summaryPanel.textContent = summary;
+      summaryPanel.classList.remove("empty");
+      
+      focusPanel.textContent = focus;
+      focusPanel.classList.remove("empty");
+      
+      stepsPanel.textContent = steps;
+      stepsPanel.classList.remove("empty");
+      
+      escalatePanel.textContent = escalate;
+      escalatePanel.classList.remove("empty");
+      
+      // Save case to localStorage
+      const caseId = Date.now();
+      const cases = loadCases();
+      const snippetSource = data.mode === "paste" ? data.rawCaseText : data.problemDescription;
+      cases.unshift({
+        id: caseId,
+        mode: data.mode,
+        title: data.title,
+        colonyName: data.colonyName || "",
+        institution: data.institution || "",
+        systemType: data.systemType,
+        problemDescription: data.problemDescription,
+        snippet: snippetSource ? snippetSource.slice(0, 140) : "",
+        raw_case_text: data.rawCaseText,
+        createdAt: new Date().toISOString(),
+        summary: data.mode === "paste" ? "" : summary,
+        status: "open",
+        resolution: null,
+        followUp: null,
+        linkedThreadId: null,
+        submittedByName: profile.name || "",
+        submittedByLabel: profile.authorLabel || "",
+        submittedByInstitution: profile.institution || "",
+        intakePayload: data
+      });
+      saveCases(cases);
+      
+      // Scroll to results on mobile
+      if (window.innerWidth < 1024) {
+        summaryPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  </script>
+</body>
+</html>

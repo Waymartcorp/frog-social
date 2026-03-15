@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · Case History</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --app-shell-bg: #050810;
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --card-border: #1F2937;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
+      --warning: #F97316;
+      --danger: #EF4444;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: var(--app-body-bg);
+      color: var(--primary-text);
+      min-height: 100vh;
+    }
+
+    /* Navigation */
+    .nav-bar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
+    }
+    .nav-brand span { font-size: 1.25rem; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-links a {
+      font-size: 0.875rem;
+      color: var(--secondary-text);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      transition: all 0.15s ease;
+    }
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--primary-text);
+    }
+    .nav-links a.active {
+      color: #6EE7B7;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .nav-signout {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .nav-signout:hover { background: #334155; }
+
+    /* Page container */
+    .page-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+    .page-header {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .page-header-text h1 {
+      font-size: 1.875rem;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+    }
+    .page-header-text p {
+      color: var(--secondary-text);
+      font-size: 0.9rem;
+      margin: 0;
+      max-width: 600px;
+    }
+
+    /* Filter tabs */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 4px;
+      border-radius: 12px;
+    }
+    .filter-tab {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--secondary-text);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-tab:hover {
+      color: var(--primary-text);
+    }
+    .filter-tab.active {
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--accent-green);
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      background: rgba(17, 24, 39, 0.7);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 16px 24px;
+      min-width: 140px;
+    }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--primary-text);
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4px;
+    }
+    .stat-item.open .stat-value { color: var(--warning); }
+    .stat-item.resolved .stat-value { color: var(--accent-green); }
+
+    /* Case list */
+    .case-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Case card */
+    .case-card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      transition: border-color 0.15s;
+    }
+    .case-card:hover {
+      border-color: rgba(52, 211, 153, 0.4);
+    }
+    .case-card.resolved {
+      border-left: 3px solid var(--accent-green);
+    }
+    .case-card.open {
+      border-left: 3px solid var(--warning);
+    }
+
+    .case-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .case-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
+      margin: 0;
+    }
+    .case-meta {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      margin-top: 4px;
+    }
+    .case-status {
+      font-size: 0.7rem;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .case-status.open {
+      background: rgba(251, 146, 60, 0.2);
+      color: #FB923C;
+    }
+    .case-status.resolved {
+      background: rgba(52, 211, 153, 0.2);
+      color: var(--accent-green);
+    }
+    .case-status.needs_followup {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent-cyan);
+    }
+
+    .case-description {
+      font-size: 0.875rem;
+      color: var(--secondary-text);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .case-detail-hint {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      margin-top: -6px;
+      margin-bottom: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Resolution section */
+    .resolution-section {
+      background: rgba(52, 211, 153, 0.08);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-top: 16px;
+    }
+    .resolution-header {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-green);
+      margin-bottom: 8px;
+    }
+    .resolution-text {
+      font-size: 0.85rem;
+      color: var(--primary-text);
+      line-height: 1.5;
+    }
+    .follow-up-section {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(52, 211, 153, 0.2);
+    }
+    .follow-up-header {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-cyan);
+      margin-bottom: 6px;
+    }
+    .follow-up-text {
+      font-size: 0.8rem;
+      color: var(--secondary-text);
+    }
+
+    /* Case actions */
+    .case-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .btn-secondary {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-secondary:hover {
+      background: #334155;
+    }
+    .btn-resolve {
+      background: var(--accent-green);
+      color: #0F172A;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .btn-resolve:hover {
+      background: #6EE7B7;
+    }
+
+    /* Resolution form (modal-like inline) */
+    .resolution-form {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 16px;
+      display: none;
+    }
+    .resolution-form.active {
+      display: block;
+    }
+    .resolution-form label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--secondary-text);
+      margin-bottom: 6px;
+      margin-top: 12px;
+    }
+    .resolution-form label:first-child {
+      margin-top: 0;
+    }
+    .resolution-form textarea,
+    .resolution-form input {
+      width: 100%;
+      background: #0F172A;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: var(--primary-text);
+    }
+    .resolution-form textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    .resolution-form textarea:focus,
+    .resolution-form input:focus {
+      outline: none;
+      border-color: var(--accent-green);
+    }
+    .resolution-form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    /* Tags row */
+    .case-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+    .tag.system {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+    }
+    .tag.husbandry {
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--accent-green);
+    }
+    .tag.social {
+      background: rgba(251, 146, 60, 0.15);
+      color: var(--warning);
+    }
+    .tag.paste {
+      background: rgba(148, 163, 184, 0.2);
+      color: #CBD5F5;
+    }
+
+    .case-detail {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-top: 14px;
+      display: none;
+    }
+    .case-detail-header {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--secondary-text);
+      margin-bottom: 8px;
+    }
+    .case-detail-body {
+      font-size: 0.85rem;
+      color: var(--primary-text);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .case-card.expanded .case-detail {
+      display: block;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--secondary-text);
+    }
+    .empty-state .icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+    .empty-state h3 {
+      font-size: 1.1rem;
+      color: var(--primary-text);
+      margin: 0 0 8px 0;
+    }
+    .empty-state p {
+      font-size: 0.9rem;
+      margin: 0 0 20px 0;
+    }
+    .btn-primary {
+      background: var(--accent-green);
+      color: #0F172A;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-primary:hover {
+      background: #6EE7B7;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="nav-bar">
+    <div class="nav-brand">
+      <span>🐸</span>
+      Frog Social
+    </div>
+    <div class="nav-links">
+      <a href="case-intake.html">Describe a Problem</a>
+      <a href="case-history.html" class="active">Case History</a>
+      <a href="social.html">Social Feed</a>
+      <a href="account.html">Profile</a>
+      <a href="system-setup.html">New System Setup</a>
+    </div>
+    <a href="index.html" class="nav-signout">Sign Out</a>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-header-text">
+        <h1>Case History</h1>
+        <p>Track cases from intake through resolution. Resolved cases with detailed notes become learning resources for future troubleshooting.</p>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">All</button>
+        <button class="filter-tab" data-filter="open">Open</button>
+        <button class="filter-tab" data-filter="resolved">Resolved</button>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-item">
+        <div class="stat-value" id="statTotal">0</div>
+        <div class="stat-label">Total Cases</div>
+      </div>
+      <div class="stat-item open">
+        <div class="stat-value" id="statOpen">0</div>
+        <div class="stat-label">Open</div>
+      </div>
+      <div class="stat-item resolved">
+        <div class="stat-value" id="statResolved">0</div>
+        <div class="stat-label">Resolved</div>
+      </div>
+    </div>
+
+    <!-- Case list -->
+    <div class="case-list" id="caseList">
+      <!-- Populated dynamically -->
+    </div>
+  </div>
+
+  <script>
+    // LocalStorage helpers
+    function loadCases() {
+      try {
+        const raw = localStorage.getItem("frogSocialCases");
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+
+    function saveCases(cases) {
+      localStorage.setItem("frogSocialCases", JSON.stringify(cases));
+    }
+
+    function loadSocial() {
+      try {
+        const raw = localStorage.getItem("frogSocialStream");
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+
+    // Current filter
+    let currentFilter = "all";
+
+    // Format date
+    function formatDate(isoString) {
+      const date = new Date(isoString);
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    // Get linked messages count for a case
+    function getLinkedMessagesCount(caseId) {
+      const messages = loadSocial();
+      return messages.filter(m => m.linkedCaseId == caseId).length;
+    }
+
+    // Update stats
+    function updateStats() {
+      const cases = loadCases();
+      document.getElementById("statTotal").textContent = cases.length;
+      document.getElementById("statOpen").textContent = cases.filter(c => c.status !== "resolved").length;
+      document.getElementById("statResolved").textContent = cases.filter(c => c.status === "resolved").length;
+    }
+
+    // Render cases
+    function renderCases() {
+      const container = document.getElementById("caseList");
+      let cases = loadCases();
+
+      // Apply filter
+      if (currentFilter === "open") {
+        cases = cases.filter(c => c.status !== "resolved");
+      } else if (currentFilter === "resolved") {
+        cases = cases.filter(c => c.status === "resolved");
+      }
+
+      if (!cases.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">📋</div>
+            <h3>No cases ${currentFilter !== 'all' ? `(${currentFilter})` : ''} yet</h3>
+            <p>Cases created from "Describe a Problem" will appear here.</p>
+            <a href="case-intake.html" class="btn-primary">Describe a Problem</a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = cases.map(c => {
+        const linkedCount = getLinkedMessagesCount(c.id);
+        const statusClass = c.status || "open";
+        
+        // Tags
+        let tags = '';
+        if (c.systemType) {
+          tags += `<span class="tag system">${formatSystemType(c.systemType)}</span>`;
+        }
+        if (linkedCount > 0) {
+          tags += `<span class="tag social">💬 ${linkedCount} message${linkedCount > 1 ? 's' : ''}</span>`;
+        }
+        if (c.mode === "paste") {
+          tags += `<span class="tag paste">Full Paste</span>`;
+        }
+
+        const descriptionText = c.problemDescription || c.snippet || (!c.summary && c.raw_case_text ? c.raw_case_text.slice(0, 140) : "");
+        const detailText = c.raw_case_text || c.summary || c.problemDescription || c.snippet || "";
+
+        // Resolution section
+        let resolutionHtml = '';
+        if (c.status === "resolved" && c.resolution) {
+          resolutionHtml = `
+            <div class="resolution-section">
+              <div class="resolution-header">✓ Resolution</div>
+              <div class="resolution-text">${escapeHtml(c.resolution)}</div>
+              ${c.followUp ? `
+                <div class="follow-up-section">
+                  <div class="follow-up-header">Follow-up</div>
+                  <div class="follow-up-text">${escapeHtml(c.followUp)}</div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        // Actions based on status
+        let actionsHtml = '';
+        if (c.status !== "resolved") {
+          actionsHtml = `
+            <div class="case-actions" onclick="event.stopPropagation();">
+              <button class="btn-resolve" onclick="toggleResolutionForm('${c.id}'); event.stopPropagation();">Mark Resolved</button>
+              <button class="btn-secondary" onclick="viewOnSocial('${c.id}'); event.stopPropagation();">Discuss on Social</button>
+            </div>
+            <div class="resolution-form" id="resolution-form-${c.id}" onclick="event.stopPropagation();">
+              <label>What resolved the issue?</label>
+              <textarea id="resolution-text-${c.id}" placeholder="e.g., Increased density, adjusted ROBUFFER, calmed vibration; appetite returned within 3 days."></textarea>
+              <label>Follow-up notes (optional)</label>
+              <textarea id="followup-text-${c.id}" placeholder="e.g., Frogs returned to spawning after 2 weeks, body condition improved."></textarea>
+              <div class="resolution-form-actions">
+                <button class="btn-resolve" onclick="saveResolution('${c.id}'); event.stopPropagation();">Save Resolution</button>
+                <button class="btn-secondary" onclick="toggleResolutionForm('${c.id}'); event.stopPropagation();">Cancel</button>
+              </div>
+            </div>
+          `;
+        } else {
+          actionsHtml = `
+            <div class="case-actions" onclick="event.stopPropagation();">
+              <button class="btn-secondary" onclick="viewOnSocial('${c.id}'); event.stopPropagation();">View on Social</button>
+              <button class="btn-secondary" onclick="reopenCase('${c.id}'); event.stopPropagation();">Re-open Case</button>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="case-card ${statusClass}" id="case-card-${c.id}" onclick="toggleCaseDetail('${c.id}')">
+            <div class="case-header">
+              <div>
+                <h3 class="case-title">${escapeHtml(c.title || c.colonyName) || "Unlabeled Case"}${c.institution ? ` @ ${escapeHtml(c.institution)}` : ''}</h3>
+                <div class="case-meta">
+                  Created ${formatDate(c.createdAt)}
+                  ${c.submittedByName ? ` · by ${escapeHtml(c.submittedByName)}` : ''}
+                </div>
+              </div>
+              <span class="case-status ${statusClass}">${statusClass.replace('_', ' ')}</span>
+            </div>
+            ${tags ? `<div class="case-tags">${tags}</div>` : ''}
+            <div class="case-description">
+              ${escapeHtml(descriptionText || "No description provided")}
+            </div>
+            <div class="case-detail-hint">View details</div>
+            ${resolutionHtml}
+            ${detailText ? `
+              <div class="case-detail">
+                <div class="case-detail-header">Case detail</div>
+                <div class="case-detail-body">${escapeHtml(detailText)}</div>
+              </div>
+            ` : ''}
+            ${actionsHtml}
+          </div>
+        `;
+      }).join("");
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatSystemType(val) {
+      const map = {
+        recirculating: "Recirculating",
+        static: "Static",
+        flow_through: "Flow-through",
+        other: "Other"
+      };
+      return map[val] || val;
+    }
+
+    // Toggle resolution form
+    window.toggleResolutionForm = function(caseId) {
+      const form = document.getElementById(`resolution-form-${caseId}`);
+      form.classList.toggle("active");
+    };
+
+    window.toggleCaseDetail = function(caseId) {
+      const card = document.getElementById(`case-card-${caseId}`);
+      if (card) {
+        card.classList.toggle("expanded");
+      }
+    };
+
+    // Save resolution
+    window.saveResolution = function(caseId) {
+      const resolution = document.getElementById(`resolution-text-${caseId}`).value.trim();
+      const followUp = document.getElementById(`followup-text-${caseId}`).value.trim();
+
+      if (!resolution) {
+        alert("Please describe what resolved the issue.");
+        return;
+      }
+
+      const cases = loadCases();
+      const idx = cases.findIndex(c => c.id == caseId);
+      if (idx !== -1) {
+        cases[idx].status = "resolved";
+        cases[idx].resolution = resolution;
+        cases[idx].followUp = followUp || null;
+        cases[idx].resolvedAt = new Date().toISOString();
+        saveCases(cases);
+        renderCases();
+        updateStats();
+      }
+    };
+
+    // Reopen case
+    window.reopenCase = function(caseId) {
+      const cases = loadCases();
+      const idx = cases.findIndex(c => c.id == caseId);
+      if (idx !== -1) {
+        cases[idx].status = "open";
+        saveCases(cases);
+        renderCases();
+        updateStats();
+      }
+    };
+
+    // View on social
+    window.viewOnSocial = function(caseId) {
+      // Store the case ID so social page can pick it up
+      sessionStorage.setItem("linkToCaseId", caseId);
+      window.location.href = "social.html";
+    };
+
+    // Filter tabs
+    document.querySelectorAll(".filter-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".filter-tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        currentFilter = tab.dataset.filter;
+        renderCases();
+      });
+    });
+
+    // Initialize
+    updateStats();
+    renderCases();
+  </script>
+</body>
+</html>

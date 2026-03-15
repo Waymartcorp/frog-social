@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --app-shell-bg: #050810;
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --card-border: #1F2937;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
+      --warning: #F97316;
+      --danger: #EF4444;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: var(--app-body-bg);
+      color: var(--primary-text);
+      min-height: 100vh;
+    }
+
+    /* Navigation */
+    .nav-bar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
+    }
+    .nav-brand span { font-size: 1.25rem; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-links a {
+      font-size: 0.875rem;
+      color: var(--secondary-text);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      transition: all 0.15s ease;
+    }
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--primary-text);
+    }
+    .nav-links a.active {
+      color: #6EE7B7;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .nav-signout {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .nav-signout:hover { background: #334155; }
+
+    /* Page container */
+    .page-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    /* Welcome header */
+    .welcome-header {
+      margin-bottom: 32px;
+    }
+    .welcome-header h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin: 0 0 12px 0;
+    }
+    .welcome-header p {
+      color: var(--secondary-text);
+      font-size: 1rem;
+      margin: 0;
+      max-width: 700px;
+      line-height: 1.6;
+    }
+
+    /* Tile grid */
+    .tile-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    /* Tiles */
+    .tile {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+    .tile:hover {
+      transform: translateY(-2px);
+      border-color: rgba(52, 211, 153, 0.4);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(52, 211, 153, 0.1);
+    }
+    .tile-tag {
+      display: inline-flex;
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--accent-green);
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+      width: fit-content;
+    }
+    .tile-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--primary-text);
+      margin-bottom: 8px;
+    }
+    .tile-desc {
+      font-size: 0.875rem;
+      color: var(--secondary-text);
+      line-height: 1.5;
+      flex: 1;
+    }
+    .tile-link {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--accent-green);
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tile-link::after {
+      content: "→";
+    }
+    .tile.featured {
+      grid-column: span 2;
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(56, 189, 248, 0.1));
+      border-color: rgba(52, 211, 153, 0.3);
+    }
+    @media (max-width: 700px) {
+      .tile.featured { grid-column: span 1; }
+    }
+
+    /* Footer note */
+    .footer-note {
+      margin-top: 32px;
+      padding: 16px 20px;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      font-size: 0.8rem;
+      color: var(--secondary-text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="nav-bar">
+    <div class="nav-brand">
+      <span>🐸</span>
+      Frog Social
+    </div>
+    <div class="nav-links">
+      <a href="case-intake.html">Describe a Problem</a>
+      <a href="case-history.html">Case History</a>
+      <a href="social.html">Social Feed</a>
+      <a href="account.html">Profile</a>
+      <a href="system-setup.html">New System Setup</a>
+    </div>
+    <a href="index.html" class="nav-signout">Sign Out</a>
+  </nav>
+
+  <div class="page-container">
+    <div class="welcome-header">
+      <h1>Welcome to Frog Social</h1>
+      <p>
+        A shared, husbandry-aware companion for Xenopus colonies and bench work. Describe problems, track cases, share observations, and learn from resolved cases across the community.
+      </p>
+    </div>
+
+    <div class="tile-grid">
+      <!-- Featured: Describe a Problem -->
+      <a class="tile featured" href="case-intake.html">
+        <span class="tile-tag">Core Workflow</span>
+        <div class="tile-title">Describe a Problem</div>
+        <div class="tile-desc">
+          Describe any Xenopus issue: colony health, water/system questions, feeding behavior. Get structured AI analysis with husbandry focus areas and next steps.
+        </div>
+        <span class="tile-link">Open case intake</span>
+      </a>
+
+      <!-- Case History -->
+      <a class="tile" href="case-history.html">
+        <span class="tile-tag">Case Archive</span>
+        <div class="tile-title">Case History</div>
+        <div class="tile-desc">
+          Track cases from intake to resolution. Resolved cases with detailed notes become learning resources for future troubleshooting.
+        </div>
+        <span class="tile-link">View cases</span>
+      </a>
+
+      <!-- Social Feed -->
+      <a class="tile" href="social.html">
+        <span class="tile-tag">Discussion</span>
+        <div class="tile-title">Social Feed</div>
+        <div class="tile-desc">
+          Share observations, discuss cases, and learn from the community. Link posts to cases to build institutional memory.
+        </div>
+        <span class="tile-link">Join conversation</span>
+      </a>
+
+      <!-- Profile -->
+      <a class="tile" href="account.html">
+        <span class="tile-tag">Identity</span>
+        <div class="tile-title">My Profile</div>
+        <div class="tile-desc">
+          Set your name, role, institution, and author label. Your profile is used for case attribution and social posts.
+        </div>
+        <span class="tile-link">Edit profile</span>
+      </a>
+
+      <!-- Colony Register -->
+      <a class="tile" href="colony-register.html">
+        <span class="tile-tag">Colony Map</span>
+        <div class="tile-title">Colony Registration</div>
+        <div class="tile-desc">
+          Register rooms, racks, and systems so case histories and discussions can be anchored to real, named colonies.
+        </div>
+        <span class="tile-link">View colonies</span>
+      </a>
+
+      <!-- System Setup -->
+      <a class="tile" href="system-setup.html">
+        <span class="tile-tag">New Systems</span>
+        <div class="tile-title">New System Setup</div>
+        <div class="tile-desc">
+          Step-by-step checklists for new Xenopus system setup: planning, cycling, stocking, and the first 90 days.
+        </div>
+        <span class="tile-link">View guide</span>
+      </a>
+
+      <!-- LabWorks -->
+      <a class="tile" href="labworks.html">
+        <span class="tile-tag">Bench Protocols</span>
+        <div class="tile-title">LabWorks</div>
+        <div class="tile-desc">
+          Bench-side notes on IVF, frozen sperm, oocytes, ion channels, extract preparation, and early embryology.
+        </div>
+        <span class="tile-link">Open LabWorks</span>
+      </a>
+    </div>
+
+    <div class="footer-note">
+      Prototype note: All data is stored locally in your browser. Future versions will add secure accounts, institutional views, and shared case archives.
+    </div>
+  </div>
+
+  <script>
+    // Simple check: if no profile exists, maybe nudge them to login (optional)
+    const profile = localStorage.getItem("frogSocialProfile");
+    if (!profile) {
+      console.log("No user profile found. They might be visiting directly.");
+    }
+  </script>
+</body>
+</html>

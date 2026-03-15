@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · New System Setup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --app-shell-bg: #050810;
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --card-border: #1F2937;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
+      --warning: #F97316;
+      --danger: #EF4444;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: var(--app-body-bg);
+      color: var(--primary-text);
+      min-height: 100vh;
+    }
+
+    /* Navigation */
+    .nav-bar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
+    }
+    .nav-brand span { font-size: 1.25rem; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-links a {
+      font-size: 0.875rem;
+      color: var(--secondary-text);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      transition: all 0.15s ease;
+    }
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--primary-text);
+    }
+    .nav-links a.active {
+      color: #6EE7B7;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .nav-signout {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .nav-signout:hover { background: #334155; }
+
+    /* Page container */
+    .page-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+    .page-header {
+      margin-bottom: 24px;
+    }
+    .page-header .tag {
+      display: inline-flex;
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--accent-green);
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+    .page-header h1 {
+      font-size: 1.875rem;
+      font-weight: 600;
+      margin: 0 0 12px 0;
+    }
+    .page-header p {
+      color: var(--secondary-text);
+      font-size: 0.95rem;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* Cards */
+    .card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 24px 28px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      margin-bottom: 20px;
+    }
+
+    /* Section headers */
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--primary-text);
+      margin: 32px 0 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2:first-child { margin-top: 0; }
+    h2 .num {
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--accent-green);
+      font-size: 0.8rem;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Section boxes */
+    .section-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-top: 12px;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
+      margin: 0 0 12px 0;
+    }
+    .section-box h3:not(:first-child) {
+      margin-top: 20px;
+    }
+
+    /* Lists */
+    ul {
+      margin: 0;
+      padding-left: 22px;
+    }
+    li {
+      font-size: 0.9rem;
+      color: var(--secondary-text);
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    li:last-child { margin-bottom: 0; }
+
+    /* Small notes */
+    .small-note {
+      font-size: 0.8rem;
+      color: var(--secondary-text);
+      margin-top: 14px;
+      padding: 12px 16px;
+      background: rgba(56, 189, 248, 0.08);
+      border-left: 3px solid var(--accent-cyan);
+      border-radius: 0 8px 8px 0;
+    }
+
+    /* Links */
+    a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Checklist items */
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .checklist-item:last-child { margin-bottom: 0; }
+    .checklist-box {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .checklist-box:hover {
+      border-color: var(--accent-green);
+    }
+    .checklist-box.checked {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+    }
+    .checklist-box.checked::after {
+      content: "✓";
+      color: #0F172A;
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+    .checklist-text {
+      font-size: 0.9rem;
+      color: var(--secondary-text);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="nav-bar">
+    <div class="nav-brand">
+      <span>🐸</span>
+      Frog Social
+    </div>
+    <div class="nav-links">
+      <a href="case-intake.html">Describe a Problem</a>
+      <a href="case-history.html">Case History</a>
+      <a href="social.html">Social Feed</a>
+      <a href="account.html">Profile</a>
+      <a href="system-setup.html" class="active">New System Setup</a>
+    </div>
+    <a href="index.html" class="nav-signout">Sign Out</a>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-header">
+      <span class="tag">System Setup</span>
+      <h1>New Xenopus System Setup</h1>
+      <p>
+        This is a structured checklist for bringing a new Xenopus system online: planning, cycling, stocking, and the first 90 days. The goal is a stable, readable environment before stocking the research cohort.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">1</span> Planning & Design</h2>
+      <div class="section-box">
+        <h3>Decisions to confirm before you buy or install</h3>
+        <ul>
+          <li>Recirculating rack vs static or dump-and-fill tanks (or a hybrid)</li>
+          <li>Intended capacity: number of adult frogs, breeding intensity, embryo work</li>
+          <li>Room: temperature band, HVAC stability, light cycle, vibration sources</li>
+          <li>Water source: municipal, RO + reconstitution, or well water</li>
+          <li>Drain / waste handling and spill management</li>
+        </ul>
+        <div class="small-note">
+          A simple one-page "system intent" document (room, water, capacity, use-case) is worth keeping and attaching to the colony register entry.
+        </div>
+      </div>
+
+      <h2><span class="num">2</span> Hardware & Installation</h2>
+      <div class="section-box">
+        <h3>Rack / tank hardware</h3>
+        <ul>
+          <li>Confirm materials are amphibian-appropriate (no untreated copper or mystery metals)</li>
+          <li>Check all joints, valves, and unions for leak-free operation before adding animals</li>
+          <li>Verify that flow to each tank is gentle and adjustable</li>
+          <li>Position airlines, stones, and returns to avoid strong jets on frogs</li>
+        </ul>
+
+        <h3>Filters & media</h3>
+        <ul>
+          <li>Assemble mechanical, biological, and (if used) carbon/chemical stages</li>
+          <li>Rinse new media to remove fines and dust before cycling</li>
+          <li>Make sure there is easy access for routine cleaning without dismantling the system</li>
+        </ul>
+      </div>
+
+      <h2><span class="num">3</span> Water Preparation & Cycling</h2>
+      <div class="section-box">
+        <h3>Initial fill</h3>
+        <ul>
+          <li>Decide on salt formulation / conductivity band for this system</li>
+          <li>Fill with conditioned source water (e.g., dechlorinated municipal, RO + salts)</li>
+          <li>Bring system to target temperature and pH range before cycling</li>
+        </ul>
+
+        <h3>Biological cycling</h3>
+        <ul>
+          <li>Seed biofilters with a trusted inoculum if available, or allow slow fishless cycling</li>
+          <li>Monitor ammonia, nitrite, and nitrate over days to weeks</li>
+          <li>Only consider the system "ready" once ammonia and nitrite are consistently zero or near zero under a test load</li>
+        </ul>
+
+        <div class="small-note">
+          Do not rush cycling just to receive animals; it is better to adjust delivery dates than to start with an unstable biofilter.
+        </div>
+      </div>
+
+      <h2><span class="num">4</span> Stocking Strategy</h2>
+      <div class="section-box">
+        <h3>Initial animals</h3>
+        <ul>
+          <li>Start with a modest number of frogs relative to system capacity</li>
+          <li>Group by size and sex to avoid extreme dominance or overcrowding in any single tank</li>
+          <li>Log source (vendor or in-house), dates, and tank assignments from day one</li>
+        </ul>
+
+        <h3>Quarantine approach</h3>
+        <ul>
+          <li>Consider a dedicated quarantine zone or rack for new arrivals</li>
+          <li>Establish separate equipment (nets, siphons) for quarantine vs main system</li>
+          <li>Record any procedures (swabs, sampling) without letting them dominate welfare decisions</li>
+        </ul>
+      </div>
+
+      <h2><span class="num">5</span> First 90 Days: Monitoring & Adjustments</h2>
+      <div class="section-box">
+        <h3>Parameters to track</h3>
+        <ul>
+          <li>Temperature, pH, and conductivity at least weekly (more often at first)</li>
+          <li>Ammonia/nitrite after any major change or new stocking event</li>
+          <li>Feeding patterns and waste load (uneaten food, feces buildup)</li>
+          <li>Behavior: hiding, floating, aggression, abnormal movement</li>
+        </ul>
+
+        <h3>Adjustments</h3>
+        <ul>
+          <li>Make small, reversible changes rather than multiple big shifts at once</li>
+          <li>Document what you changed, when, and why in the colony register or notes</li>
+          <li>Use Frog Social's case-intake when you see patterns you don't yet understand</li>
+        </ul>
+      </div>
+
+      <h2><span class="num">6</span> Linking Setup to Frog Social</h2>
+      <div class="section-box">
+        <ul>
+          <li>Create a <strong>Colony / Room</strong> entry for this system in the colony register</li>
+          <li>Attach basic setup notes (water recipe, target ranges, rack type, room ID)</li>
+          <li>When issues arise (mortality, behavior, embryo survival, extracts, oocytes), use <a href="case-intake.html">Describe a Problem</a> and link back to this system</li>
+        </ul>
+        <div class="small-note">
+          Over time, new-system setups and their case histories become a shared library: what worked, what drifted, and how labs resolved problems without overreacting to isolated pathogen findings.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Interactive checklist (optional enhancement)
+    document.querySelectorAll('.checklist-box').forEach(box => {
+      box.addEventListener('click', () => {
+        box.classList.toggle('checked');
+      });
+    });
+  </script>
+</body>
+</html>
