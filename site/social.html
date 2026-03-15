@@ -60,8 +60,81 @@
     button:hover{background:#0369a1;}
     .social-message-meta{font-size:0.75rem;color:#6b7280;margin-bottom:2px;}
     .social-message-text{font-size:0.8rem;color:#111827;margin-bottom:6px;}
+    .two-column{
+      display:grid;
+      grid-template-columns:minmax(0,1.4fr) minmax(260px,0.9fr);
+      gap:16px;
+      margin-top:12px;
+      align-items:start;
+    }
+    .sidebar{
+      background:#f9fafb;
+      border:1px solid var(--border-soft);
+      border-radius:12px;
+      padding:10px 12px;
+    }
+    .sidebar h2{
+      margin:0 0 8px 0;
+      font-size:0.95rem;
+      color:#111827;
+    }
+    .obs-section{
+      border-top:1px solid #e5e7eb;
+      padding-top:8px;
+      margin-top:8px;
+    }
+    .obs-section:first-of-type{
+      border-top:none;
+      padding-top:0;
+      margin-top:0;
+    }
+    .obs-title{
+      margin:0 0 4px 0;
+      font-size:0.78rem;
+      color:#374151;
+      font-weight:600;
+      letter-spacing:0.01em;
+    }
+    .obs-list{
+      margin:0;
+      padding-left:18px;
+      color:#4b5563;
+      font-size:0.8rem;
+      line-height:1.45;
+    }
+    .obs-list li{margin-bottom:3px;}
+    .obs-placeholder{
+      margin:0;
+      color:#6b7280;
+      font-size:0.8rem;
+      line-height:1.4;
+    }
+    .thread-row{
+      display:flex;
+      gap:6px;
+      margin-top:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .thread-row input{
+      min-width:180px;
+      flex:1;
+      padding:7px 9px;
+      border-radius:9px;
+      border:1px solid #d1d5db;
+      background:#f9fafb;
+      font-size:0.83rem;
+    }
+    .secondary-btn{
+      background:#e5e7eb;
+      color:#111827;
+    }
+    .secondary-btn:hover{background:#d1d5db;}
     hr{border:none;border-top:1px solid #e5e7eb;margin:6px 0;}
-    @media(max-width:800px){.container{padding:14px;}}
+    @media(max-width:900px){
+      .container{padding:14px;}
+      .two-column{grid-template-columns:minmax(0,1fr);}
+    }
   </style>
 </head>
 <body>
@@ -84,26 +157,65 @@
       <div class="card">
         <h1>Frog Social Stream (local preview)</h1>
         <p>
-          Local-only prototype of the social layer – notes linked to this browser.
-          In a future version this becomes a multi-user, permissioned discussion space.
+          Simple thread view with running observations from backend recap.
+          Main message flow remains lightweight while the case summary appears in the right column.
         </p>
 
-        <div class="social-input-row">
-          <input id="socialText" type="text" placeholder="Share an observation, note, or question..." />
-          <button type="button" id="socialPostBtn">Post</button>
-        </div>
-        <p style="font-size:0.78rem;color:#6b7280;margin-top:6px;">
-          Messages here are stored only in this browser. They are not synced or shared yet.
-        </p>
+        <div class="two-column">
+          <div>
+            <div class="thread-row">
+              <input id="threadIdInput" type="text" value="smoke-test" placeholder="Thread ID" />
+              <button type="button" id="loadThreadBtn" class="secondary-btn">Load Thread</button>
+            </div>
 
-        <div id="socialStreamBox" class="panel">
-          No messages yet. Be the first to post a note.
+            <div class="social-input-row">
+              <input id="socialText" type="text" placeholder="Share an observation, note, or question..." />
+              <button type="button" id="socialPostBtn">Post</button>
+            </div>
+            <p style="font-size:0.78rem;color:#6b7280;margin-top:6px;">
+              Posting sends a message to the backend thread and refreshes recap.
+            </p>
+
+            <div id="socialStreamBox" class="panel">
+              No messages yet. Be the first to post a note.
+            </div>
+          </div>
+
+          <aside class="sidebar">
+            <h2>Running Observations</h2>
+            <div class="obs-section">
+              <p class="obs-title">What We Know</p>
+              <p id="obsSummary" class="obs-placeholder">No observations yet</p>
+            </div>
+            <div class="obs-section">
+              <p class="obs-title">Initial Observations</p>
+              <ul id="obsInitial" class="obs-list"></ul>
+            </div>
+            <div class="obs-section">
+              <p class="obs-title">Missing Details</p>
+              <ul id="obsMissing" class="obs-list"></ul>
+            </div>
+            <div class="obs-section">
+              <p class="obs-title">Domains to Review</p>
+              <ul id="obsDomains" class="obs-list"></ul>
+            </div>
+            <div class="obs-section">
+              <p class="obs-title">Actions Tried</p>
+              <ul id="obsActions" class="obs-list"></ul>
+            </div>
+            <div class="obs-section">
+              <p class="obs-title">Resolution Status</p>
+              <p id="obsStatus" class="obs-placeholder">Open</p>
+            </div>
+          </aside>
         </div>
       </div>
     </div>
   </div>
 
   <script>
+    const API_BASE = "http://localhost:4000";
+
     function loadSocial() {
       try {
         const raw = localStorage.getItem("frogSocialStream");
@@ -120,28 +232,90 @@
       } catch { return {}; }
     }
 
-    function renderSocial() {
+    function renderBulletList(elementId, items, emptyText) {
+      const el = document.getElementById(elementId);
+      if (!items || !items.length) {
+        el.innerHTML = `<li style="list-style:none;margin-left:-18px;color:#6b7280;">${emptyText}</li>`;
+        return;
+      }
+      el.innerHTML = items.map(item => `<li>${item}</li>`).join("");
+    }
+
+    function renderRecap(recap) {
+      document.getElementById("obsSummary").textContent = recap.situationSummary || "No observations yet";
+      document.getElementById("obsStatus").textContent = recap.resolutionStatus || "open";
+      renderBulletList("obsInitial", recap.initialObservations, "No observations yet");
+      renderBulletList("obsMissing", recap.missingDetails, "No missing details flagged yet");
+      renderBulletList("obsDomains", recap.domainsInPlay, "No domains flagged yet");
+      renderBulletList("obsActions", recap.actionsTried, "No actions logged yet");
+    }
+
+    function renderSocial(messages) {
       const box = document.getElementById("socialStreamBox");
-      const messages = loadSocial();
       if (!messages.length) {
         box.textContent = "No messages yet. Be the first to post a note.";
         return;
       }
       const chunks = messages.map(m => {
         const when = m.createdAt ? new Date(m.createdAt).toLocaleString() : "";
-        const who = m.author || "local user";
+        const who = m.author || m.userId || "user";
+        const text = m.text || m.content || "";
         return `
 <div class="social-message-meta">${when} · ${who}</div>
-<div class="social-message-text">${m.text}</div>
+<div class="social-message-text">${text}</div>
 `;
       });
       box.innerHTML = chunks.join("<hr/>");
     }
 
+    function getActiveThreadId() {
+      const input = document.getElementById("threadIdInput");
+      return (input.value || "").trim() || "smoke-test";
+    }
+
+    async function fetchThreadMessages(threadId) {
+      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/messages`);
+      if (!response.ok) throw new Error("Failed to fetch thread messages");
+      return response.json();
+    }
+
+    async function fetchThreadRecap(threadId) {
+      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/recap`);
+      if (!response.ok) throw new Error("Failed to fetch thread recap");
+      return response.json();
+    }
+
+    async function refreshThreadView() {
+      const threadId = getActiveThreadId();
+      try {
+        const [messages, recap] = await Promise.all([
+          fetchThreadMessages(threadId),
+          fetchThreadRecap(threadId),
+        ]);
+        renderSocial(messages);
+        renderRecap(recap);
+      } catch {
+        renderSocial(loadSocial());
+        renderRecap({
+          situationSummary: "Backend recap unavailable. Start backend and reload thread.",
+          initialObservations: [],
+          missingDetails: [],
+          domainsInPlay: [],
+          actionsTried: [],
+          resolutionStatus: "open",
+        });
+      }
+    }
+
     const socialText = document.getElementById("socialText");
     const socialPostBtn = document.getElementById("socialPostBtn");
+    const loadThreadBtn = document.getElementById("loadThreadBtn");
 
-    socialPostBtn.addEventListener("click", () => {
+    loadThreadBtn.addEventListener("click", () => {
+      refreshThreadView();
+    });
+
+    socialPostBtn.addEventListener("click", async () => {
       const text = socialText.value.trim();
       if (!text) return;
 
@@ -151,20 +325,51 @@
       if (profile.authorLabel) submitBits.push("(" + profile.authorLabel + ")");
       if (profile.institution) submitBits.push("· " + profile.institution);
       const author = submitBits.length ? submitBits.join(" ") : "local user";
+      const threadId = getActiveThreadId();
 
-      const messages = loadSocial();
-      messages.unshift({
-        id: Date.now(),
-        text,
-        author,
-        createdAt: new Date().toISOString()
-      });
-      saveSocial(messages);
+      try {
+        await fetch(`${API_BASE}/api/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: "demo-user",
+            threadId,
+            content: text,
+          }),
+        });
+      } catch {
+        const messages = loadSocial();
+        messages.unshift({
+          id: Date.now(),
+          text,
+          author,
+          createdAt: new Date().toISOString()
+        });
+        saveSocial(messages);
+        renderSocial(messages);
+        socialText.value = "";
+        return;
+      }
+
       socialText.value = "";
-      renderSocial();
+      await refreshThreadView();
     });
 
-    renderSocial();
+    socialText.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        socialPostBtn.click();
+      }
+    });
+
+    (function init() {
+      const params = new URLSearchParams(window.location.search);
+      const threadIdParam = params.get("threadId");
+      if (threadIdParam) {
+        document.getElementById("threadIdInput").value = threadIdParam;
+      }
+      refreshThreadView();
+    })();
   </script>
 </body>
 </html>

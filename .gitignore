@@ -2,3 +2,7 @@ node_modules/
 .DS_Store
 .env
 *.code-workspace
+backend/data/*.json
+
+backend/dist/
+backend/data/
