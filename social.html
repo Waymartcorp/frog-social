@@ -191,6 +191,41 @@
       color: var(--primary-text);
       cursor: pointer;
     }
+    .thread-loader-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .thread-loader-row label {
+      font-size: 0.8rem;
+      color: var(--secondary-text);
+      white-space: nowrap;
+    }
+    .thread-loader-row input {
+      flex: 1;
+      background: #0F172A;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      color: var(--primary-text);
+    }
+    .thread-loader-row input:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+    }
+    .thread-notice {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: var(--secondary-text);
+    }
+    .thread-notice.error {
+      color: #FCA5A5;
+    }
 
     /* Message stream */
     .message-stream {
@@ -422,6 +457,14 @@
     <div class="split-layout">
       <!-- LEFT COLUMN: Feed -->
       <div class="card">
+        <!-- Thread loader -->
+        <div class="thread-loader-row">
+          <label for="threadIdInput">Thread:</label>
+          <input id="threadIdInput" type="text" placeholder="e.g. water-test" />
+          <button class="btn-primary" id="loadThreadBtn" type="button">Load Thread</button>
+        </div>
+        <div id="threadNotice" class="thread-notice">Load a thread to view messages and recap.</div>
+
         <!-- Link to case -->
         <div class="link-case-row">
           <label for="linkCase">Link to case:</label>
@@ -505,6 +548,15 @@
   </div>
 
   <script>
+    const API_BASE = "http://localhost:4000";
+    let currentThreadId = "";
+    let currentThreadMessages = [];
+    let currentThreadCase = null;
+    let rehydrationStatus = { label: "Awaiting thread load", tone: "muted" };
+    let latestKeyStrategiesPayload = null;
+    let latestKeyStrategiesThreadId = "";
+    let keyStrategiesCollapsed = false;
+
     // LocalStorage helpers
     function loadSocial() {
       try {
@@ -568,14 +620,38 @@
       }
 
       panel.style.display = "block";
+      const shortPreview = toSummaryPreview(linkedCase.problemDescription || linkedCase.snippet || "No description");
       summary.innerHTML = `
         <div class="case-summary-header">
           <span class="case-summary-title">${linkedCase.colonyName || "Unlabeled"}</span>
           <span class="case-status ${linkedCase.status || 'open'}">${linkedCase.status || 'open'}</span>
         </div>
         <div class="case-summary-body">
-          ${linkedCase.problemDescription || linkedCase.snippet || "No description"}
+          ${escapeHtml(shortPreview)}
         </div>
+      `;
+    }
+
+    function renderLinkedCaseFromBackend(frogCase) {
+      const panel = document.getElementById("linkedCasePanel");
+      const summary = document.getElementById("linkedCaseSummary");
+      currentThreadCase = frogCase || null;
+
+      if (!frogCase) {
+        panel.style.display = "none";
+        summary.innerHTML = "";
+        return;
+      }
+
+      panel.style.display = "block";
+      const statusText = String(frogCase.currentStatus || frogCase.status || "open");
+      const summaryText = toSummaryPreview(frogCase.caseSummary || frogCase.currentSystemStatus || "No summary yet.");
+      summary.innerHTML = `
+        <div class="case-summary-header">
+          <span class="case-summary-title">${escapeHtml(frogCase.title || "Linked case")}</span>
+          <span class="case-status ${escapeHtml(String(frogCase.status || "open").toLowerCase())}">${escapeHtml(statusText)}</span>
+        </div>
+        <div class="case-summary-body">${escapeHtml(summaryText)}</div>
       `;
     }
 
@@ -591,10 +667,321 @@
       return date.toLocaleDateString();
     }
 
+    function setThreadNotice(message, isError = false) {
+      const notice = document.getElementById("threadNotice");
+      notice.textContent = message;
+      notice.className = isError ? "thread-notice error" : "thread-notice";
+    }
+
+    function ensureThreadLoaded() {
+      if (!currentThreadId) {
+        setThreadNotice("Please load a thread first.", true);
+        return false;
+      }
+      return true;
+    }
+
+    function renderList(items, emptyText) {
+      if (!Array.isArray(items) || items.length === 0) {
+        return `<li style="color: var(--secondary-text);">${emptyText}</li>`;
+      }
+      return items.map((item) => `<li>${escapeHtml(String(item))}</li>`).join("");
+    }
+
+    function renderRecap(recap) {
+      const container = document.getElementById("discussionSummary");
+      const badgeColor =
+        rehydrationStatus.tone === "ok"
+          ? "rgba(52, 211, 153, 0.18)"
+          : rehydrationStatus.tone === "warn"
+            ? "rgba(251, 191, 36, 0.2)"
+            : "rgba(148, 163, 184, 0.2)";
+      const badgeText =
+        rehydrationStatus.tone === "ok"
+          ? "#6EE7B7"
+          : rehydrationStatus.tone === "warn"
+            ? "#FCD34D"
+            : "var(--secondary-text)";
+      container.innerHTML = `
+        <div style="margin-bottom: 10px; display: inline-flex; align-items: center; border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 999px; padding: 4px 10px; font-size: 0.72rem; color: ${badgeText}; background: ${badgeColor};">
+          Rehydration: ${escapeHtml(rehydrationStatus.label)}
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong style="color: var(--accent-green); font-size: 0.82rem;">Case Update</strong>
+          <p style="margin: 6px 0 0 0; color: var(--primary-text);">${escapeHtml(recap.caseUpdate || recap.situationSummary || "No case update yet.")}</p>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong style="color: var(--accent-cyan); font-size: 0.76rem; text-transform: uppercase;">Current Strategy</strong>
+          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.currentStrategy || recap.suggestedNextSteps, "No strategy yet.")}</ul>
+          <div style="margin-top: 8px;">
+            <button class="btn-secondary" id="keyStrategiesBtn" type="button" onclick="loadKeyStrategies()">Emerging Strategy</button>
+          </div>
+          <div id="keyStrategiesResult" style="margin-top: 10px;"></div>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Current Status</strong>
+          <p style="margin: 6px 0 0 0; color: var(--primary-text); text-transform: capitalize;">${escapeHtml(recap.currentStatus || recap.resolutionStatus || "open")}</p>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong style="color: var(--accent-cyan); font-size: 0.82rem;">What We Know</strong>
+          <p style="margin: 6px 0 0 0; color: var(--primary-text);">${escapeHtml(recap.situationSummary || "No observations yet.")}</p>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Initial Observations</strong>
+          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.initialObservations, "No observations yet.")}</ul>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Missing Details</strong>
+          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.missingDetails, "No missing details yet.")}</ul>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Domains to Review</strong>
+          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.domainsInPlay, "No domains flagged yet.")}</ul>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Actions Tried</strong>
+          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.actionsTried, "No actions logged yet.")}</ul>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Suggested Next Steps</strong>
+          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.suggestedNextSteps, "No suggested next steps yet.")}</ul>
+        </div>
+        <div>
+          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Resolution Status</strong>
+          <p style="margin: 6px 0 0 0; color: var(--primary-text); text-transform: capitalize;">${escapeHtml(recap.resolutionStatus || "open")}</p>
+        </div>
+      `;
+
+      if (latestKeyStrategiesPayload && latestKeyStrategiesThreadId === currentThreadId) {
+        renderKeyStrategiesResult(latestKeyStrategiesPayload);
+      }
+    }
+
+    async function fetchThreadMessages(threadId) {
+      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/messages`);
+      if (!response.ok) throw new Error(`Thread messages failed (${response.status})`);
+      return response.json();
+    }
+
+    async function fetchThreadRecap(threadId) {
+      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/recap`);
+      if (!response.ok) throw new Error(`Thread recap failed (${response.status})`);
+      return response.json();
+    }
+
+    async function fetchThreadCase(threadId) {
+      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/case`);
+      if (response.status === 404) {
+        return null;
+      }
+      if (!response.ok) throw new Error(`Thread case lookup failed (${response.status})`);
+      return response.json();
+    }
+
+    async function fetchThreadKeyStrategies(threadId) {
+      const primary = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/emerging-strategy`);
+      if (primary.ok) {
+        return primary.json();
+      }
+      if (primary.status !== 404) {
+        throw new Error(`Emerging strategy failed (${primary.status})`);
+      }
+      // Backward-compatible fallback for older backend servers.
+      const fallback = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/key-strategies`);
+      if (!fallback.ok) {
+        throw new Error(`Emerging strategy failed (${fallback.status})`);
+      }
+      return fallback.json();
+    }
+
+    function renderKeyStrategiesResult(payload) {
+      const container = document.getElementById("keyStrategiesResult");
+      if (!container) return;
+
+      const title = payload?.title || "Emerging Strategy";
+      const toggleLabel = keyStrategiesCollapsed ? "Show strategies" : "Hide strategies";
+
+      if (!payload || !payload.ready) {
+        if (keyStrategiesCollapsed) {
+          container.innerHTML = `
+            <div style="border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 10px; padding: 10px; background: rgba(15, 23, 42, 0.42);">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--secondary-text);">${escapeHtml(title)}</div>
+                <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleKeyStrategiesVisibility()">${toggleLabel}</button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+        container.innerHTML = `
+          <div style="border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 10px; padding: 10px; background: rgba(15, 23, 42, 0.42);">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--secondary-text);">${escapeHtml(title)}</div>
+              <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleKeyStrategiesVisibility()">${toggleLabel}</button>
+            </div>
+            <p style="margin: 0; color: var(--secondary-text);">${escapeHtml(payload?.message || "More detail is needed before generating strong strategies. Consider adding feeding behavior, water parameters, system setup, or recent changes.")}</p>
+          </div>
+        `;
+        return;
+      }
+
+      if (keyStrategiesCollapsed) {
+        container.innerHTML = `
+          <div style="border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 10px; padding: 10px; background: rgba(15, 23, 42, 0.46);">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+              <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--accent-cyan);">${escapeHtml(title)}</div>
+              <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleKeyStrategiesVisibility()">${toggleLabel}</button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const supporting = Array.isArray(payload.supportingActions) ? payload.supportingActions : [];
+      container.innerHTML = `
+        <div style="border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 10px; padding: 10px; background: rgba(15, 23, 42, 0.46);">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--accent-cyan);">${escapeHtml(title)}</div>
+            <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleKeyStrategiesVisibility()">${toggleLabel}</button>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong style="font-size: 0.78rem; color: var(--primary-text);">1. Primary intervention</strong>
+            <p style="margin: 4px 0 0 0; color: var(--primary-text);">${escapeHtml(payload.primaryIntervention || "")}</p>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong style="font-size: 0.78rem; color: var(--primary-text);">2. Secondary intervention</strong>
+            <p style="margin: 4px 0 0 0; color: var(--primary-text);">${escapeHtml(payload.secondaryIntervention || "")}</p>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong style="font-size: 0.78rem; color: var(--primary-text);">3. Supporting actions</strong>
+            <ul style="margin: 4px 0 0 0; padding-left: 18px;">${renderList(supporting, "No supporting actions yet.")}</ul>
+          </div>
+          <div>
+            <strong style="font-size: 0.78rem; color: var(--primary-text);">Why this direction</strong>
+            <p style="margin: 4px 0 0 0; color: var(--secondary-text);">${escapeHtml(payload.whyThisDirection || "")}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    window.toggleKeyStrategiesVisibility = function() {
+      if (!latestKeyStrategiesPayload) return;
+      keyStrategiesCollapsed = !keyStrategiesCollapsed;
+      renderKeyStrategiesResult(latestKeyStrategiesPayload);
+    };
+
+    window.loadKeyStrategies = async function() {
+      if (!ensureThreadLoaded()) return;
+      const button = document.getElementById("keyStrategiesBtn");
+      const container = document.getElementById("keyStrategiesResult");
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Generating...";
+      }
+      if (container) {
+        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">Generating strategy options from this thread...</p>`;
+      }
+
+      try {
+        const payload = await fetchThreadKeyStrategies(currentThreadId);
+        latestKeyStrategiesPayload = payload;
+        latestKeyStrategiesThreadId = currentThreadId;
+        keyStrategiesCollapsed = false;
+        renderKeyStrategiesResult(payload);
+      } catch (error) {
+        console.error("Emerging strategy request failed:", error);
+        if (container) {
+          container.innerHTML = `<p style="margin: 0; color: #FCA5A5;">Emerging strategy is temporarily unavailable.</p>`;
+        }
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = "Emerging Strategy";
+        }
+      }
+    };
+
+    async function loadThread(threadId) {
+      const normalized = (threadId || "").trim();
+      if (!normalized) {
+        setThreadNotice("Please enter a thread id.", true);
+        return;
+      }
+
+      try {
+        rehydrationStatus = { label: "Loading...", tone: "muted" };
+        setThreadNotice(`Loading thread "${normalized}"...`);
+        const [messagesResult, recapResult, linkedCaseResult, emergingResult] = await Promise.allSettled([
+          fetchThreadMessages(normalized),
+          fetchThreadRecap(normalized),
+          fetchThreadCase(normalized),
+          fetchThreadKeyStrategies(normalized).catch((error) => {
+            console.warn("Emerging strategy preload failed:", error);
+            return null;
+          }),
+        ]);
+        if (messagesResult.status === "rejected") {
+          throw messagesResult.reason;
+        }
+        if (recapResult.status === "rejected") {
+          throw recapResult.reason;
+        }
+        const messages = messagesResult.value;
+        const recap = recapResult.value;
+        const linkedCase = linkedCaseResult.status === "fulfilled" ? linkedCaseResult.value : null;
+        const emerging = emergingResult.status === "fulfilled" ? emergingResult.value : null;
+        if (linkedCaseResult.status === "rejected") {
+          console.warn("Linked case preload failed:", linkedCaseResult.reason);
+        }
+        currentThreadId = normalized;
+        if (latestKeyStrategiesThreadId !== normalized) {
+          latestKeyStrategiesPayload = null;
+        }
+        currentThreadMessages = Array.isArray(messages) ? messages : [];
+        renderLinkedCaseFromBackend(linkedCase);
+        if (emerging) {
+          latestKeyStrategiesPayload = emerging;
+          latestKeyStrategiesThreadId = normalized;
+        }
+        renderMessages();
+        renderRecap(recap);
+
+        const messageCount = currentThreadMessages.length;
+        const linkedCaseFound = Boolean(linkedCase);
+        if (linkedCaseFound && messageCount === 0) {
+          console.warn("Thread history is incomplete for this older case.", {
+            threadId: normalized,
+            caseId: linkedCase.caseId || linkedCase.id,
+          });
+          rehydrationStatus = { label: "Incomplete legacy thread history", tone: "warn" };
+          setThreadNotice("Thread history is incomplete for this older case.");
+        } else {
+          rehydrationStatus = { label: `Loaded ${messageCount} message(s)`, tone: "ok" };
+          setThreadNotice(`Loaded thread "${normalized}".`);
+        }
+
+        console.info("Case open debug:", {
+          event: "case_opened",
+          threadId: normalized,
+          messageCountLoaded: messageCount,
+          linkedCaseStateFound: linkedCaseFound,
+          caseId: linkedCaseFound ? (linkedCase.caseId || linkedCase.id) : null,
+        });
+      } catch (error) {
+        currentThreadId = "";
+        currentThreadMessages = [];
+        currentThreadCase = null;
+        rehydrationStatus = { label: "Failed", tone: "warn" };
+        renderLinkedCaseFromBackend(null);
+        renderMessages();
+        setThreadNotice(error instanceof Error ? error.message : "Failed to load thread.", true);
+      }
+    }
+
     // Render messages
     function renderMessages() {
       const stream = document.getElementById("messageStream");
-      const messages = loadSocial();
+      const messages = (currentThreadMessages || []).filter((message) => !isSystemGeneratedMessage(message));
       const cases = loadCases();
 
       if (!messages.length) {
@@ -615,10 +1002,10 @@
         return `
           <div class="message ${m.isAI ? 'ai-message' : ''}">
             <div class="message-header">
-              <span class="message-author">${m.author || "Local user"}</span>
+              <span class="message-author">${m.author || m.userId || "user"}</span>
               <span class="message-time">${formatTime(m.createdAt)}</span>
             </div>
-            <div class="message-content">${escapeHtml(m.text)}</div>
+            <div class="message-content">${escapeHtml(m.text || m.content || "")}</div>
             ${caseTag ? `<div class="message-tags">${caseTag}</div>` : ""}
           </div>
         `;
@@ -629,6 +1016,51 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function isSystemGeneratedMessage(message) {
+      const user = String(message?.userId || message?.author || "").toLowerCase();
+      const content = String(message?.content || message?.text || "").toLowerCase();
+      const correctionSignal =
+        /(\bthis is not accurate\b|\bthis is incorrect\b|\bover[- ]emphasized\b|\bshould not be\b|\bi disagree with the summary\b|\bsummary is wrong\b)/i.test(
+          content
+        );
+      if (correctionSignal) return false;
+      return (
+        user.includes("system-import") ||
+        user.includes("system") ||
+        user.includes("generated") ||
+        content.includes("generated summary") ||
+        content.includes("discussion summary") ||
+        content.includes("case update:") ||
+        content.includes("initially, this case started") ||
+        content.includes("early discussion considered") ||
+        content.includes("later responses suggest") ||
+        content.includes("current thinking is shifting toward") ||
+        content.includes("at this stage, the working strategy") ||
+        content.includes("current status is")
+      );
+    }
+
+    function toSummaryPreview(text) {
+      const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+      if (!cleaned) return "No summary yet.";
+      const sentences = cleaned
+        .split(/(?<=[.!?])\s+/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+      const selected = [];
+      let len = 0;
+      for (const sentence of sentences) {
+        if (selected.length >= 3) break;
+        if (len + sentence.length > 220) break;
+        selected.push(sentence);
+        len += sentence.length + 1;
+      }
+      if (selected.length > 0) {
+        return selected.join(" ");
+      }
+      return cleaned.length > 220 ? `${cleaned.slice(0, 217).trimEnd()}...` : cleaned;
     }
 
     // Generate resolution insights from resolved cases
@@ -662,7 +1094,8 @@
     }
 
     // Post message
-    function postMessage() {
+    async function postMessage() {
+      if (!ensureThreadLoaded()) return;
       const input = document.getElementById("messageInput");
       const text = input.value.trim();
       if (!text) return;
@@ -676,35 +1109,45 @@
       if (profile.institution) submitBits.push("· " + profile.institution);
       const author = submitBits.length ? submitBits.join(" ") : "Local user";
 
-      const messages = loadSocial();
-      const newMessage = {
-        id: Date.now(),
-        text,
-        author,
-        createdAt: new Date().toISOString(),
-        linkedCaseId: linkedCaseId || null,
-        isAI: false
-      };
-      
-      messages.unshift(newMessage);
+      try {
+        const response = await fetch(`${API_BASE}/api/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: profile.name ? profile.name : "demo-user",
+            threadId: currentThreadId,
+            content: text,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Post failed (${response.status})`);
+        }
+      } catch (error) {
+        setThreadNotice(error instanceof Error ? error.message : "Failed to post message.", true);
+        return;
+      }
 
       // If linked to a case, update the case's linked thread
       if (linkedCaseId) {
         const cases = loadCases();
         const caseIndex = cases.findIndex(c => c.id == linkedCaseId);
         if (caseIndex !== -1) {
-          cases[caseIndex].linkedThreadId = newMessage.id;
+          cases[caseIndex].linkedThreadId = currentThreadId;
           localStorage.setItem("frogSocialCases", JSON.stringify(cases));
         }
       }
 
-      saveSocial(messages);
       input.value = "";
-      renderMessages();
+      await loadThread(currentThreadId);
     }
 
     // Event listeners
     document.getElementById("postBtn").addEventListener("click", postMessage);
+    document.getElementById("loadThreadBtn").addEventListener("click", () => {
+      const threadId = document.getElementById("threadIdInput").value;
+      loadThread(threadId);
+    });
     document.getElementById("messageInput").addEventListener("keypress", (e) => {
       if (e.key === "Enter") postMessage();
     });
@@ -727,6 +1170,11 @@
     renderMessages();
     updateResolutionInsights();
     checkForLinkedCase();
+    const threadIdFromUrl = new URLSearchParams(window.location.search).get("threadId");
+    if (threadIdFromUrl) {
+      document.getElementById("threadIdInput").value = threadIdFromUrl;
+      loadThread(threadIdFromUrl);
+    }
   </script>
 </body>
 </html>

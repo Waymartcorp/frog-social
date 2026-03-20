@@ -214,6 +214,10 @@
               <ul id="obsActions" class="obs-list"></ul>
             </div>
             <div class="obs-section">
+              <p class="obs-title">Suggested Next Steps</p>
+              <ul id="obsNextSteps" class="obs-list"></ul>
+            </div>
+            <div class="obs-section">
               <p class="obs-title">Resolution Status</p>
               <p id="obsStatus" class="obs-placeholder">Open</p>
             </div>
@@ -258,6 +262,7 @@
       renderBulletList("obsMissing", recap.missingDetails, "No missing details flagged yet");
       renderBulletList("obsDomains", recap.domainsInPlay, "No domains flagged yet");
       renderBulletList("obsActions", recap.actionsTried, "No actions logged yet");
+      renderBulletList("obsNextSteps", recap.suggestedNextSteps, "No suggested next steps yet.");
     }
 
     function renderSocial(messages) {
