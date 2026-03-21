@@ -80,6 +80,18 @@
       } catch { return []; }
     }
 
+    function formatDateTime(isoString) {
+      const date = new Date(isoString);
+      if (Number.isNaN(date.getTime())) return "Unknown date";
+      return date.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+
     function renderCaseHistory() {
       const box = document.getElementById("caseHistoryBox");
       const cases = loadCases();
@@ -89,7 +101,7 @@
       }
 
       const lines = cases.map(k => {
-        const when = k.createdAt ? new Date(k.createdAt).toLocaleString() : "";
+        const when = k.createdAt ? formatDateTime(k.createdAt) : "";
         const submitBits = [];
         if (k.submittedByName) submitBits.push(k.submittedByName);
         if (k.submittedByLabel) submitBits.push("(" + k.submittedByLabel + ")");

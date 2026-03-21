@@ -3,14 +3,18 @@ import {
   buildCaseState,
   buildInterpretationAudit,
   buildKeyStrategies,
+  type CaseKnowledgeContext,
   type CaseState,
   type InterpretationAudit,
   type KeyStrategiesResult,
 } from "./caseState";
 import { loadCasesFromDisk, saveCasesToDisk } from "./caseStorage";
 import { loadMessagesFromDisk, saveMessagesToDisk } from "./messageStorage";
+import { buildKnowledgeContextForThread } from "./knowledgeContext";
 
 export type CaseStatus = "OPEN" | "MONITORING" | "RESOLVED";
+export type CaseAdmissionState = "candidate" | "admitted" | "hidden";
+export type CaseEntryMode = "social" | "direct" | "seed";
 
 export interface ForumMessage {
   id: string;
@@ -26,6 +30,7 @@ export interface ForumMessage {
 export interface FrogCase {
   id: string;
   caseId: string;
+  caseNumber: number;
   threadId: string;
   isSeedOrTest: boolean;
   title: string;
@@ -50,6 +55,9 @@ export interface FrogCase {
   followUpCount: number;
   currentSystemStatus: string;
   resolutionSummary: string;
+  admissionState: CaseAdmissionState;
+  emergingThreads: string[];
+  entryMode: CaseEntryMode;
 }
 
 export interface ResolutionInput {
@@ -75,6 +83,13 @@ export interface CaseSeedInput {
   messageIds?: string[];
 }
 
+export interface DirectCaseInput {
+  userId: string;
+  title?: string;
+  narrative: string;
+  threadId?: string;
+}
+
 export interface PersistenceCaseReportRow {
   caseId: string;
   threadId: string;
@@ -84,6 +99,7 @@ export interface PersistenceCaseReportRow {
   hasAnyThreadMessages: boolean;
   status: CaseStatus;
   updatedAt: string;
+  entryMode: CaseEntryMode;
 }
 
 export interface ThreadVerificationReport {
@@ -91,12 +107,38 @@ export interface ThreadVerificationReport {
   caseFound: boolean;
   caseId: string | null;
   caseTitle: string | null;
+  entryMode: CaseEntryMode | null;
   messageCount: number;
   caseSummaryPresent: boolean;
   strategyCount: number;
   status: string | null;
   emergingStrategyReady: boolean;
   interpretationAudit: InterpretationAudit;
+}
+
+export interface CaseRecallResult {
+  caseId: string;
+  caseNumber: number;
+  threadId: string;
+  title: string;
+  summaryPreview: string;
+  updatedAt: string;
+  status: CaseStatus;
+  entryMode: CaseEntryMode;
+  matchScore: number;
+  matchReasons: string[];
+}
+
+export interface ThreadSimilarCasesResult {
+  threadId: string;
+  query: string;
+  matches: CaseRecallResult[];
+}
+
+export interface FeedSimilarCasesResult {
+  query: string;
+  generatedAt: string;
+  matches: CaseRecallResult[];
 }
 
 const UNIVERSAL_FOLLOW_UP_PROMPT = "Please describe any corrective actions taken and the current status of the system.";
@@ -189,11 +231,6 @@ function listThreadMessages(threadId: string, includeGenerated = false): ForumMe
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 }
 
-function threadHasRequiredSignals(messagesInThread: ForumMessage[]): boolean {
-  const combined = messagesInThread.map((message) => message.content).join(" ");
-  return SYMPTOM_SIGNAL_REGEX.test(combined) && ENVIRONMENT_SIGNAL_REGEX.test(combined);
-}
-
 function shouldCreateCaseFromThread(messagesInThread: ForumMessage[], threadId: string): boolean {
   if (isExcludedThreadId(threadId)) {
     return false;
@@ -202,13 +239,54 @@ function shouldCreateCaseFromThread(messagesInThread: ForumMessage[], threadId: 
   const meaningfulPosts = messagesInThread.filter((message) => isMeaningfulPost(message.content));
   const hasLongNarrative = messagesInThread.some((message) => message.content.trim().length > 300);
   const hasLongNarrativeWithReply = hasLongNarrative && meaningfulPosts.length >= 2;
-  const hasEnoughMeaningfulPosts = meaningfulPosts.length >= 4;
+  const hasEnoughMeaningfulPosts = meaningfulPosts.length >= 2;
 
   if (!(hasEnoughMeaningfulPosts || hasLongNarrativeWithReply)) {
     return false;
   }
 
-  return threadHasRequiredSignals(messagesInThread);
+  return true;
+}
+
+function inferAdmissionStateForCase(frogCase: FrogCase, messagesInThread: ForumMessage[]): CaseAdmissionState {
+  const threadId = frogCase.threadId || frogCase.sourceThreadId;
+  if (!threadId || isExcludedThreadId(threadId)) {
+    return "hidden";
+  }
+  if (frogCase.isSeedOrTest) {
+    return "hidden";
+  }
+  if (!String(frogCase.title || "").trim() || !String(frogCase.caseSummary || "").trim()) {
+    return "hidden";
+  }
+
+  const participantMessages = messagesInThread.filter((message) => !isSystemGeneratedMessage(message));
+  const meaningfulPosts = participantMessages.filter((message) => isMeaningfulPost(message.content)).length;
+  const combined = participantMessages.map((message) => message.content).join(" ");
+  const hasIssueSignal = SYMPTOM_SIGNAL_REGEX.test(combined);
+  const hasContextSignal = ENVIRONMENT_SIGNAL_REGEX.test(combined);
+  const hasCredibleSummary = String(frogCase.caseSummary || "").trim().length >= 70;
+  const hasDomains = Array.isArray(frogCase.domainsInPlay) && frogCase.domainsInPlay.length >= 2;
+  const hasStructuredCaseSignals =
+    (Array.isArray(frogCase.runningObservations) && frogCase.runningObservations.length >= 2) ||
+    (Array.isArray(frogCase.actionsTried) && frogCase.actionsTried.length >= 1) ||
+    (Array.isArray(frogCase.suggestedNextSteps) && frogCase.suggestedNextSteps.length >= 2);
+  const hasMeaningfulCaseHistory = Array.isArray(frogCase.messageIds) && frogCase.messageIds.length >= 4;
+  const hasNonPlaceholderTitle = !isPlaceholderNarrativeTitle(frogCase.title);
+  const summaryLength = String(frogCase.caseSummary || "").trim().length;
+
+  if (
+    hasCredibleSummary &&
+    ((meaningfulPosts >= 2 && hasNonPlaceholderTitle) ||
+      (hasIssueSignal && hasContextSignal && (meaningfulPosts >= 3 || summaryLength >= 180)) ||
+      (hasStructuredCaseSignals && (hasDomains || hasMeaningfulCaseHistory) && hasNonPlaceholderTitle))
+  ) {
+    return "admitted";
+  }
+  if (meaningfulPosts >= 1 && (hasIssueSignal || hasContextSignal || hasDomains || hasCredibleSummary)) {
+    return "candidate";
+  }
+  return "hidden";
 }
 
 function deriveTitleFromThread(messagesInThread: ForumMessage[]): string {
@@ -280,12 +358,44 @@ function extractActionPhrases(text: string): string[] {
     .filter(Boolean);
 
   const actionSignals = /(changed|adjusted|reduced|increased|added|removed|moved|cleaned|calibrated|measured|checked|reviewed|monitored|isolated|quarantined)/i;
-  const actions = sentences.filter((sentence) => actionSignals.test(sentence));
+  const actions = sentences.filter((sentence) => actionSignals.test(sentence) && isReliableActionPhrase(sentence));
   const unique = new Set<string>();
   for (const action of actions) {
     unique.add(action);
   }
   return Array.from(unique).slice(0, 8);
+}
+
+function isReliableActionPhrase(text: string): boolean {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return false;
+  const lower = cleaned.toLowerCase();
+  const blocked = [
+    /^\d+(\.\d+)?[,;: ]+\s*conductivity\b/,
+    /^update pass\b/,
+    /^unified update test\b/,
+    /^second unified update test\b/,
+    /^case note update\b/,
+    /^direct intake check\b/,
+    /^describe update for\b/,
+    /\bunify-e2e-\d+\b/,
+  ];
+  if (blocked.some((pattern) => pattern.test(lower))) return false;
+  if (cleaned.length < 18) return false;
+  return true;
+}
+
+function sanitizeStrategyLine(text: string): string {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+  const lower = cleaned.toLowerCase();
+  if (lower.includes("split high-density groups") || lower.includes("increase feeding access/frequency to reduce competition")) {
+    return "Verify feeding access and appetite trend tank-by-tank without changing baseline population structure unless direct competition is observed.";
+  }
+  if (lower.includes("split density pressure")) {
+    return "Track feeding access and appetite by tank, and only change population structure if direct competition is observed.";
+  }
+  return cleaned;
 }
 
 function mergeUnique(base: string[], incoming: string[]): string[] {
@@ -362,25 +472,33 @@ function shouldMarkCaseAsSeedOrTest(frogCase: FrogCase): boolean {
   if (/^(msg one|test)$/i.test(frogCase.title.trim())) {
     return true;
   }
-  if (!threadHasRequiredSignals([{ id: "tmp", userId: "system", threadId: frogCase.threadId, content: frogCase.caseSummary, createdAt: new Date() }])) {
-    const meaningfulCount = frogCase.runningObservations.filter((entry) => isMeaningfulPost(entry)).length;
-    if (meaningfulCount < 2) {
-      return true;
-    }
+  const summaryText = String(frogCase.caseSummary || "");
+  const hasCaseSignal = SYMPTOM_SIGNAL_REGEX.test(summaryText) || ENVIRONMENT_SIGNAL_REGEX.test(summaryText);
+  const meaningfulCount = frogCase.runningObservations.filter((entry) => isMeaningfulPost(entry)).length;
+  if (!hasCaseSignal && meaningfulCount < 2) {
+    return true;
   }
   return false;
 }
 
-function markExistingSeedOrTestCases(casesToMark: FrogCase[]): { marked: number; result: FrogCase[] } {
+function applyAdmissionStateToCases(casesToMark: FrogCase[]): { markedHidden: number; result: FrogCase[] } {
   let marked = 0;
-  const result = casesToMark.map((frogCase) => {
-    if (shouldMarkCaseAsSeedOrTest(frogCase) && !frogCase.isSeedOrTest) {
+  const result: FrogCase[] = casesToMark.map((frogCase) => {
+    const threadId = frogCase.threadId || frogCase.sourceThreadId;
+    const threadMessages = listThreadMessages(threadId, true);
+    const admissionState = inferAdmissionStateForCase(frogCase, threadMessages);
+    const hiddenByLegacyRules = shouldMarkCaseAsSeedOrTest(frogCase);
+    const shouldHide = hiddenByLegacyRules || admissionState === "hidden";
+    if (shouldHide && !frogCase.isSeedOrTest) {
       marked += 1;
-      return { ...frogCase, isSeedOrTest: true };
     }
-    return frogCase;
+    return {
+      ...frogCase,
+      isSeedOrTest: shouldHide ? true : frogCase.isSeedOrTest,
+      admissionState: (shouldHide ? "hidden" : admissionState) as CaseAdmissionState,
+    };
   });
-  return { marked, result };
+  return { markedHidden: marked, result };
 }
 
 function dedupeCasesByThread(casesToDedupe: FrogCase[]): FrogCase[] {
@@ -421,15 +539,23 @@ function syncCaseLearningFromThread(threadId: string, frogCase: FrogCase): FrogC
   frogCase.title = frogCase.title || deriveTitleFromThread(listThreadMessages(threadId));
   enforceCaseTitleFromThread(frogCase);
   frogCase.caseSummary = recap.caseUpdate;
-  frogCase.currentStrategy = recap.currentStrategy;
+  frogCase.currentStrategy = (recap.currentStrategy || []).map((entry) => sanitizeStrategyLine(entry)).filter(Boolean);
   frogCase.currentStatus = recap.currentStatus;
   frogCase.runningObservations = recap.initialObservations;
   frogCase.missingDetails = recap.missingDetails;
   frogCase.domainsInPlay = recap.domainsInPlay;
-  frogCase.actionsTried = mergeUnique(frogCase.actionsTried, recap.actionsTried);
-  frogCase.suggestedNextSteps = recap.suggestedNextSteps;
+  frogCase.actionsTried = mergeUnique(
+    (frogCase.actionsTried || []).filter((entry) => isReliableActionPhrase(entry)),
+    (recap.actionsTried || []).filter((entry) => isReliableActionPhrase(entry))
+  );
+  frogCase.suggestedNextSteps = (recap.suggestedNextSteps || []).map((entry) => sanitizeStrategyLine(entry)).filter(Boolean);
   frogCase.currentSystemStatus = recap.situationSummary;
+  frogCase.emergingThreads = recap.emergingThreads;
   frogCase.status = frogCase.status === "RESOLVED" ? "RESOLVED" : mapRecapStatus(recap.resolutionStatus);
+  const admissionState = inferAdmissionStateForCase(frogCase, listThreadMessages(threadId, true));
+  frogCase.admissionState = admissionState;
+  frogCase.isSeedOrTest = admissionState === "hidden" ? true : frogCase.isSeedOrTest;
+  enforceFormalCaseArchiveFields(frogCase);
   return frogCase;
 }
 
@@ -452,16 +578,55 @@ function registerCaseInIndices(frogCase: FrogCase) {
   }
 }
 
+function nextCaseNumber(): number {
+  const numbers = Array.from(cases.values())
+    .map((entry) => Number(entry.caseNumber || 0))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  if (numbers.length === 0) return 1;
+  return Math.max(...numbers) + 1;
+}
+
+function enforceFormalCaseArchiveFields(frogCase: FrogCase): boolean {
+  if (frogCase.admissionState !== "admitted") return false;
+  let changed = false;
+  const caseNumber = Number(frogCase.caseNumber || 0);
+  if (!Number.isFinite(caseNumber) || caseNumber <= 0) {
+    frogCase.caseNumber = nextCaseNumber();
+    changed = true;
+  }
+  const createdAtMs = frogCase.createdAt instanceof Date ? frogCase.createdAt.getTime() : Number.NaN;
+  if (Number.isNaN(createdAtMs)) {
+    const fallbackMs = frogCase.updatedAt instanceof Date ? frogCase.updatedAt.getTime() : Date.now();
+    frogCase.createdAt = new Date(fallbackMs);
+    changed = true;
+  }
+  return changed;
+}
+
+function buildThreadKnowledgeContext(threadId: string): CaseKnowledgeContext {
+  const snapshots = Array.from(cases.values()).map((entry) => ({
+    threadId: entry.threadId || entry.sourceThreadId,
+    admissionState: entry.admissionState,
+    caseSummary: entry.caseSummary,
+    currentSystemStatus: entry.currentSystemStatus,
+    runningObservations: entry.runningObservations,
+    actionsTried: entry.actionsTried,
+    domainsInPlay: entry.domainsInPlay,
+  }));
+  return buildKnowledgeContextForThread(threadId, snapshots);
+}
+
 function normalizeLoadedCase(loaded: FrogCase): FrogCase {
   const normalizedStatus: CaseStatus =
     loaded.status === "RESOLVED" ? "RESOLVED" : loaded.status === "MONITORING" ? "MONITORING" : "OPEN";
   return {
     ...loaded,
     caseId: loaded.caseId || loaded.id,
+    caseNumber: Number((loaded as FrogCase).caseNumber || 0),
     threadId: loaded.threadId || loaded.sourceThreadId || `legacy-thread-${loaded.id}`,
     isSeedOrTest: loaded.isSeedOrTest ?? false,
     caseSummary: loaded.caseSummary ?? loaded.currentSystemStatus ?? "",
-    currentStrategy: Array.isArray(loaded.currentStrategy) ? loaded.currentStrategy : [],
+    currentStrategy: Array.isArray(loaded.currentStrategy) ? loaded.currentStrategy.map((entry) => sanitizeStrategyLine(entry)).filter(Boolean) : [],
     currentStatus: loaded.currentStatus ?? (normalizedStatus === "RESOLVED" ? "improved" : normalizedStatus.toLowerCase()),
     sourceThreadId: loaded.sourceThreadId || `legacy-${loaded.id}`,
     contributors: Array.isArray(loaded.contributors) && loaded.contributors.length > 0 ? loaded.contributors : [loaded.createdByUserId],
@@ -470,12 +635,36 @@ function normalizeLoadedCase(loaded: FrogCase): FrogCase {
     runningObservations: Array.isArray(loaded.runningObservations) ? loaded.runningObservations : [],
     missingDetails: Array.isArray(loaded.missingDetails) ? loaded.missingDetails : [],
     domainsInPlay: Array.isArray(loaded.domainsInPlay) ? loaded.domainsInPlay : [],
-    actionsTried: Array.isArray(loaded.actionsTried) ? loaded.actionsTried : [],
-    suggestedNextSteps: Array.isArray(loaded.suggestedNextSteps) ? loaded.suggestedNextSteps : [],
+    actionsTried: Array.isArray(loaded.actionsTried) ? loaded.actionsTried.filter((entry) => isReliableActionPhrase(entry)) : [],
+    suggestedNextSteps: Array.isArray(loaded.suggestedNextSteps) ? loaded.suggestedNextSteps.map((entry) => sanitizeStrategyLine(entry)).filter(Boolean) : [],
     currentSystemStatus: loaded.currentSystemStatus ?? "",
     resolutionSummary: loaded.resolutionSummary ?? "",
     status: normalizedStatus,
+    admissionState: (loaded as FrogCase).admissionState ?? (loaded.isSeedOrTest ? "hidden" : "admitted"),
+    emergingThreads: Array.isArray((loaded as FrogCase).emergingThreads) ? (loaded as FrogCase).emergingThreads : [],
+    entryMode: (loaded as FrogCase).entryMode ?? "social",
   };
+}
+
+function assignCaseNumbers(casesToAssign: FrogCase[]): { assigned: number; result: FrogCase[] } {
+  let assigned = 0;
+  const used = new Set<number>();
+  for (const frogCase of casesToAssign) {
+    const value = Number(frogCase.caseNumber || 0);
+    if (Number.isFinite(value) && value > 0) used.add(value);
+  }
+  const ordered = [...casesToAssign].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  let cursor = 1;
+  for (const frogCase of ordered) {
+    const value = Number(frogCase.caseNumber || 0);
+    if (Number.isFinite(value) && value > 0) continue;
+    while (used.has(cursor)) cursor += 1;
+    frogCase.caseNumber = cursor;
+    used.add(cursor);
+    assigned += 1;
+    cursor += 1;
+  }
+  return { assigned, result: casesToAssign };
 }
 
 function hydrateCasesFromDisk() {
@@ -484,26 +673,46 @@ function hydrateCasesFromDisk() {
 
   const persistedCases = loadCasesFromDisk().map(normalizeLoadedCase);
   const dedupedCases = dedupeCasesByThread(persistedCases);
-  const marked = markExistingSeedOrTestCases(dedupedCases);
-  for (const persisted of marked.result) {
+  const numbered = assignCaseNumbers(dedupedCases);
+  for (const persisted of dedupedCases) {
     enforceCaseTitleFromThread(persisted);
+  }
+  const backfilledCases = backfillLegacyMessagesForCases(dedupedCases);
+  const admitted = applyAdmissionStateToCases(dedupedCases);
+  let backfilledArchiveFieldCount = 0;
+  for (const persisted of admitted.result) {
+    const threadKey = getThreadKey(persisted);
+    if (threadKey) {
+      const existingThreadMessages = listThreadMessages(threadKey);
+      if (existingThreadMessages.length > 0) {
+        syncCaseLearningFromThread(threadKey, persisted);
+      }
+    }
+    if (enforceFormalCaseArchiveFields(persisted)) {
+      backfilledArchiveFieldCount += 1;
+    }
     registerCaseInIndices(persisted);
   }
-  const backfilledCases = backfillLegacyMessagesForCases(marked.result);
 
   if (dedupedCases.length !== persistedCases.length) {
     console.warn(
       `[frogCases] Rewriting cases.json after deduplication (${persistedCases.length} -> ${dedupedCases.length}).`
     );
   }
-  if (marked.marked > 0) {
-    console.warn(`[frogCases] Marked ${marked.marked} existing case(s) as isSeedOrTest.`);
+  if (numbered.assigned > 0) {
+    console.warn(`[frogCases] Assigned stable case numbers for ${numbered.assigned} case(s).`);
+  }
+  if (admitted.markedHidden > 0) {
+    console.warn(`[frogCases] Marked ${admitted.markedHidden} existing case(s) as hidden/test.`);
   }
   if (backfilledCases > 0) {
     console.warn(`[frogCases] Backfilled legacy message history for ${backfilledCases} case(s).`);
   }
+  if (backfilledArchiveFieldCount > 0) {
+    console.warn(`[frogCases] Backfilled archive-required fields for ${backfilledArchiveFieldCount} admitted case(s).`);
+  }
   // Always rewrite the normalized deduped set so disk state is clean and canonical.
-  saveCasesToDisk(marked.result);
+  saveCasesToDisk(admitted.result);
   saveMessagesToDisk(Array.from(messages.values()));
 }
 
@@ -590,6 +799,7 @@ export function createCaseFromSeed(input: CaseSeedInput): FrogCase {
   const frogCase: FrogCase = {
     id: caseId,
     caseId,
+    caseNumber: nextCaseNumber(),
     threadId: sourceThreadId,
     isSeedOrTest: isExcludedThreadId(sourceThreadId),
     title: input.title.trim() || "Frog case",
@@ -614,9 +824,126 @@ export function createCaseFromSeed(input: CaseSeedInput): FrogCase {
     followUpCount: 0,
     currentSystemStatus: initialNarrative,
     resolutionSummary: "",
+    admissionState: "candidate",
+    emergingThreads: [],
+    entryMode: "seed",
   };
   enforceCaseTitleFromThread(frogCase);
+  frogCase.admissionState = inferAdmissionStateForCase(frogCase, listThreadMessages(sourceThreadId, true));
+  frogCase.isSeedOrTest = frogCase.admissionState === "hidden" ? true : frogCase.isSeedOrTest;
+  enforceFormalCaseArchiveFields(frogCase);
 
+  registerCaseInIndices(frogCase);
+  persistCases();
+  return frogCase;
+}
+
+export function createCaseFromDirectIntake(input: DirectCaseInput): FrogCase {
+  const now = new Date();
+  const narrative = String(input.narrative || "").trim();
+  if (!narrative) {
+    throw new Error("Direct intake narrative is required");
+  }
+
+  const requestedThreadId = String(input.threadId || "").trim();
+  const normalizedTitle = String(input.title || "").trim();
+  const canonicalThreadLabel = /^[A-Z0-9_-]{3,40}$/.test(normalizedTitle) ? normalizedTitle : "";
+  let matchedThreadId = requestedThreadId || canonicalThreadLabel;
+  if (!matchedThreadId && normalizedTitle) {
+    const exactThreadCaseId = findCaseIdByThreadId(normalizedTitle);
+    if (exactThreadCaseId) {
+      const existing = cases.get(exactThreadCaseId);
+      matchedThreadId = existing?.threadId || normalizedTitle;
+    } else {
+      const titleLower = normalizedTitle.toLowerCase();
+      const matched = Array.from(cases.values()).find((entry) => {
+        const threadKey = (entry.threadId || entry.sourceThreadId || "").toLowerCase();
+        const caseTitle = String(entry.title || "").toLowerCase();
+        return threadKey === titleLower || caseTitle === titleLower;
+      });
+      if (matched) {
+        matchedThreadId = matched.threadId || matched.sourceThreadId;
+      }
+    }
+  }
+  const threadId = matchedThreadId || `intake-${generateId()}`;
+  const intakeMessage: ForumMessage = {
+    id: `intake-${generateId()}`,
+    userId: input.userId || "direct-intake-user",
+    threadId,
+    content: narrative,
+    createdAt: now,
+  };
+
+  messages.set(intakeMessage.id, intakeMessage);
+  persistMessages();
+
+  const threadMessages = listThreadMessages(threadId);
+  const recap = buildCaseState(
+    threadMessages.map((entry) => ({
+      id: entry.id,
+      threadId: entry.threadId,
+      content: entry.content,
+      role: entry.role,
+      correctionSignal: entry.correctionSignal,
+    })),
+    threadId,
+    buildThreadKnowledgeContext(threadId)
+  );
+
+  const existingCaseId = findCaseIdByThreadId(threadId);
+  if (existingCaseId) {
+    const existing = cases.get(existingCaseId);
+    if (!existing) {
+      throw new Error("Case index inconsistency for direct intake");
+    }
+    existing.messageIds = mergeUnique(existing.messageIds, [intakeMessage.id]);
+    existing.contributors = mergeUnique(existing.contributors, [input.userId]);
+    existing.updatedAt = now;
+    syncCaseLearningFromThread(threadId, existing);
+    registerCaseInIndices(existing);
+    persistCases();
+    return existing;
+  }
+
+  const caseId = generateId();
+  const frogCase: FrogCase = {
+    id: caseId,
+    caseId,
+    caseNumber: nextCaseNumber(),
+    threadId,
+    isSeedOrTest: false,
+    title: String(input.title || "").trim() || deriveTitleFromThread(threadMessages),
+    caseSummary: recap.caseUpdate,
+    currentStrategy: recap.currentStrategy,
+    currentStatus: recap.currentStatus,
+    createdAt: now,
+    updatedAt: now,
+    createdByUserId: input.userId || "direct-intake-user",
+    contributors: [input.userId || "direct-intake-user"],
+    sourceThreadId: threadId,
+    messageIds: threadMessages.map((entry) => entry.id),
+    tags: deriveInitialTags(intakeMessage),
+    status: mapRecapStatus(recap.resolutionStatus),
+    runningObservations: recap.initialObservations,
+    missingDetails: recap.missingDetails,
+    domainsInPlay: recap.domainsInPlay,
+    actionsTried: recap.actionsTried,
+    suggestedNextSteps: recap.suggestedNextSteps,
+    followUpDueAt: computeInitialFollowUpTime(),
+    lastFollowUpSentAt: null,
+    followUpCount: 0,
+    currentSystemStatus: recap.situationSummary,
+    resolutionSummary: "",
+    admissionState: "candidate",
+    emergingThreads: recap.emergingThreads,
+    entryMode: "direct",
+  };
+
+  enforceCaseTitleFromThread(frogCase);
+  frogCase.admissionState = inferAdmissionStateForCase(frogCase, threadMessages);
+  frogCase.isSeedOrTest = frogCase.admissionState === "hidden";
+  enforceFormalCaseArchiveFields(frogCase);
   registerCaseInIndices(frogCase);
   persistCases();
   return frogCase;
@@ -670,11 +997,13 @@ export function handleNewMessage(message: ForumMessage): FrogCase | null {
       threadId: threadMessage.threadId,
       content: threadMessage.content,
     })),
-    message.threadId
+    message.threadId,
+    buildThreadKnowledgeContext(message.threadId)
   );
   const frogCase: FrogCase = {
     id: caseId,
     caseId,
+    caseNumber: nextCaseNumber(),
     threadId: message.threadId,
     isSeedOrTest: false,
     title: deriveTitleFromThread(threadMessages),
@@ -699,8 +1028,14 @@ export function handleNewMessage(message: ForumMessage): FrogCase | null {
     currentSystemStatus: recap.situationSummary,
     resolutionSummary: "",
     status: mapRecapStatus(recap.resolutionStatus),
+    admissionState: "candidate",
+    emergingThreads: recap.emergingThreads,
+    entryMode: "social",
   };
   enforceCaseTitleFromThread(frogCase);
+  frogCase.admissionState = inferAdmissionStateForCase(frogCase, threadMessages);
+  frogCase.isSeedOrTest = frogCase.admissionState === "hidden" ? true : frogCase.isSeedOrTest;
+  enforceFormalCaseArchiveFields(frogCase);
 
   registerCaseInIndices(frogCase);
   persistCases();
@@ -713,6 +1048,14 @@ export function getMessageById(id: string): ForumMessage | null {
 
 export function listMessagesByThreadId(threadId: string): ForumMessage[] {
   return listThreadMessages(threadId);
+}
+
+export function listAllMessages(limit = 200): ForumMessage[] {
+  const normalizedLimit = Math.max(1, Math.min(1000, Math.floor(Number(limit) || 200)));
+  const all = Array.from(messages.values())
+    .filter((message) => !isSystemGeneratedMessage(message))
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return all.slice(-normalizedLimit);
 }
 
 export function listMessagesByCaseId(caseId: string): ForumMessage[] {
@@ -732,7 +1075,18 @@ export function buildThreadRecap(threadId: string): CaseState {
     role: message.role,
     correctionSignal: message.correctionSignal,
   }));
-  return buildCaseState(threadMessages, threadId);
+  return buildCaseState(threadMessages, threadId, buildThreadKnowledgeContext(threadId));
+}
+
+export function buildGlobalFeedRecap(limit = 120): CaseState {
+  const feedMessages = listAllMessages(limit).map((message) => ({
+    id: message.id,
+    threadId: message.threadId,
+    content: message.content,
+    role: message.role,
+    correctionSignal: message.correctionSignal,
+  }));
+  return buildCaseState(feedMessages, "global-feed", buildThreadKnowledgeContext("global-feed"));
 }
 
 export function buildThreadKeyStrategies(threadId: string): KeyStrategiesResult {
@@ -871,6 +1225,176 @@ export function getCaseByThreadId(threadId: string): FrogCase | null {
   return cases.get(caseId) ?? null;
 }
 
+export function getCaseByNumber(caseNumber: number): FrogCase | null {
+  const target = Number(caseNumber);
+  if (!Number.isFinite(target) || target <= 0) return null;
+  for (const frogCase of cases.values()) {
+    if (Number(frogCase.caseNumber || 0) === target) {
+      return frogCase;
+    }
+  }
+  return null;
+}
+
+function formatCaseDateTokens(date: Date): string[] {
+  const iso = date.toISOString();
+  const month = date.toLocaleString("en-US", { month: "long" }).toLowerCase();
+  const monthShort = date.toLocaleString("en-US", { month: "short" }).toLowerCase();
+  const year = String(date.getFullYear());
+  const day = String(date.getDate());
+  return [iso, `${month} ${day}`, `${monthShort} ${day}`, month, monthShort, year];
+}
+
+function buildCaseRecallHaystack(frogCase: FrogCase): string {
+  const threadMessages = listThreadMessages(frogCase.threadId || frogCase.sourceThreadId)
+    .map((message) => message.content)
+    .join(" ");
+  const fields = [
+    `case ${frogCase.caseNumber}`,
+    `case #${frogCase.caseNumber}`,
+    frogCase.title,
+    frogCase.threadId,
+    frogCase.caseSummary,
+    frogCase.currentSystemStatus,
+    frogCase.currentStatus,
+    frogCase.runningObservations.join(" "),
+    frogCase.actionsTried.join(" "),
+    frogCase.domainsInPlay.join(" "),
+    frogCase.tags.join(" "),
+    threadMessages,
+    ...formatCaseDateTokens(frogCase.updatedAt),
+    ...formatCaseDateTokens(frogCase.createdAt),
+  ];
+  return fields.join(" ").toLowerCase();
+}
+
+function toSummaryPreview(text: string, maxLen = 220): string {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "No summary yet.";
+  if (cleaned.length <= maxLen) return cleaned;
+  return `${cleaned.slice(0, maxLen - 3).trimEnd()}...`;
+}
+
+export function recallCases(query: string, limit = 12): CaseRecallResult[] {
+  const trimmed = String(query || "").trim().toLowerCase();
+  const tokens = trimmed.split(/\s+/).filter(Boolean);
+  const pool = listCases().filter((frogCase) => frogCase.admissionState === "admitted");
+
+  const scored = pool
+    .map((frogCase) => {
+      const haystack = buildCaseRecallHaystack(frogCase);
+      const reasons: string[] = [];
+      let score = 0;
+
+      if (!trimmed) {
+        score = 1;
+      } else {
+        for (const token of tokens) {
+          if (token.length < 2) continue;
+          if (frogCase.title.toLowerCase().includes(token)) {
+            score += 5;
+            reasons.push(`title:${token}`);
+          }
+          if (frogCase.threadId.toLowerCase().includes(token)) {
+            score += 4;
+            reasons.push(`thread:${token}`);
+          }
+          if (frogCase.caseSummary.toLowerCase().includes(token)) {
+            score += 3;
+            reasons.push(`summary:${token}`);
+          }
+          if (frogCase.currentSystemStatus.toLowerCase().includes(token)) {
+            score += 2;
+            reasons.push(`status:${token}`);
+          }
+          if (haystack.includes(token)) {
+            score += 1;
+          }
+        }
+      }
+
+      if (!score) {
+        return null;
+      }
+
+      return {
+        caseId: frogCase.caseId || frogCase.id,
+        caseNumber: Number(frogCase.caseNumber || 0),
+        threadId: frogCase.threadId,
+        title: frogCase.title,
+        summaryPreview: toSummaryPreview(frogCase.caseSummary || frogCase.currentSystemStatus),
+        updatedAt: frogCase.updatedAt.toISOString(),
+        status: frogCase.status,
+        entryMode: frogCase.entryMode,
+        matchScore: score,
+        matchReasons: Array.from(new Set(reasons)).slice(0, 4),
+      } satisfies CaseRecallResult;
+    })
+    .filter((row): row is CaseRecallResult => Boolean(row));
+
+  scored.sort((a, b) => {
+    if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
+
+  return scored.slice(0, Math.max(1, Math.min(limit, 50)));
+}
+
+export function findSimilarCasesForThread(threadId: string, limit = 6): ThreadSimilarCasesResult {
+  const threadMessages = listThreadMessages(threadId);
+  const recap = buildThreadRecap(threadId);
+  const recapParts = [
+    recap.caseUpdate,
+    recap.situationSummary,
+    ...(Array.isArray(recap.emergingThreads) ? recap.emergingThreads.slice(0, 4) : []),
+    ...(Array.isArray(recap.domainsInPlay) ? recap.domainsInPlay.slice(0, 3) : []),
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const recentMessageParts = threadMessages
+    .slice(-4)
+    .map((entry) => String(entry.content || "").trim())
+    .filter(Boolean)
+    .join(" ");
+  const query = `${recapParts} ${recentMessageParts}`.replace(/\s+/g, " ").trim();
+  const rawMatches = recallCases(query, Math.max(1, Math.min(limit, 20)));
+  const matches = rawMatches
+    .filter((entry) => String(entry.threadId || "").trim() !== String(threadId || "").trim())
+    .slice(0, Math.max(1, Math.min(limit, 20)));
+  return { threadId, query, matches };
+}
+
+export function findSimilarCasesForFeed(limit = 8): FeedSimilarCasesResult {
+  const recap = buildGlobalFeedRecap(120);
+  const recentMessageParts = listAllMessages(80)
+    .slice(-12)
+    .map((entry) => String(entry.content || "").trim())
+    .filter(Boolean)
+    .join(" ");
+  const query = [
+    recap.caseUpdate,
+    recap.situationSummary,
+    ...(Array.isArray(recap.emergingThreads) ? recap.emergingThreads.slice(0, 5) : []),
+    recentMessageParts,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const matches = recallCases(query, Math.max(1, Math.min(limit, 20)));
+  const ranked = [...matches].sort((a, b) => {
+    const aResolved = a.status === "RESOLVED" ? 1 : 0;
+    const bResolved = b.status === "RESOLVED" ? 1 : 0;
+    if (bResolved !== aResolved) return bResolved - aResolved;
+    return b.matchScore - a.matchScore;
+  });
+  return {
+    query,
+    generatedAt: new Date().toISOString(),
+    matches: ranked.slice(0, Math.max(1, Math.min(limit, 20))),
+  };
+}
+
 export function buildPersistenceReport(): {
   totalCases: number;
   totalThreadsWithMessages: number;
@@ -890,6 +1414,7 @@ export function buildPersistenceReport(): {
       hasAnyThreadMessages: messagesForThread.length > 0,
       status: frogCase.status,
       updatedAt: frogCase.updatedAt.toISOString(),
+      entryMode: frogCase.entryMode ?? "social",
     };
   });
 
@@ -920,6 +1445,7 @@ export function buildThreadVerificationReport(threadId: string): ThreadVerificat
     caseFound: Boolean(linkedCase),
     caseId: linkedCase ? linkedCase.caseId || linkedCase.id : null,
     caseTitle: linkedCase ? linkedCase.title : null,
+    entryMode: linkedCase ? linkedCase.entryMode ?? "social" : null,
     messageCount: threadMessages.length,
     caseSummaryPresent: Boolean(linkedCase?.caseSummary || recap.caseUpdate),
     strategyCount: linkedCase?.currentStrategy?.length ?? recap.currentStrategy.length,

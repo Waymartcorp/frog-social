@@ -85,7 +85,7 @@
 
     /* Page container */
     .page-container {
-      max-width: 1280px;
+      max-width: 1500px;
       margin: 0 auto;
       padding: 24px 32px;
     }
@@ -107,12 +107,19 @@
     /* Two-column layout */
     .split-layout {
       display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 24px;
+      grid-template-columns: minmax(720px, 2.3fr) minmax(320px, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+    @media (max-width: 1280px) {
+      .split-layout {
+        grid-template-columns: minmax(580px, 2fr) minmax(300px, 1fr);
+      }
     }
     @media (max-width: 1024px) {
       .split-layout {
         grid-template-columns: 1fr;
+        gap: 14px;
       }
     }
 
@@ -124,6 +131,7 @@
       border-radius: 16px;
       padding: 20px 24px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      min-height: calc(100vh - 190px);
     }
 
     /* Message input */
@@ -131,9 +139,40 @@
       display: flex;
       gap: 10px;
       margin-bottom: 20px;
+      width: 100%;
+      min-width: 0;
+    }
+    .context-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 16px 0;
+      width: 100%;
+      min-width: 0;
+    }
+    .context-input-row label {
+      font-size: 0.75rem;
+      color: var(--secondary-text);
+      white-space: nowrap;
+    }
+    .context-input-row input {
+      flex: 1;
+      min-width: 0;
+      background: #0F172A;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.78rem;
+      color: var(--primary-text);
+    }
+    .context-input-row input:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
     }
     .message-input-area input {
       flex: 1;
+      min-width: 0;
       background: #0F172A;
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 12px;
@@ -220,8 +259,10 @@
     }
     .thread-notice {
       margin-top: 8px;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       color: var(--secondary-text);
+      line-height: 1.4;
+      word-break: break-word;
     }
     .thread-notice.error {
       color: #FCA5A5;
@@ -229,7 +270,8 @@
 
     /* Message stream */
     .message-stream {
-      max-height: 60vh;
+      max-height: calc(100vh - 320px);
+      min-height: 320px;
       overflow-y: auto;
       padding-right: 8px;
     }
@@ -259,6 +301,8 @@
       font-size: 0.875rem;
       color: var(--primary-text);
       line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
     .message-tags {
       display: flex;
@@ -285,23 +329,80 @@
       background: rgba(56, 189, 248, 0.25);
     }
 
-    /* AI message style */
-    .message.ai-message {
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(52, 211, 153, 0.4);
+    .field-note-post {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 0;
+      padding: 12px 0 14px 0;
+      margin-bottom: 0;
     }
-    .message.ai-message .message-author {
-      color: var(--accent-green);
+    .field-note-post:last-child {
+      border-bottom: none;
+      padding-bottom: 4px;
     }
-    .husbandry-chip {
-      display: inline-flex;
+    .field-note-post.is-muted {
+      opacity: 0.35;
+    }
+    .note-header {
+      display: flex;
+      gap: 8px;
       align-items: center;
-      gap: 4px;
-      background: rgba(52, 211, 153, 0.15);
-      color: #6EE7B7;
-      padding: 3px 10px;
-      border-radius: 9999px;
+      margin-bottom: 7px;
+      flex-wrap: wrap;
+    }
+    .note-time {
+      font-size: 0.69rem;
+      color: var(--secondary-text);
+      letter-spacing: 0.02em;
+    }
+    .note-author {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--primary-text);
+      text-transform: lowercase;
+    }
+    .note-body {
+      font-size: 0.84rem;
+      line-height: 1.5;
+      color: var(--primary-text);
+      margin-bottom: 6px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .note-structured {
+      margin-bottom: 7px;
+    }
+    .note-line {
+      font-size: 0.77rem;
+      line-height: 1.45;
+      color: var(--secondary-text);
+      margin: 1px 0;
+      word-break: break-word;
+    }
+    .note-line strong {
+      color: #CBD5E1;
+      margin-right: 4px;
+      font-size: 0.69rem;
+      letter-spacing: 0.03em;
+    }
+    .dev-noise-wrap {
+      margin-top: 12px;
+      border-top: 1px dashed rgba(148, 163, 184, 0.28);
+      padding-top: 10px;
+    }
+    .dev-noise-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .dev-noise-label {
       font-size: 0.7rem;
+      color: var(--secondary-text);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
     /* Empty state */
@@ -324,6 +425,9 @@
       position: sticky;
       top: 80px;
       align-self: start;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
     @media (max-width: 1024px) {
       .right-column { position: static; }
@@ -332,22 +436,72 @@
       background: rgba(15, 23, 42, 0.8);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 16px;
-      padding: 16px 20px;
-      margin-bottom: 16px;
+      padding: 14px 16px;
+      margin-bottom: 0;
+      overflow: hidden;
     }
-    .ai-panel:last-child { margin-bottom: 0; }
     .ai-panel-header {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--secondary-text);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
     .ai-panel-content {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--primary-text);
-      line-height: 1.6;
+      line-height: 1.5;
+      white-space: normal;
+      word-break: break-word;
+    }
+    .context-row {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 8px;
+      margin-bottom: 7px;
+      align-items: start;
+    }
+    .context-key {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--secondary-text);
+      font-weight: 600;
+    }
+    .context-value {
+      font-size: 0.8rem;
+      color: var(--primary-text);
+      line-height: 1.45;
+    }
+    .thread-cluster-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .thread-cluster-btn {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      color: var(--primary-text);
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: 0.76rem;
+      cursor: pointer;
+      text-align: left;
+    }
+    .thread-cluster-btn.active {
+      border-color: rgba(56, 189, 248, 0.5);
+      background: rgba(56, 189, 248, 0.14);
+    }
+    .cluster-count {
+      font-size: 0.68rem;
+      color: var(--secondary-text);
+      white-space: nowrap;
     }
     .ai-panel-content ul {
       margin: 0;
@@ -362,6 +516,93 @@
     }
     .ai-panel-content a:hover {
       text-decoration: underline;
+    }
+    .recall-search-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .recall-search-row input {
+      flex: 1;
+      background: #0F172A;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      color: var(--primary-text);
+    }
+    .recall-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .recall-item {
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: rgba(15, 23, 42, 0.55);
+    }
+    .recall-item-title {
+      font-size: 0.78rem;
+      color: var(--primary-text);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .recall-item-meta {
+      font-size: 0.68rem;
+      color: var(--secondary-text);
+      margin-bottom: 6px;
+    }
+    .recall-item-preview {
+      font-size: 0.76rem;
+      color: var(--secondary-text);
+      line-height: 1.45;
+      margin-bottom: 8px;
+    }
+    .recall-item-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .btn-secondary {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+      padding: 6px 10px;
+      border-radius: 9999px;
+      font-size: 0.74rem;
+      cursor: pointer;
+    }
+    @media (max-width: 900px) {
+      .nav-bar {
+        padding: 10px 14px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .nav-links {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+      .page-container {
+        padding: 16px;
+      }
+      .card {
+        min-height: auto;
+        padding: 16px;
+      }
+      .message-input-area {
+        flex-direction: column;
+      }
+      .message-input-area .btn-primary {
+        width: 100%;
+      }
+      .message-stream {
+        max-height: 52vh;
+      }
     }
 
     /* Case summary card */
@@ -402,6 +643,7 @@
       font-size: 0.8rem;
       color: var(--secondary-text);
       line-height: 1.5;
+      word-break: break-word;
     }
 
     /* Resolution insights section */
@@ -458,12 +700,12 @@
       <!-- LEFT COLUMN: Feed -->
       <div class="card">
         <!-- Thread loader -->
-        <div class="thread-loader-row">
+        <div class="thread-loader-row" style="display:none;">
           <label for="threadIdInput">Thread:</label>
           <input id="threadIdInput" type="text" placeholder="e.g. water-test" />
           <button class="btn-primary" id="loadThreadBtn" type="button">Load Thread</button>
         </div>
-        <div id="threadNotice" class="thread-notice">Load a thread to view messages and recap.</div>
+        <div id="threadNotice" class="thread-notice" style="display:none;">Live feed updates automatically.</div>
 
         <!-- Link to case -->
         <div class="link-case-row">
@@ -478,6 +720,11 @@
           <input type="text" id="messageInput" placeholder="Share an observation, note, or question..." />
           <button class="btn-primary" id="postBtn">Post</button>
         </div>
+        <div class="context-input-row">
+          <label for="contextInput">Add Context:</label>
+          <input id="contextInput" type="text" placeholder="Optional background (arrival timing, system age, recent changes, water source)..." />
+        </div>
+        <div id="referencedCasesHint" class="thread-notice" style="display:none;"></div>
 
         <!-- Message stream -->
         <div class="message-stream" id="messageStream">
@@ -488,59 +735,42 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN: AI Assistant -->
+      <!-- RIGHT COLUMN: Context rail -->
       <div class="right-column">
-        <!-- Linked case summary -->
-        <div class="ai-panel" id="linkedCasePanel" style="display: none;">
-          <div class="ai-panel-header">Linked Case</div>
-          <div class="case-summary" id="linkedCaseSummary">
-            <!-- Populated dynamically -->
-          </div>
-        </div>
-
-        <!-- AI discussion summary -->
         <div class="ai-panel">
-          <div class="ai-panel-header">Discussion Summary</div>
-          <div class="ai-panel-content" id="discussionSummary">
-            <p style="color: var(--secondary-text); font-style: italic;">
-              As the conversation evolves, summaries of what's been discussed and what's been tried will appear here.
-            </p>
+          <div class="ai-panel-header">Live Chat Summary</div>
+          <div class="ai-panel-content" id="activeCaseSummary">
+            <p style="margin: 0; color: var(--secondary-text);">No live summary yet.</p>
           </div>
         </div>
 
-        <!-- Stable colony conditions -->
-<div class="ai-panel">
-  <div class="ai-panel-header">Stable Colony Conditions</div>
-  <div class="ai-panel-content">
-    <ul>
-      <li>Water source and remineralization approach</li>
-      <li>System maturity and biofilter stability</li>
-      <li>Measured pH and conductivity</li>
-      <li>Tank density and feeding response</li>
-      <li>Flow, nozzle splash, and pump vibration</li>
-    </ul>
-  </div>
-</div>
-          </div>
-        </div>
-
-        <!-- Resolution insights from past cases -->
         <div class="ai-panel">
-          <div class="ai-panel-header">Insights from Past Cases</div>
-          <div class="ai-panel-content" id="resolutionInsights">
-            <p style="color: var(--secondary-text); font-style: italic;">
-              Patterns from resolved cases will appear here to help guide your troubleshooting.
-            </p>
-          </div>
-        </div>
-
-        <!-- Quick actions -->
-        <div class="ai-panel">
-          <div class="ai-panel-header">Quick Actions</div>
+          <div class="ai-panel-header">Emerging Threads (Live)</div>
           <div class="ai-panel-content">
-            <p><a href="case-intake.html">→ Describe a new problem</a></p>
-            <p><a href="case-history.html">→ Review past cases</a></p>
-            <p><a href="robuffer.html">→ ROBUFFER guide</a></p>
+            <div id="emergingThreadClusterList" class="thread-cluster-list">
+              <p style="margin: 0; color: var(--secondary-text);">No active thread clusters yet.</p>
+            </div>
+            <p style="margin: 8px 0 0 0; color: var(--secondary-text); font-size: 0.72rem;">
+              Click a thread to highlight related posts.
+            </p>
+          </div>
+        </div>
+
+        <div class="ai-panel">
+          <div class="ai-panel-header">Related Cases</div>
+          <div class="ai-panel-content">
+            <div id="similarCasesLive" class="recall-list">
+              <p style="margin: 0; color: var(--secondary-text);">No similar cases found yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ai-panel">
+          <div class="ai-panel-header">Linked Cases / Summaries</div>
+          <div class="ai-panel-content">
+            <div id="linkedCasesList" class="recall-list">
+              <p style="margin: 0; color: var(--secondary-text);">Linked and referenced cases will appear here.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -549,13 +779,19 @@
 
   <script>
     const API_BASE = "http://localhost:4000";
+    const DEFAULT_THREAD_ID = "social-feed";
+    const ACTIVE_THREAD_STORAGE_KEY = "frogSocialActiveThreadId";
     let currentThreadId = "";
     let currentThreadMessages = [];
     let currentThreadCase = null;
+    let caseMemory = [];
     let rehydrationStatus = { label: "Awaiting thread load", tone: "muted" };
-    let latestKeyStrategiesPayload = null;
-    let latestKeyStrategiesThreadId = "";
-    let keyStrategiesCollapsed = false;
+    let latestEmergingThreadsPayload = null;
+    let latestEmergingThreadsThreadId = "";
+    let emergingThreadsCollapsed = false;
+    let latestSimilarCasesPayload = null;
+    let similarityRefreshIntervalId = null;
+    let showDevNoisePosts = false;
 
     // LocalStorage helpers
     function loadSocial() {
@@ -576,83 +812,63 @@
       } catch { return {}; }
     }
 
-    function loadCases() {
-      try {
-        const raw = localStorage.getItem("frogSocialCases");
-        return raw ? JSON.parse(raw) : [];
-      } catch { return []; }
+    async function fetchCasesFromApi() {
+      const response = await fetch(`${API_BASE}/api/cases`);
+      if (!response.ok) throw new Error(`Cases load failed (${response.status})`);
+      const rows = await response.json();
+      const filtered = Array.isArray(rows)
+        ? rows.filter((entry) => String(entry.admissionState || "admitted") === "admitted")
+        : [];
+      caseMemory = filtered.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      return caseMemory;
     }
 
     // Populate case selector
     function populateCaseSelector() {
-      const cases = loadCases();
       const select = document.getElementById("linkCase");
-      
       // Keep first option
       select.innerHTML = '<option value="">No case linked</option>';
-      
-      cases.forEach(c => {
+      caseMemory.forEach(c => {
         const option = document.createElement("option");
-        option.value = c.id;
-        const label = c.colonyName || "Unlabeled";
-        const status = c.status === "resolved" ? " ✓" : "";
-        option.textContent = `${label} - ${c.problemDescription?.slice(0, 40) || c.snippet?.slice(0, 40) || "No description"}...${status}`;
+        option.value = c.caseId || c.id;
+        const label = c.title || c.threadId || "Unlabeled";
+        const preview = toSummaryPreview(c.caseSummary || c.currentSystemStatus || "");
+        const numberTag = Number(c.caseNumber || 0) > 0 ? `Case ${c.caseNumber} · ` : "";
+        option.textContent = `${numberTag}${label} - ${preview}`;
         select.appendChild(option);
       });
     }
 
+    let latestRecapPayload = null;
+    let activeThreadClusterKey = "";
+
     // Show linked case summary
     function showLinkedCase(caseId) {
-      const panel = document.getElementById("linkedCasePanel");
-      const summary = document.getElementById("linkedCaseSummary");
-      
       if (!caseId) {
-        panel.style.display = "none";
+        currentThreadCase = null;
+        renderActiveCaseSummary();
+        renderLinkedCasesList();
         return;
       }
 
-      const cases = loadCases();
-      const linkedCase = cases.find(c => c.id == caseId);
+      const linkedCase = caseMemory.find(c => (c.caseId || c.id) == caseId);
       
       if (!linkedCase) {
-        panel.style.display = "none";
+        currentThreadCase = null;
+        renderActiveCaseSummary();
+        renderLinkedCasesList();
         return;
       }
 
-      panel.style.display = "block";
-      const shortPreview = toSummaryPreview(linkedCase.problemDescription || linkedCase.snippet || "No description");
-      summary.innerHTML = `
-        <div class="case-summary-header">
-          <span class="case-summary-title">${linkedCase.colonyName || "Unlabeled"}</span>
-          <span class="case-status ${linkedCase.status || 'open'}">${linkedCase.status || 'open'}</span>
-        </div>
-        <div class="case-summary-body">
-          ${escapeHtml(shortPreview)}
-        </div>
-      `;
+      currentThreadCase = linkedCase;
+      renderActiveCaseSummary();
+      renderLinkedCasesList();
     }
 
     function renderLinkedCaseFromBackend(frogCase) {
-      const panel = document.getElementById("linkedCasePanel");
-      const summary = document.getElementById("linkedCaseSummary");
       currentThreadCase = frogCase || null;
-
-      if (!frogCase) {
-        panel.style.display = "none";
-        summary.innerHTML = "";
-        return;
-      }
-
-      panel.style.display = "block";
-      const statusText = String(frogCase.currentStatus || frogCase.status || "open");
-      const summaryText = toSummaryPreview(frogCase.caseSummary || frogCase.currentSystemStatus || "No summary yet.");
-      summary.innerHTML = `
-        <div class="case-summary-header">
-          <span class="case-summary-title">${escapeHtml(frogCase.title || "Linked case")}</span>
-          <span class="case-status ${escapeHtml(String(frogCase.status || "open").toLowerCase())}">${escapeHtml(statusText)}</span>
-        </div>
-        <div class="case-summary-body">${escapeHtml(summaryText)}</div>
-      `;
+      renderActiveCaseSummary();
+      renderLinkedCasesList();
     }
 
     // Format timestamp
@@ -667,94 +883,464 @@
       return date.toLocaleDateString();
     }
 
+    function formatDateLabel(isoString) {
+      const date = new Date(isoString);
+      if (Number.isNaN(date.getTime())) return "Unknown date";
+      return date.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+
+    function formatDateTimeLabel(isoString) {
+      const date = new Date(isoString);
+      if (Number.isNaN(date.getTime())) return "Unknown date";
+      return date.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+
     function setThreadNotice(message, isError = false) {
       const notice = document.getElementById("threadNotice");
       notice.textContent = message;
       notice.className = isError ? "thread-notice error" : "thread-notice";
     }
 
+    function persistActiveThreadId(threadId) {
+      const safe = String(threadId || "").trim();
+      if (!safe) return;
+      sessionStorage.setItem(ACTIVE_THREAD_STORAGE_KEY, safe);
+      localStorage.setItem(ACTIVE_THREAD_STORAGE_KEY, safe);
+    }
+
+    function getDefaultThreadId() {
+      const fromInput = String(document.getElementById("threadIdInput")?.value || "").trim();
+      if (fromInput) return fromInput;
+      const persisted = String(
+        sessionStorage.getItem(ACTIVE_THREAD_STORAGE_KEY) ||
+        localStorage.getItem(ACTIVE_THREAD_STORAGE_KEY) ||
+        ""
+      ).trim();
+      if (persisted) return persisted;
+      // Prefer a stable default so prior persisted social posts remain visible after new login.
+      persistActiveThreadId(DEFAULT_THREAD_ID);
+      return DEFAULT_THREAD_ID;
+    }
+
     function ensureThreadLoaded() {
-      if (!currentThreadId) {
-        setThreadNotice("Please load a thread first.", true);
-        return false;
-      }
+      if (!currentThreadId) currentThreadId = getDefaultThreadId();
       return true;
     }
 
-    function renderList(items, emptyText) {
-      if (!Array.isArray(items) || items.length === 0) {
+    function compactUniqueLines(items, maxItems = 5, maxLen = 120) {
+      const seen = new Set();
+      const out = [];
+      for (const raw of Array.isArray(items) ? items : []) {
+        const normalized = String(raw || "")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (!normalized) continue;
+        const key = normalized.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(normalized.length > maxLen ? `${normalized.slice(0, maxLen - 3).trimEnd()}...` : normalized);
+        if (out.length >= maxItems) break;
+      }
+      return out;
+    }
+
+    function renderList(items, emptyText, maxItems = 5, maxLen = 120) {
+      const compact = compactUniqueLines(items, maxItems, maxLen);
+      if (compact.length === 0) {
         return `<li style="color: var(--secondary-text);">${emptyText}</li>`;
       }
-      return items.map((item) => `<li>${escapeHtml(String(item))}</li>`).join("");
+      return compact.map((item) => `<li>${escapeHtml(String(item))}</li>`).join("");
+    }
+
+    function renderShortLines(text, emptyText, maxLines = 2) {
+      const cleaned = String(text || "").trim();
+      if (!cleaned) {
+        return `<p style="margin: 0; color: var(--secondary-text);">${escapeHtml(emptyText)}</p>`;
+      }
+      const fillerPattern =
+        /\b(observed issues remain non-specific|limited thread context|no major context gaps flagged|more detail is needed|consider adding|actions focus on repeated field signals)\b/i;
+      const withBreaks = cleaned
+        .replace(/\s*(Current picture:|Reported context:|Open points:|Recent outcomes:)\s*/g, "\n$1 ")
+        .trim();
+      const lines = compactUniqueLines(
+        withBreaks
+        .split(/\n+/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .filter((line) => !/^(Recent outcomes:|Observed signals:|Still uncertain:)/i.test(line))
+        .filter((line) => !fillerPattern.test(line))
+        .map((line) => line.length > 110 ? `${line.slice(0, 107).trimEnd()}...` : line),
+        maxLines,
+        110
+      );
+      if (lines.length === 0) {
+        return `<p style="margin: 0; color: var(--secondary-text);">${escapeHtml(emptyText)}</p>`;
+      }
+      return lines.map((line) => `<p style="margin: 4px 0; color: var(--primary-text);">${escapeHtml(line)}</p>`).join("");
+    }
+
+    function parseSummaryFields(recap) {
+      const text = String(recap?.caseUpdate || "").trim();
+      const sections = {
+        currentPicture: "",
+        reportedContext: "",
+        openPoints: "",
+      };
+
+      const matches = text.match(/(Current picture:|Reported context:|Open points:)\s*([^]*?)(?=(Current picture:|Reported context:|Open points:|$))/gi) || [];
+      for (const raw of matches) {
+        const normalized = raw.replace(/\s+/g, " ").trim();
+        if (/^Current picture:/i.test(normalized)) {
+          sections.currentPicture = normalized.replace(/^Current picture:\s*/i, "").trim();
+        } else if (/^Reported context:/i.test(normalized)) {
+          sections.reportedContext = normalized.replace(/^Reported context:\s*/i, "").trim();
+        } else if (/^Open points:/i.test(normalized)) {
+          sections.openPoints = normalized.replace(/^Open points:\s*/i, "").trim();
+        }
+      }
+
+      if (!sections.currentPicture) {
+        sections.currentPicture = String(recap?.situationSummary || "").trim();
+      }
+
+      return sections;
+    }
+
+    function normalizeComparable(text) {
+      return String(text || "").toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+    }
+
+    function cleanNoteTone(text) {
+      return String(text || "")
+        .replace(/\b(it seems that|this could potentially indicate|the ai believes)\b/gi, "")
+        .replace(/\b(later responses suggest|early discussion considered|current thinking is shifting toward)\b/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function isDevOrTestMessage(message) {
+      const threadId = String(message?.threadId || "").toLowerCase();
+      const user = String(message?.userId || message?.author || "").toLowerCase();
+      const content = String(message?.text || message?.content || "").toLowerCase();
+      return (
+        /^auto-/.test(threadId) ||
+        /^smoke/.test(threadId) ||
+        /^test/.test(threadId) ||
+        threadId.includes("unify-e2e") ||
+        user.includes("qa") ||
+        user.includes("test") ||
+        content.includes("update pass") ||
+        content.includes("unified update test") ||
+        content.includes("describe update for")
+      );
+    }
+
+    function extractFieldNote(text) {
+      const cleaned = cleanNoteTone(String(text || "").replace(/\s+/g, " ").trim());
+      const lines = cleaned.split(/(?<=[.!?])\s+/).map((line) => line.trim()).filter(Boolean);
+      const shortLines = compactUniqueLines(lines, 4, 140);
+      const q = shortLines.find((line) => /\?/.test(line)) || "";
+      const bodyLines = compactUniqueLines(shortLines.filter((line) => line !== q), 2, 140);
+      const bodyText = normalizeComparable(bodyLines.join(" "));
+      const candidateObs = shortLines[0] || "";
+      const obs = normalizeComparable(candidateObs) && !bodyText.includes(normalizeComparable(candidateObs))
+        ? candidateObs
+        : "";
+      const ctxCandidate = shortLines.find((line) => /(tank|system|density|recent|after|before|room|flow|pump|water|ph|conductivity|thread|case)/i.test(line)) || "";
+      const ctxComparable = normalizeComparable(ctxCandidate);
+      const obsComparable = normalizeComparable(obs);
+      const ctx = ctxComparable && !bodyText.includes(ctxComparable) && ctxComparable !== obsComparable ? ctxCandidate : "";
+      return {
+        obs,
+        ctx,
+        q,
+        bodyLines,
+      };
+    }
+
+    function extractSearchTokens(text) {
+      return String(text || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .split(/\s+/)
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 2);
+    }
+
+    function getRecentEmergingMessages(messages, windowHours = 2) {
+      const rows = Array.isArray(messages) ? messages : [];
+      const cutoff = Date.now() - windowHours * 60 * 60 * 1000;
+      return rows.filter((message) => {
+        const ts = new Date(String(message.createdAt || "")).getTime();
+        return Number.isFinite(ts) && ts >= cutoff;
+      });
+    }
+
+    function buildEmergingThreadClusters(messages) {
+      const recent = getRecentEmergingMessages(messages, 2);
+      if (!recent.length) return [];
+      const combined = recent.map((message) => String(message.text || message.content || "")).join(" ").toLowerCase();
+      const themes = [];
+      const tokens = [];
+      if (/(vibration|pump|noise|hum)/.test(combined)) {
+        themes.push("vibration");
+        tokens.push("vibration", "pump", "noise", "hum");
+      }
+      if (/(feeding|eating|appetite|off food|not eating|reduced feeding)/.test(combined)) {
+        themes.push("eating");
+        tokens.push("feeding", "eating", "appetite", "off", "food", "not");
+      }
+      if (/\bph\b|acidity|alkalinity/.test(combined)) {
+        themes.push("pH");
+        tokens.push("ph");
+      }
+      const latestAt = recent.reduce((latest, message) => {
+        const created = String(message.createdAt || "");
+        return !latest || new Date(created).getTime() > new Date(latest).getTime() ? created : latest;
+      }, "");
+      if (!themes.length) {
+        return [{
+          key: "emerging-current",
+          label: "Emerging threads in the last 2 hours are still forming from current posts.",
+          count: recent.length,
+          latestAt,
+          tokens: [],
+        }];
+      }
+      return [{
+        key: "emerging-current",
+        label: `Emerging threads are about ${themes.join(", ")}.`,
+        count: recent.length,
+        latestAt,
+        tokens: Array.from(new Set(tokens)),
+      }];
+    }
+
+    function renderEmergingThreadClusters() {
+      const el = document.getElementById("emergingThreadClusterList");
+      if (!el) return;
+      const messages = (currentThreadMessages || []).filter((message) => !isSystemGeneratedMessage(message));
+      const clusters = buildEmergingThreadClusters(messages);
+      if (!clusters.length) {
+        el.innerHTML = `<p style="margin:0; color: var(--secondary-text);">No active thread clusters yet.</p>`;
+        return;
+      }
+      el.innerHTML = clusters
+        .map((cluster) => `
+          <button class="thread-cluster-btn ${activeThreadClusterKey === cluster.key ? "active" : ""}" type="button" data-cluster-key="${escapeHtml(cluster.key)}">
+            <span>${escapeHtml(cluster.label)}</span>
+            <span class="cluster-count">last 2h · ${escapeHtml(String(cluster.count))} posts · ${escapeHtml(formatDateTimeLabel(cluster.latestAt))}</span>
+          </button>
+        `)
+        .join("");
+    }
+
+    function renderActiveCaseSummary() {
+      const container = document.getElementById("activeCaseSummary");
+      if (!container) return;
+      const selectedCaseId = document.getElementById("linkCase")?.value || "";
+      const linkedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(selectedCaseId)) || currentThreadCase;
+      const summary = parseSummaryFields(latestRecapPayload || {});
+      const messageCorpus = (currentThreadMessages || [])
+        .filter((message) => !isSystemGeneratedMessage(message))
+        .map((message) => String(message.text || message.content || ""))
+        .join(" ")
+        .toLowerCase();
+      const normalizeForCompare = (text) =>
+        String(text || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      const overlapScore = (a, b) => {
+        const ta = normalizeForCompare(a).split(" ").filter((t) => t.length >= 4);
+        const tb = new Set(normalizeForCompare(b).split(" ").filter((t) => t.length >= 4));
+        if (!ta.length || !tb.size) return 0;
+        const hits = ta.filter((token) => tb.has(token)).length;
+        return hits / Math.max(ta.length, 1);
+      };
+      const contextGrounded = (() => {
+        const context = String(summary.reportedContext || "").trim();
+        if (!context) return "";
+        const contextTokens = normalizeForCompare(context).split(" ").filter((token) => token.length >= 4);
+        const hasGroundingToken = contextTokens.some((token) => messageCorpus.includes(token));
+        if (!hasGroundingToken) return "";
+        if (overlapScore(context, summary.currentPicture || "") >= 0.72) return "";
+        return context;
+      })();
+      const status = String(linkedCase?.currentStatus || linkedCase?.status || latestRecapPayload?.currentStatus || "open");
+      const lastUpdate = linkedCase?.updatedAt || (currentThreadMessages[currentThreadMessages.length - 1]?.createdAt ?? "");
+      const chatDate = currentThreadMessages[0]?.createdAt || linkedCase?.createdAt || "";
+      const title = linkedCase?.title || linkedCase?.threadId || currentThreadId || "Active feed";
+      const rows = [
+        ["Thread", title],
+        ["Chat date", formatDateTimeLabel(chatDate)],
+        ["Status", status],
+        ["Last update", formatDateTimeLabel(lastUpdate)],
+        ["Current", summary.currentPicture || "No current picture yet."],
+        ["Context", contextGrounded || "No additional context logged yet."],
+        ["Open", summary.openPoints || "No open points logged from posts."],
+      ];
+      container.innerHTML = rows
+        .map(([key, value]) => `
+          <div class="context-row">
+            <div class="context-key">${escapeHtml(key)}</div>
+            <div class="context-value">${escapeHtml(toSummaryPreview(value))}</div>
+          </div>
+        `)
+        .join("");
+    }
+
+    function renderLinkedCasesList() {
+      const container = document.getElementById("linkedCasesList");
+      if (!container) return;
+      const scopedMessages = (currentThreadMessages || []).filter((message) => !isSystemGeneratedMessage(message));
+      const selectedCaseId = document.getElementById("linkCase")?.value || "";
+      const selectedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(selectedCaseId));
+      const byThread = scopedMessages
+        .map((message) => caseMemory.find((entry) => String(entry.threadId || "").trim() === String(message.threadId || "").trim()))
+        .filter(Boolean);
+      const byNumber = scopedMessages.flatMap((message) =>
+        findReferencedCaseNumbers(String(message.text || message.content || ""))
+          .map((num) => findCaseByNumber(num))
+          .filter(Boolean)
+      );
+      const deduped = new Map();
+      for (const entry of [selectedCase, ...byThread, ...byNumber].filter(Boolean)) {
+        const id = String(entry.caseId || entry.id || "");
+        if (!id || deduped.has(id)) continue;
+        deduped.set(id, {
+          id,
+          title: entry.title || entry.threadId || "Unlabeled",
+          caseNumber: Number(entry.caseNumber || 0),
+          updatedAt: entry.updatedAt || "",
+        });
+      }
+      const rows = Array.from(deduped.values())
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 8);
+
+      if (!rows.length) {
+        container.innerHTML = `<p style="margin:0; color: var(--secondary-text);">No linked cases in this thread yet.</p>`;
+        return;
+      }
+      container.innerHTML = rows.map((row) => `
+        <div class="recall-item">
+          <div class="recall-item-title">${escapeHtml(row.title)}</div>
+          <div class="recall-item-meta">${row.caseNumber > 0 ? `Case ${escapeHtml(String(row.caseNumber))} · ` : ""}last activity ${escapeHtml(formatDateTimeLabel(row.updatedAt))}</div>
+          <div class="recall-item-actions">
+            <button class="btn-secondary linked-case-open" type="button" data-case-id="${escapeHtml(String(row.id || ""))}">Open case</button>
+          </div>
+        </div>
+      `).join("");
     }
 
     function renderRecap(recap) {
-      const container = document.getElementById("discussionSummary");
-      const badgeColor =
-        rehydrationStatus.tone === "ok"
-          ? "rgba(52, 211, 153, 0.18)"
-          : rehydrationStatus.tone === "warn"
-            ? "rgba(251, 191, 36, 0.2)"
-            : "rgba(148, 163, 184, 0.2)";
-      const badgeText =
-        rehydrationStatus.tone === "ok"
-          ? "#6EE7B7"
-          : rehydrationStatus.tone === "warn"
-            ? "#FCD34D"
-            : "var(--secondary-text)";
-      container.innerHTML = `
-        <div style="margin-bottom: 10px; display: inline-flex; align-items: center; border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 999px; padding: 4px 10px; font-size: 0.72rem; color: ${badgeText}; background: ${badgeColor};">
-          Rehydration: ${escapeHtml(rehydrationStatus.label)}
-        </div>
-        <div style="margin-bottom: 10px;">
-          <strong style="color: var(--accent-green); font-size: 0.82rem;">Case Update</strong>
-          <p style="margin: 6px 0 0 0; color: var(--primary-text);">${escapeHtml(recap.caseUpdate || recap.situationSummary || "No case update yet.")}</p>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <strong style="color: var(--accent-cyan); font-size: 0.76rem; text-transform: uppercase;">Current Strategy</strong>
-          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.currentStrategy || recap.suggestedNextSteps, "No strategy yet.")}</ul>
-          <div style="margin-top: 8px;">
-            <button class="btn-secondary" id="keyStrategiesBtn" type="button" onclick="loadKeyStrategies()">Emerging Strategy</button>
-          </div>
-          <div id="keyStrategiesResult" style="margin-top: 10px;"></div>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Current Status</strong>
-          <p style="margin: 6px 0 0 0; color: var(--primary-text); text-transform: capitalize;">${escapeHtml(recap.currentStatus || recap.resolutionStatus || "open")}</p>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <strong style="color: var(--accent-cyan); font-size: 0.82rem;">What We Know</strong>
-          <p style="margin: 6px 0 0 0; color: var(--primary-text);">${escapeHtml(recap.situationSummary || "No observations yet.")}</p>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Initial Observations</strong>
-          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.initialObservations, "No observations yet.")}</ul>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Missing Details</strong>
-          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.missingDetails, "No missing details yet.")}</ul>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Domains to Review</strong>
-          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.domainsInPlay, "No domains flagged yet.")}</ul>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Actions Tried</strong>
-          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.actionsTried, "No actions logged yet.")}</ul>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Suggested Next Steps</strong>
-          <ul style="margin: 6px 0 0 0; padding-left: 18px;">${renderList(recap.suggestedNextSteps, "No suggested next steps yet.")}</ul>
-        </div>
-        <div>
-          <strong style="color: var(--secondary-text); font-size: 0.76rem; text-transform: uppercase;">Resolution Status</strong>
-          <p style="margin: 6px 0 0 0; color: var(--primary-text); text-transform: capitalize;">${escapeHtml(recap.resolutionStatus || "open")}</p>
-        </div>
-      `;
+      latestRecapPayload = recap || null;
+      renderActiveCaseSummary();
+      renderEmergingThreadClusters();
+      renderLinkedCasesList();
+    }
 
-      if (latestKeyStrategiesPayload && latestKeyStrategiesThreadId === currentThreadId) {
-        renderKeyStrategiesResult(latestKeyStrategiesPayload);
+    async function fetchCaseRecall(query) {
+      const url = `${API_BASE}/api/cases/recall?q=${encodeURIComponent(String(query || "").trim())}&limit=10`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Case recall failed (${response.status})`);
+      return response.json();
+    }
+
+    function formatDateShort(iso) {
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return "Unknown";
+      return date.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+
+    function renderCaseRecall(matches) {
+      const list = document.getElementById("caseRecallList");
+      if (!Array.isArray(matches) || matches.length === 0) {
+        list.innerHTML = `<p style="margin:0; color: var(--secondary-text);">No matching admitted cases found.</p>`;
+        return;
       }
+      list.innerHTML = matches.map((item) => `
+        <div class="recall-item">
+          <div class="recall-item-title">${escapeHtml(item.title || item.threadId)}</div>
+          <div class="recall-item-meta">Case ${escapeHtml(String(item.caseNumber || "n/a"))}</div>
+          <div class="recall-item-meta">${escapeHtml(item.threadId)} · ${escapeHtml(item.status)} · updated ${escapeHtml(formatDateShort(item.updatedAt))}</div>
+          <div class="recall-item-preview">${escapeHtml(item.summaryPreview || "No summary preview.")}</div>
+          <div class="recall-item-actions">
+            <button class="btn-secondary recall-open-btn" type="button" data-thread-id="${encodeURIComponent(String(item.threadId || ""))}">Open in chat</button>
+            <button class="btn-secondary recall-bring-btn" type="button" data-thread-id="${encodeURIComponent(String(item.threadId || ""))}">Bring into discussion</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function openRecalledCaseThread(threadId) {
+      const safe = String(threadId || "").trim();
+      if (!safe) return;
+      window.location.href = `case-history.html?search=${encodeURIComponent(safe)}`;
+    }
+
+    function bringRecalledCaseIntoComposer(threadId) {
+      const safe = String(threadId || "").trim();
+      if (!safe) return;
+      const recalled = caseMemory.find((entry) => String(entry.threadId || "").trim() === safe);
+      const input = document.getElementById("messageInput");
+      const summary = toSummaryPreview(recalled?.caseSummary || recalled?.currentSystemStatus || "");
+      const title = recalled?.title || safe;
+      const cue = `[Recall case ${title} (${safe}): ${summary}] `;
+      input.value = `${cue}${input.value || ""}`.trim();
+      input.focus();
+    }
+
+    function findReferencedCaseNumbers(text) {
+      const source = String(text || "");
+      const matches = [...source.matchAll(/\bcase\s*#?\s*(\d{1,5})\b/gi)];
+      const numbers = matches
+        .map((entry) => Number(entry[1]))
+        .filter((value) => Number.isFinite(value) && value > 0);
+      return Array.from(new Set(numbers));
+    }
+
+    function findCaseByNumber(caseNumber) {
+      const target = Number(caseNumber);
+      if (!Number.isFinite(target) || target <= 0) return null;
+      return caseMemory.find((entry) => Number(entry.caseNumber || 0) === target) || null;
+    }
+
+    function renderReferencedCasesHint(cases) {
+      const el = document.getElementById("referencedCasesHint");
+      const rows = Array.isArray(cases) ? cases : [];
+      if (!rows.length) {
+        el.style.display = "none";
+        el.textContent = "";
+        return;
+      }
+      const labels = rows
+        .map((entry) => `Case ${entry.caseNumber}: ${entry.title || entry.threadId}`)
+        .slice(0, 3)
+        .join(" | ");
+      el.style.display = "block";
+      el.className = "thread-notice";
+      el.textContent = `Referenced in this message: ${labels}`;
     }
 
     async function fetchThreadMessages(threadId) {
@@ -778,7 +1364,7 @@
       return response.json();
     }
 
-    async function fetchThreadKeyStrategies(threadId) {
+    async function fetchThreadEmergingThreads(threadId) {
       const primary = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/emerging-strategy`);
       if (primary.ok) {
         return primary.json();
@@ -794,20 +1380,75 @@
       return fallback.json();
     }
 
-    function renderKeyStrategiesResult(payload) {
-      const container = document.getElementById("keyStrategiesResult");
+    async function fetchThreadSimilarCases(threadId) {
+      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/similar-cases?limit=8`);
+      if (!response.ok) {
+        throw new Error(`Similar case search failed (${response.status})`);
+      }
+      return response.json();
+    }
+
+    function renderSimilarCases(payload) {
+      const container = document.getElementById("similarCasesLive");
+      if (!container) return;
+      const matches = Array.isArray(payload?.matches) ? payload.matches : [];
+      if (!matches.length) {
+        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">No similar cases found yet.</p>`;
+        return;
+      }
+      container.innerHTML = matches.slice(0, 4).map((item) => `
+        <div class="recall-item">
+          <div class="recall-item-title">Case ${escapeHtml(String(item.caseNumber || "n/a"))}: ${escapeHtml(item.title || item.threadId)} ${String(item.status || "").toUpperCase() === "RESOLVED" ? '<span style="margin-left:6px;padding:2px 8px;border-radius:999px;background:rgba(52,211,153,0.2);color:#6EE7B7;font-size:0.64rem;">resolved</span>' : ""}</div>
+          <div class="recall-item-meta">${escapeHtml(item.threadId)} · ${escapeHtml(formatDateTimeLabel(item.updatedAt))} · score ${escapeHtml(String(item.matchScore || 0))} · ${escapeHtml(item.status || "")}</div>
+          <div class="recall-item-preview">${escapeHtml(toSummaryPreview(item.summaryPreview || ""))}</div>
+          <div class="recall-item-actions">
+            <button class="btn-secondary sim-open-btn" type="button" data-thread-id="${encodeURIComponent(String(item.threadId || ""))}">Open linked case</button>
+            <button class="btn-secondary sim-bring-btn" type="button" data-thread-id="${encodeURIComponent(String(item.threadId || ""))}">Bring into discussion</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function refreshSimilarCasesForCurrentThread() {
+      if (!currentThreadId) return;
+      const container = document.getElementById("similarCasesLive");
+      if (container && !latestSimilarCasesPayload) {
+        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">Searching related cases...</p>`;
+      }
+      try {
+        const payload = await fetchThreadSimilarCases(currentThreadId);
+        latestSimilarCasesPayload = payload;
+        renderSimilarCases(payload);
+      } catch (error) {
+        if (container) {
+          container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">No similar cases found yet.</p>`;
+        }
+      }
+    }
+
+    function startSimilarityAutoRefresh() {
+      if (similarityRefreshIntervalId) {
+        clearInterval(similarityRefreshIntervalId);
+      }
+      similarityRefreshIntervalId = setInterval(() => {
+        refreshSimilarCasesForCurrentThread();
+      }, 15000);
+    }
+
+    function renderEmergingThreadsResult(payload) {
+      const container = document.getElementById("emergingThreadsResult");
       if (!container) return;
 
-      const title = payload?.title || "Emerging Strategy";
-      const toggleLabel = keyStrategiesCollapsed ? "Show strategies" : "Hide strategies";
+      const title = "Emerging Threads";
+      const toggleLabel = emergingThreadsCollapsed ? "Show details" : "Hide details";
 
       if (!payload || !payload.ready) {
-        if (keyStrategiesCollapsed) {
+        if (emergingThreadsCollapsed) {
           container.innerHTML = `
             <div style="border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 10px; padding: 10px; background: rgba(15, 23, 42, 0.42);">
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                 <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--secondary-text);">${escapeHtml(title)}</div>
-                <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleKeyStrategiesVisibility()">${toggleLabel}</button>
+                <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleEmergingThreadsVisibility()">${toggleLabel}</button>
               </div>
             </div>
           `;
@@ -817,7 +1458,7 @@
           <div style="border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 10px; padding: 10px; background: rgba(15, 23, 42, 0.42);">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px;">
               <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--secondary-text);">${escapeHtml(title)}</div>
-              <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleKeyStrategiesVisibility()">${toggleLabel}</button>
+              <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleEmergingThreadsVisibility()">${toggleLabel}</button>
             </div>
             <p style="margin: 0; color: var(--secondary-text);">${escapeHtml(payload?.message || "More detail is needed before generating strong strategies. Consider adding feeding behavior, water parameters, system setup, or recent changes.")}</p>
           </div>
@@ -825,12 +1466,12 @@
         return;
       }
 
-      if (keyStrategiesCollapsed) {
+      if (emergingThreadsCollapsed) {
         container.innerHTML = `
           <div style="border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 10px; padding: 10px; background: rgba(15, 23, 42, 0.46);">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
               <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--accent-cyan);">${escapeHtml(title)}</div>
-              <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleKeyStrategiesVisibility()">${toggleLabel}</button>
+              <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleEmergingThreadsVisibility()">${toggleLabel}</button>
             </div>
           </div>
         `;
@@ -842,80 +1483,83 @@
         <div style="border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 10px; padding: 10px; background: rgba(15, 23, 42, 0.46);">
           <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px;">
             <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--accent-cyan);">${escapeHtml(title)}</div>
-            <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleKeyStrategiesVisibility()">${toggleLabel}</button>
+            <button class="btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" type="button" onclick="toggleEmergingThreadsVisibility()">${toggleLabel}</button>
           </div>
           <div style="margin-bottom: 8px;">
-            <strong style="font-size: 0.78rem; color: var(--primary-text);">1. Primary intervention</strong>
+            <strong style="font-size: 0.78rem; color: var(--primary-text);">1. Likely shared stressor</strong>
             <p style="margin: 4px 0 0 0; color: var(--primary-text);">${escapeHtml(payload.primaryIntervention || "")}</p>
           </div>
           <div style="margin-bottom: 8px;">
-            <strong style="font-size: 0.78rem; color: var(--primary-text);">2. Secondary intervention</strong>
+            <strong style="font-size: 0.78rem; color: var(--primary-text);">2. Current focal points</strong>
             <p style="margin: 4px 0 0 0; color: var(--primary-text);">${escapeHtml(payload.secondaryIntervention || "")}</p>
           </div>
           <div style="margin-bottom: 8px;">
-            <strong style="font-size: 0.78rem; color: var(--primary-text);">3. Supporting actions</strong>
+            <strong style="font-size: 0.78rem; color: var(--primary-text);">3. Repeated views in thread</strong>
             <ul style="margin: 4px 0 0 0; padding-left: 18px;">${renderList(supporting, "No supporting actions yet.")}</ul>
           </div>
           <div>
-            <strong style="font-size: 0.78rem; color: var(--primary-text);">Why this direction</strong>
+            <strong style="font-size: 0.78rem; color: var(--primary-text);">Why this is focal now</strong>
             <p style="margin: 4px 0 0 0; color: var(--secondary-text);">${escapeHtml(payload.whyThisDirection || "")}</p>
           </div>
         </div>
       `;
     }
 
-    window.toggleKeyStrategiesVisibility = function() {
-      if (!latestKeyStrategiesPayload) return;
-      keyStrategiesCollapsed = !keyStrategiesCollapsed;
-      renderKeyStrategiesResult(latestKeyStrategiesPayload);
+    window.toggleEmergingThreadsVisibility = function() {
+      if (!latestEmergingThreadsPayload) return;
+      emergingThreadsCollapsed = !emergingThreadsCollapsed;
+      renderEmergingThreadsResult(latestEmergingThreadsPayload);
     };
 
-    window.loadKeyStrategies = async function() {
+    window.loadEmergingThreads = async function() {
       if (!ensureThreadLoaded()) return;
-      const button = document.getElementById("keyStrategiesBtn");
-      const container = document.getElementById("keyStrategiesResult");
+      const button = document.getElementById("emergingThreadsBtn");
+      const container = document.getElementById("emergingThreadsResult");
       if (button) {
         button.disabled = true;
         button.textContent = "Generating...";
       }
       if (container) {
-        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">Generating strategy options from this thread...</p>`;
+        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">Generating emerging thread details...</p>`;
       }
 
       try {
-        const payload = await fetchThreadKeyStrategies(currentThreadId);
-        latestKeyStrategiesPayload = payload;
-        latestKeyStrategiesThreadId = currentThreadId;
-        keyStrategiesCollapsed = false;
-        renderKeyStrategiesResult(payload);
+        const payload = await fetchThreadEmergingThreads(currentThreadId);
+        latestEmergingThreadsPayload = payload;
+        latestEmergingThreadsThreadId = currentThreadId;
+        emergingThreadsCollapsed = false;
+        renderEmergingThreadsResult(payload);
       } catch (error) {
         console.error("Emerging strategy request failed:", error);
         if (container) {
-          container.innerHTML = `<p style="margin: 0; color: #FCA5A5;">Emerging strategy is temporarily unavailable.</p>`;
+          container.innerHTML = `<p style="margin: 0; color: #FCA5A5;">Emerging threads details are temporarily unavailable.</p>`;
         }
       } finally {
         if (button) {
           button.disabled = false;
-          button.textContent = "Emerging Strategy";
+          button.textContent = "Emerging Threads Details";
         }
       }
     };
 
     async function loadThread(threadId) {
-      const normalized = (threadId || "").trim();
-      if (!normalized) {
-        setThreadNotice("Please enter a thread id.", true);
-        return;
-      }
-
       try {
         rehydrationStatus = { label: "Loading...", tone: "muted" };
-        setThreadNotice(`Loading thread "${normalized}"...`);
-        const [messagesResult, recapResult, linkedCaseResult, emergingResult] = await Promise.allSettled([
-          fetchThreadMessages(normalized),
-          fetchThreadRecap(normalized),
-          fetchThreadCase(normalized),
-          fetchThreadKeyStrategies(normalized).catch((error) => {
+        activeThreadClusterKey = "";
+        const requestedThreadId = String(threadId || "").trim() || getDefaultThreadId();
+        currentThreadId = requestedThreadId;
+        persistActiveThreadId(requestedThreadId);
+        const threadInput = document.getElementById("threadIdInput");
+        if (threadInput) {
+          threadInput.value = requestedThreadId;
+        }
+        await fetchCasesFromApi().catch(() => caseMemory);
+        populateCaseSelector();
+        const [messagesResult, recapResult, similarResult, emergingResult] = await Promise.allSettled([
+          fetchThreadMessages(requestedThreadId),
+          fetchThreadRecap(requestedThreadId),
+          fetchThreadSimilarCases(requestedThreadId),
+          fetchThreadEmergingThreads(requestedThreadId).catch((error) => {
             console.warn("Emerging strategy preload failed:", error);
             return null;
           }),
@@ -928,63 +1572,53 @@
         }
         const messages = messagesResult.value;
         const recap = recapResult.value;
-        const linkedCase = linkedCaseResult.status === "fulfilled" ? linkedCaseResult.value : null;
+        const similarCases = similarResult.status === "fulfilled" ? similarResult.value : { matches: [] };
         const emerging = emergingResult.status === "fulfilled" ? emergingResult.value : null;
-        if (linkedCaseResult.status === "rejected") {
-          console.warn("Linked case preload failed:", linkedCaseResult.reason);
+        if (similarResult.status === "rejected") {
+          console.warn("Similar-case preload failed:", similarResult.reason);
         }
-        currentThreadId = normalized;
-        if (latestKeyStrategiesThreadId !== normalized) {
-          latestKeyStrategiesPayload = null;
+        if (latestEmergingThreadsThreadId !== requestedThreadId) {
+          latestEmergingThreadsPayload = null;
         }
         currentThreadMessages = Array.isArray(messages) ? messages : [];
-        renderLinkedCaseFromBackend(linkedCase);
+        renderLinkedCaseFromBackend(null);
         if (emerging) {
-          latestKeyStrategiesPayload = emerging;
-          latestKeyStrategiesThreadId = normalized;
+          latestEmergingThreadsPayload = emerging;
+          latestEmergingThreadsThreadId = requestedThreadId;
         }
+        latestSimilarCasesPayload = similarCases;
+        renderSimilarCases(similarCases);
         renderMessages();
         renderRecap(recap);
-
-        const messageCount = currentThreadMessages.length;
-        const linkedCaseFound = Boolean(linkedCase);
-        if (linkedCaseFound && messageCount === 0) {
-          console.warn("Thread history is incomplete for this older case.", {
-            threadId: normalized,
-            caseId: linkedCase.caseId || linkedCase.id,
-          });
-          rehydrationStatus = { label: "Incomplete legacy thread history", tone: "warn" };
-          setThreadNotice("Thread history is incomplete for this older case.");
-        } else {
-          rehydrationStatus = { label: `Loaded ${messageCount} message(s)`, tone: "ok" };
-          setThreadNotice(`Loaded thread "${normalized}".`);
-        }
-
-        console.info("Case open debug:", {
-          event: "case_opened",
-          threadId: normalized,
-          messageCountLoaded: messageCount,
-          linkedCaseStateFound: linkedCaseFound,
-          caseId: linkedCaseFound ? (linkedCase.caseId || linkedCase.id) : null,
-        });
+        await refreshSimilarCasesForCurrentThread();
+        startSimilarityAutoRefresh();
+        rehydrationStatus = { label: `Thread ${requestedThreadId} · ${currentThreadMessages.length} posts`, tone: "ok" };
       } catch (error) {
-        currentThreadId = "";
+        currentThreadId = String(threadId || "").trim() || getDefaultThreadId();
+        activeThreadClusterKey = "";
         currentThreadMessages = [];
         currentThreadCase = null;
+        latestSimilarCasesPayload = null;
+        if (similarityRefreshIntervalId) {
+          clearInterval(similarityRefreshIntervalId);
+          similarityRefreshIntervalId = null;
+        }
         rehydrationStatus = { label: "Failed", tone: "warn" };
         renderLinkedCaseFromBackend(null);
+        renderSimilarCases({ matches: [] });
         renderMessages();
-        setThreadNotice(error instanceof Error ? error.message : "Failed to load thread.", true);
+        setThreadNotice(error instanceof Error ? error.message : "Failed to load live feed.", true);
       }
     }
 
     // Render messages
     function renderMessages() {
       const stream = document.getElementById("messageStream");
-      const messages = (currentThreadMessages || []).filter((message) => !isSystemGeneratedMessage(message));
-      const cases = loadCases();
+      const allMessages = (currentThreadMessages || []).filter((message) => !isSystemGeneratedMessage(message));
+      const liveMessages = allMessages.filter((message) => !isDevOrTestMessage(message));
+      const devNoiseMessages = allMessages.filter((message) => isDevOrTestMessage(message));
 
-      if (!messages.length) {
+      if (!liveMessages.length && !devNoiseMessages.length) {
         stream.innerHTML = `
           <div class="empty-state">
             <div class="icon">💬</div>
@@ -994,22 +1628,53 @@
         return;
       }
 
-      stream.innerHTML = messages.map(m => {
-        const linkedCase = m.linkedCaseId ? cases.find(c => c.id == m.linkedCaseId) : null;
-        const caseTag = linkedCase ? 
-          `<span class="tag case-tag" onclick="document.getElementById('linkCase').value='${m.linkedCaseId}'; showLinkedCase('${m.linkedCaseId}')">📋 ${linkedCase.colonyName || "Case"}</span>` : "";
-        
+      const activeClusters = buildEmergingThreadClusters(liveMessages);
+      const selectedCluster = activeClusters.find((cluster) => cluster.key === activeThreadClusterKey) || null;
+      const renderPost = (m, mutedByCluster = false) => {
+        const text = String(m.text || m.content || "");
+        const note = extractFieldNote(text);
+        const muted = Boolean(mutedByCluster);
+        const body = note.bodyLines.length ? note.bodyLines.join("\n") : toSummaryPreview(text);
+        const structuredRows = [
+          note.obs ? `<div class="note-line"><strong>OBS:</strong>${escapeHtml(note.obs)}</div>` : "",
+          note.ctx ? `<div class="note-line"><strong>CTX:</strong>${escapeHtml(note.ctx)}</div>` : "",
+          note.q ? `<div class="note-line"><strong>Q:</strong>${escapeHtml(note.q)}</div>` : "",
+        ].filter(Boolean).join("");
+
         return `
-          <div class="message ${m.isAI ? 'ai-message' : ''}">
-            <div class="message-header">
-              <span class="message-author">${m.author || m.userId || "user"}</span>
-              <span class="message-time">${formatTime(m.createdAt)}</span>
+          <article class="field-note-post ${muted ? "is-muted" : ""}" data-message-id="${escapeHtml(String(m.id || ""))}" data-thread-id="${escapeHtml(String(m.threadId || ""))}">
+            <div class="note-header">
+              <span class="note-time">${formatTime(m.createdAt)} · ${formatDateTimeLabel(m.createdAt)}</span>
+              <span class="note-author">${escapeHtml(String(m.author || m.userId || "anon"))}</span>
             </div>
-            <div class="message-content">${escapeHtml(m.text || m.content || "")}</div>
-            ${caseTag ? `<div class="message-tags">${caseTag}</div>` : ""}
-          </div>
+            <div class="note-body">${escapeHtml(body)}</div>
+            ${structuredRows ? `<div class="note-structured">${structuredRows}</div>` : ""}
+          </article>
         `;
+      };
+
+      const liveHtml = liveMessages.map((m) => {
+        const text = String(m.text || m.content || "");
+        const muted = Boolean(selectedCluster) &&
+          Array.isArray(selectedCluster.tokens) &&
+          selectedCluster.tokens.length > 0 &&
+          !selectedCluster.tokens.some((token) => text.toLowerCase().includes(token));
+        return renderPost(m, muted);
       }).join("");
+
+      const devHtml = devNoiseMessages.length
+        ? `
+          <div class="dev-noise-wrap">
+            <div class="dev-noise-header">
+              <div class="dev-noise-label">Dev/Test noise (${devNoiseMessages.length})</div>
+              <button class="btn-secondary" id="toggleDevNoiseBtn" type="button">${showDevNoisePosts ? "Hide" : "Show"}</button>
+            </div>
+            ${showDevNoisePosts ? devNoiseMessages.map((m) => renderPost(m, true)).join("") : ""}
+          </div>
+        `
+        : "";
+
+      stream.innerHTML = `${liveHtml}${devHtml}`;
     }
 
     function escapeHtml(text) {
@@ -1065,9 +1730,9 @@
 
     // Generate resolution insights from resolved cases
     function updateResolutionInsights() {
-      const cases = loadCases();
-      const resolved = cases.filter(c => c.status === "resolved" && c.resolution);
+      const resolved = caseMemory.filter(c => String(c.status || "").toUpperCase() === "RESOLVED");
       const container = document.getElementById("resolutionInsights");
+      if (!container) return;
 
       if (!resolved.length) {
         container.innerHTML = `<p style="color: var(--secondary-text); font-style: italic;">
@@ -1084,7 +1749,7 @@
             <div class="insight-item">
               <span class="insight-icon">✓</span>
               <div class="insight-text">
-                <strong>${c.colonyName || "Case"}</strong>: ${c.resolution}
+                <strong>${escapeHtml(c.title || c.threadId || "Case")}</strong>: ${escapeHtml(toSummaryPreview(c.caseSummary || c.currentSystemStatus || ""))}
               </div>
             </div>
           `).join("")}
@@ -1098,10 +1763,23 @@
       if (!ensureThreadLoaded()) return;
       const input = document.getElementById("messageInput");
       const text = input.value.trim();
+      const contextInput = document.getElementById("contextInput");
+      const contextText = String(contextInput?.value || "").trim();
       if (!text) return;
 
       const profile = loadProfile();
       const linkedCaseId = document.getElementById("linkCase").value;
+      const referencedCaseNumbers = findReferencedCaseNumbers(text);
+      const referencedCases = referencedCaseNumbers
+        .map((num) => findCaseByNumber(num))
+        .filter((entry) => Boolean(entry));
+      const primaryReferencedCase = referencedCases[0] || null;
+      renderReferencedCasesHint(referencedCases);
+      if (primaryReferencedCase) {
+        const caseId = primaryReferencedCase.caseId || primaryReferencedCase.id;
+        document.getElementById("linkCase").value = caseId;
+        showLinkedCase(caseId);
+      }
 
       const submitBits = [];
       if (profile.name) submitBits.push(profile.name);
@@ -1110,13 +1788,16 @@
       const author = submitBits.length ? submitBits.join(" ") : "Local user";
 
       try {
+        const selectedCaseId = primaryReferencedCase ? (primaryReferencedCase.caseId || primaryReferencedCase.id) : linkedCaseId;
+        const linkedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(selectedCaseId));
+        const targetThreadId = linkedCase?.threadId || currentThreadId || getDefaultThreadId();
         const response = await fetch(`${API_BASE}/api/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userId: profile.name ? profile.name : "demo-user",
-            threadId: currentThreadId,
-            content: text,
+            threadId: targetThreadId,
+            content: contextText ? `${text}\nContext: ${contextText}` : text,
           }),
         });
 
@@ -1128,31 +1809,115 @@
         return;
       }
 
-      // If linked to a case, update the case's linked thread
+      // If linked to a case, keep UI scoped to that case thread.
       if (linkedCaseId) {
-        const cases = loadCases();
-        const caseIndex = cases.findIndex(c => c.id == linkedCaseId);
-        if (caseIndex !== -1) {
-          cases[caseIndex].linkedThreadId = currentThreadId;
-          localStorage.setItem("frogSocialCases", JSON.stringify(cases));
+        const linkedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(linkedCaseId));
+        if (linkedCase?.threadId) {
+          currentThreadId = String(linkedCase.threadId);
+          persistActiveThreadId(currentThreadId);
         }
       }
 
       input.value = "";
+      if (contextInput) {
+        contextInput.value = "";
+      }
+      renderReferencedCasesHint([]);
       await loadThread(currentThreadId);
+      await fetchCasesFromApi().catch(() => caseMemory);
+      populateCaseSelector();
+      await refreshSimilarCasesForCurrentThread();
     }
 
     // Event listeners
-    document.getElementById("postBtn").addEventListener("click", postMessage);
-    document.getElementById("loadThreadBtn").addEventListener("click", () => {
-      const threadId = document.getElementById("threadIdInput").value;
-      loadThread(threadId);
+    document.getElementById("postBtn")?.addEventListener("click", postMessage);
+    document.getElementById("loadThreadBtn")?.addEventListener("click", () => {
+      const requested = String(document.getElementById("threadIdInput")?.value || "").trim();
+      loadThread(requested || getDefaultThreadId());
     });
-    document.getElementById("messageInput").addEventListener("keypress", (e) => {
+    document.getElementById("messageInput")?.addEventListener("keypress", (e) => {
       if (e.key === "Enter") postMessage();
     });
-    document.getElementById("linkCase").addEventListener("change", (e) => {
+    document.getElementById("linkCase")?.addEventListener("change", (e) => {
+      const selectedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(e.target.value));
       showLinkedCase(e.target.value);
+      if (selectedCase?.threadId) {
+        document.getElementById("threadIdInput").value = selectedCase.threadId;
+        loadThread(selectedCase.threadId);
+      }
+    });
+    document.getElementById("caseRecallBtn")?.addEventListener("click", async () => {
+      const query = document.getElementById("caseRecallInput").value;
+      const list = document.getElementById("caseRecallList");
+      list.innerHTML = `<p style="margin:0; color: var(--secondary-text);">Searching case memory...</p>`;
+      try {
+        const payload = await fetchCaseRecall(query);
+        renderCaseRecall(payload.matches || []);
+      } catch (error) {
+        list.innerHTML = `<p style="margin:0; color:#FCA5A5;">${escapeHtml(error instanceof Error ? error.message : "Search failed.")}</p>`;
+      }
+    });
+    document.getElementById("caseRecallInput")?.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("caseRecallBtn").click();
+      }
+    });
+    document.getElementById("caseRecallList")?.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const threadData = target.dataset.threadId;
+      if (!threadData) return;
+      const threadId = decodeURIComponent(threadData);
+      if (target.classList.contains("recall-open-btn")) {
+        openRecalledCaseThread(threadId);
+      } else if (target.classList.contains("recall-bring-btn")) {
+        bringRecalledCaseIntoComposer(threadId);
+      }
+    });
+    document.getElementById("similarCasesLive")?.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const threadData = target.dataset.threadId;
+      if (!threadData) return;
+      const threadId = decodeURIComponent(threadData);
+      if (target.classList.contains("sim-open-btn")) {
+        openRecalledCaseThread(threadId);
+      } else if (target.classList.contains("sim-bring-btn")) {
+        bringRecalledCaseIntoComposer(threadId);
+      }
+    });
+    document.getElementById("emergingThreadClusterList")?.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const button = target.closest(".thread-cluster-btn");
+      if (!button) return;
+      const key = String(button.dataset.clusterKey || "");
+      activeThreadClusterKey = activeThreadClusterKey === key ? "" : key;
+      renderEmergingThreadClusters();
+      renderMessages();
+    });
+    document.getElementById("linkedCasesList")?.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const button = target.closest(".linked-case-open");
+      if (!button) return;
+      const caseId = button.dataset.caseId || "";
+      if (!caseId) return;
+      const linkSelect = document.getElementById("linkCase");
+      if (linkSelect) {
+        linkSelect.value = caseId;
+      }
+      showLinkedCase(caseId);
+    });
+    document.getElementById("messageStream")?.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target.id === "toggleDevNoiseBtn") {
+        showDevNoisePosts = !showDevNoisePosts;
+        renderMessages();
+        return;
+      }
     });
 
     // Check for linked case from case-history navigation
@@ -1160,21 +1925,28 @@
       const linkedCaseId = sessionStorage.getItem("linkToCaseId");
       if (linkedCaseId) {
         document.getElementById("linkCase").value = linkedCaseId;
+        const selectedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(linkedCaseId));
         showLinkedCase(linkedCaseId);
+        if (selectedCase?.threadId) {
+          document.getElementById("threadIdInput").value = selectedCase.threadId;
+          loadThread(selectedCase.threadId);
+        }
         sessionStorage.removeItem("linkToCaseId");
       }
     }
 
     // Initialize
-    populateCaseSelector();
-    renderMessages();
-    updateResolutionInsights();
-    checkForLinkedCase();
-    const threadIdFromUrl = new URLSearchParams(window.location.search).get("threadId");
-    if (threadIdFromUrl) {
-      document.getElementById("threadIdInput").value = threadIdFromUrl;
-      loadThread(threadIdFromUrl);
-    }
+    (async function initSocial() {
+      try {
+        await fetchCasesFromApi();
+      } catch (error) {
+        console.warn("Unable to preload case memory:", error);
+      }
+      populateCaseSelector();
+      renderMessages();
+      checkForLinkedCase();
+      loadThread(getDefaultThreadId());
+    })();
   </script>
 </body>
 </html>

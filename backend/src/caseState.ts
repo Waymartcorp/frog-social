@@ -3,6 +3,11 @@ type MessageIntent = "ACTION" | "OBSERVATION" | "CONTEXT" | "PLAN";
 type CurrentCaseStatus = "open" | "monitoring" | "improved" | "unresolved" | "mixed / still under discussion";
 type MessageRole = "expert" | "trusted" | "standard";
 
+export interface CaseKnowledgeContext {
+  knownChecks: string[];
+  memorySignals: string[];
+}
+
 export interface CaseStateMessage {
   id: string;
   threadId: string;
@@ -14,6 +19,7 @@ export interface CaseStateMessage {
 export interface CaseState {
   threadId: string;
   caseUpdate: string;
+  emergingThreads: string[];
   currentStrategy: string[];
   currentStatus: CurrentCaseStatus;
   situationSummary: string;
@@ -102,7 +108,6 @@ const DOMAIN_KEYWORDS: Record<string, string[]> = {
     "hum",
     "noise",
     "pump",
-    "rack",
   ],
   "density and feeding": [
     "density",
@@ -289,6 +294,40 @@ interface OutcomeSummary {
   uncertaintyScore: number;
 }
 
+interface SignalRow {
+  key: string;
+  label: string;
+  observedMentions: number;
+  speculativeMentions: number;
+  weightedScore: number;
+  recentMentions: number;
+}
+
+interface SignalLedger {
+  observedTop: SignalRow[];
+  speculativeTop: SignalRow[];
+  mixedTop: SignalRow[];
+}
+
+const SPECULATIVE_CUE_REGEX =
+  /\b(maybe|might|could|possibly|suspect|guess|hypothesis|unclear|not sure|i think|likely|possible)\b/i;
+
+const OBSERVED_CUE_REGEX =
+  /\b(observed|noticed|seeing|saw|reported|present|measured|counted|tracked|trend|worse|improv|stable|not eating|off food|redness|lesion|mortality)\b/i;
+
+const SIGNAL_PATTERNS: Array<{ key: string; label: string; pattern: RegExp }> = [
+  { key: "feeding", label: "reduced feeding response", pattern: /\b(not eating|off food|reduced feeding|poor feeding|feeding response)\b/i },
+  { key: "skin", label: "skin lesions or redness", pattern: /\b(lesion|redness|ulcer|skin|abrasion|irritation)\b/i },
+  { key: "mortality", label: "mortality events", pattern: /\b(mortality|deaths|dying)\b/i },
+  { key: "lethargy", label: "lethargy/low activity", pattern: /\b(letharg|weak|inactive|listless)\b/i },
+  { key: "flow", label: "flow/nozzle disturbance", pattern: /\b(flow|nozzle|splash|surface agitation)\b/i },
+  { key: "vibration", label: "pump vibration/noise load", pattern: /\b(vibration|pump|noise|hum)\b/i },
+  { key: "handling", label: "handling/disturbance pressure", pattern: /\b(handling|disturbance|traffic|injection|clamping)\b/i },
+  { key: "density", label: "density/competition pressure", pattern: /\b(density|stocking|competition|crowd)\b/i },
+  { key: "water", label: "water chemistry instability", pattern: /\b(ammonia|nitrite|ph|conductivity|remineral|buffer|water chemistry)\b/i },
+  { key: "maturity", label: "system maturity/biofilter instability", pattern: /\b(system maturity|biofilter|cycling|new system|mature filter)\b/i },
+];
+
 function toSentenceUnits(messages: CaseStateMessage[]): WeightedSentence[] {
   const total = Math.max(messages.length, 1);
   const units: WeightedSentence[] = [];
@@ -299,12 +338,86 @@ function toSentenceUnits(messages: CaseStateMessage[]): WeightedSentence[] {
       .map((part) => part.trim())
       .filter(Boolean)
       .filter((part) => part.length > 3)
+      .filter((part) => !isSyntheticUpdateLine(part))
       .filter((part) => !isGeneratedSummaryArtifact(part))
       .forEach((part) => {
         units.push({ text: part, messageIndex: index, recencyWeight });
       });
   });
   return units;
+}
+
+function isSyntheticUpdateLine(text: string): boolean {
+  const lower = normalize(String(text || "").replace(/\s+/g, " ").trim());
+  if (!lower) return true;
+  const blocked = [
+    /^describe update for\b/,
+    /^direct intake check\b/,
+    /^update pass\b/,
+    /^unified update test\b/,
+    /^second unified update test\b/,
+    /^case note update\b/,
+    /\bunify-e2e-\d+\b/,
+    /^\d+(\.\d+)?[,;: ]+\s*conductivity\b/,
+    /^\d+(\.\d+)?[,;: ]+\s*ph\b/,
+    /^conductivity\s+\d{2,5}\s*microsiemens\b/,
+  ];
+  return blocked.some((pattern) => pattern.test(lower));
+}
+
+function buildSignalLedger(messages: CaseStateMessage[]): SignalLedger {
+  const rows = new Map<string, SignalRow>();
+  const units = toSentenceUnits(messages);
+  const recentCutoff = Math.max(0, units.length - 8);
+
+  for (let i = 0; i < units.length; i += 1) {
+    const unit = units[i];
+    const sentence = unit.text;
+    if (isCorrectionSignalText(sentence)) {
+      continue;
+    }
+    const speculative = SPECULATIVE_CUE_REGEX.test(sentence);
+    const observed = OBSERVED_CUE_REGEX.test(sentence) || !speculative;
+
+    for (const signal of SIGNAL_PATTERNS) {
+      if (!signal.pattern.test(sentence)) continue;
+      const existing =
+        rows.get(signal.key) ??
+        ({
+          key: signal.key,
+          label: signal.label,
+          observedMentions: 0,
+          speculativeMentions: 0,
+          weightedScore: 0,
+          recentMentions: 0,
+        } as SignalRow);
+      if (observed) {
+        existing.observedMentions += 1;
+        existing.weightedScore += unit.recencyWeight * 1.2;
+      } else {
+        existing.speculativeMentions += 1;
+        existing.weightedScore += unit.recencyWeight * 0.5;
+      }
+      if (i >= recentCutoff) {
+        existing.recentMentions += 1;
+        existing.weightedScore += 0.3;
+      }
+      rows.set(signal.key, existing);
+    }
+  }
+
+  const ranked = Array.from(rows.values()).sort((a, b) => b.weightedScore - a.weightedScore);
+  const observedTop = ranked.filter((row) => row.observedMentions >= Math.max(2, row.speculativeMentions + 1)).slice(0, 4);
+  const speculativeTop = ranked.filter((row) => row.speculativeMentions > row.observedMentions).slice(0, 3);
+  const mixedTop = ranked
+    .filter((row) => row.observedMentions > 0 && row.speculativeMentions > 0)
+    .slice(0, 3);
+
+  return { observedTop, speculativeTop, mixedTop };
+}
+
+function hasSpeculativeDiscussion(messages: CaseStateMessage[]): boolean {
+  return messages.some((message) => SPECULATIVE_CUE_REGEX.test(message.content || ""));
 }
 
 function scoreIntent(text: string, regexes: RegExp[]): number {
@@ -371,6 +484,9 @@ function scoreAndSelectByIntent(
   };
 
   for (const sentence of toSentenceUnits(messages)) {
+    if (isCorrectionSignalText(sentence.text)) {
+      continue;
+    }
     const intent = classifyIntent(sentence.text);
     scored[intent].push({
       text: sentenceCase(sentence.text),
@@ -459,8 +575,13 @@ function extractKnownFacts(messages: CaseStateMessage[]): KnownFacts {
 
 function inferDomainsInPlay(messages: CaseStateMessage[]): string[] {
   const all = normalize(messages.map((message) => message.content).join("\n"));
+  const matchesKeyword = (keyword: string): boolean => {
+    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`\\b${escaped}\\b`, "i");
+    return pattern.test(all);
+  };
   return Object.entries(DOMAIN_KEYWORDS)
-    .filter(([, keywords]) => keywords.some((keyword) => all.includes(keyword)))
+    .filter(([, keywords]) => keywords.some((keyword) => matchesKeyword(keyword)))
     .map(([domain]) => domain);
 }
 
@@ -470,25 +591,64 @@ function extractActionsTried(messages: CaseStateMessage[], actionSnippets: strin
   return unique([...actionSnippets, ...patternHits]).slice(0, 10);
 }
 
-function buildMissingDetails(facts: KnownFacts, contextSnippets: string[]): string[] {
+function buildMissingDetails(facts: KnownFacts, contextSnippets: string[], messages: CaseStateMessage[]): string[] {
+  const all = normalize(messages.map((message) => message.content).join("\n"));
+  const hasWaterSignals = /(ph|conductivity|ammonia|nitrite|water source|remineral|buffer|biofilter|filtration|water chemistry)/.test(all);
+  const hasFlowSignals = /(flow|nozzle|splash|vibration|pump|noise)/.test(all);
+  const hasFeedingSignals = /(feeding|not eating|off food|appetite|density|stocking|competition|crowd)/.test(all);
+  const hasHandlingSignals = /(handling|handled|injection|inject|disturbance|traffic|room entries|door|light)/.test(all);
+  const hasSkinSignals = /(lesion|redness|ulcer|skin|wound|abrasion)/.test(all);
+  const hasSystemSignals = /(system maturity|biofilter|cycling|new system|newly set up|recently modified)/.test(all);
   const missing: string[] = [];
-  if (!facts.systemMaturity || !facts.biofilterStatus) {
+  if (hasSystemSignals && (!facts.systemMaturity || !facts.biofilterStatus)) {
     missing.push("System maturity / biofilter status");
   }
-  if (!facts.waterSource) missing.push("Water source (RO, city, well, mixed)");
-  if (!facts.ph) missing.push("Measured pH");
-  if (!facts.phCalibration) missing.push("pH meter calibration status");
-  if (!facts.conductivity) missing.push("Conductivity/TDS readings");
-  if (!facts.buffering) missing.push("Buffering / remineralization context (GH/KH)");
-  if (!facts.flow) missing.push("Flow/nozzle/splash context");
-  if (!facts.vibration) missing.push("Vibration/pump-noise context");
-  if (!facts.density) missing.push("Tank density / stocking context");
-  if (!facts.feeding) missing.push("Observed feeding response");
-  if (!facts.handling && !facts.injection) missing.push("Recent handling/injection history");
-  if (!facts.lesions) missing.push("Lesion/skin finding details");
-  if (!facts.light && !facts.disturbance) missing.push("Light and disturbance context");
+  if (hasWaterSignals) {
+    if (!facts.waterSource) missing.push("Water source (RO, city, well, mixed)");
+    if (!facts.ph) missing.push("Measured pH");
+    if (!facts.phCalibration) missing.push("pH meter calibration status");
+    if (!facts.conductivity) missing.push("Conductivity/TDS readings");
+    if (!facts.buffering) missing.push("Buffering / remineralization context (GH/KH)");
+  }
+  if (hasFlowSignals) {
+    if (!facts.flow) missing.push("Flow/nozzle/splash context");
+    if (!facts.vibration) missing.push("Vibration/pump-noise context");
+  }
+  if (hasFeedingSignals) {
+    if (!facts.density) missing.push("Tank density / stocking context");
+    if (!facts.feeding) missing.push("Observed feeding response");
+  }
+  if (hasHandlingSignals) {
+    if (!facts.handling && !facts.injection) missing.push("Recent handling/injection history");
+    if (!facts.light && !facts.disturbance) missing.push("Light and disturbance context");
+  }
+  if (hasSkinSignals && !facts.lesions) {
+    missing.push("Lesion/skin finding details");
+  }
   if (contextSnippets.length === 0) missing.push("Current setup/system context details");
   return missing;
+}
+
+function mergeKnowledgeChecks(
+  missingDetails: string[],
+  knownChecks: string[],
+  messages: CaseStateMessage[]
+): string[] {
+  if (!knownChecks.length) return missingDetails;
+  const all = normalize(messages.map((message) => message.content).join(" "));
+  const existing = new Set(missingDetails.map((entry) => normalize(entry)));
+  const merged = [...missingDetails];
+  for (const check of knownChecks) {
+    const key = normalize(check);
+    if (existing.has(key)) continue;
+    const tokens = key.split(/\s+/).filter((token) => token.length >= 4);
+    const covered = tokens.some((token) => all.includes(token));
+    if (!covered) {
+      merged.push(check);
+      existing.add(key);
+    }
+  }
+  return merged;
 }
 
 function buildInitialObservations(
@@ -498,8 +658,16 @@ function buildInitialObservations(
   outcomeSnippets: string[]
 ): string[] {
   const all = normalize(messages.map((message) => message.content).join("\n"));
+  const fieldSignalPattern =
+    /(lesion|redness|ulcer|skin|mortality|deaths|dying|feeding|off food|not eating|appetite|flow|nozzle|vibration|pump|noise|water|ph|conductivity|biofilter|system maturity|handling|disturbance|density|competition|improv|stabil)/i;
+  const complaintPattern =
+    /(not accurate|incorrect|over[- ]emphasized|disagree|revise|no actions logged|summary|key strategies|please|should not be)/i;
   const observations: string[] = [...outcomeSnippets, ...observationSnippets].filter(
-    (entry) => !isCorrectionSignalText(entry)
+    (entry) =>
+      !isCorrectionSignalText(entry) &&
+      !complaintPattern.test(entry) &&
+      fieldSignalPattern.test(entry) &&
+      isReliableObservationSnippet(entry)
   );
 
   if (facts.systemMaturity || facts.biofilterStatus) {
@@ -528,18 +696,53 @@ function buildInitialObservations(
   return unique(observations.map((entry) => toFieldNoteText(entry)).filter(Boolean)).slice(0, 12);
 }
 
+function isReliableObservationSnippet(text: string): boolean {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return false;
+  const lower = cleaned.toLowerCase();
+
+  // Drop templated/dev-style recap lines that read like synthetic imports.
+  const syntheticPatterns = [
+    /^describe update for\b/,
+    /^direct intake check\b/,
+    /^update pass\b/,
+    /^unified update test\b/,
+    /^case note update\b/,
+    /^second unified update test\b/,
+    /\bunify-e2e-\d+\b/,
+    /^\d+(\.\d+)?[,;: ]+\s*conductivity\b/,
+  ];
+  if (syntheticPatterns.some((pattern) => pattern.test(lower))) {
+    return false;
+  }
+
+  // Guardrail: avoid confident named-attribution lines unless they are simple direct reports.
+  if (/^lab\s+[a-z0-9 _-]{2,60}\s+observed\b/i.test(cleaned)) {
+    return false;
+  }
+
+  return true;
+}
+
 function buildSituationSummary(
   observations: string[],
-  domains: string[],
-  missingDetails: string[],
+  signalLedger: SignalLedger,
+  hasSpeculation: boolean,
   contextSnippets: string[],
   outcomeSummary: OutcomeSummary
 ): string {
-  const signalFacts = unique(observations.map((entry) => clipSentence(entry, 120))).slice(0, 3);
+  const signalFacts = unique(
+    signalLedger.observedTop.map((row) => sentenceCase(row.label)).concat(observations.map((entry) => clipSentence(entry, 120)))
+  ).slice(0, 3);
   const contextFacts = unique(contextSnippets.map((entry) => clipSentence(entry, 110))).slice(0, 2);
   const parts: string[] = [];
   if (signalFacts.length > 0) {
     parts.push(`Observed signals: ${signalFacts.join(" ")}`);
+  }
+  if (signalLedger.speculativeTop.length > 0) {
+    parts.push(`Still uncertain: ${signalLedger.speculativeTop.map((row) => row.label).join(", ")}.`);
+  } else if (hasSpeculation) {
+    parts.push("Still uncertain: causal driver remains unconfirmed.");
   }
   if (contextFacts.length > 0) {
     parts.push(`Reported conditions: ${contextFacts.join(" ")}`);
@@ -606,6 +809,72 @@ function buildSuggestedNextSteps(domains: string[], missingDetails: string[], pl
   return unique([...fromPlans, ...fromDomains, ...fromMissing]).slice(0, 8);
 }
 
+function buildEmergingThreads(
+  messages: CaseStateMessage[],
+  signalLedger: SignalLedger,
+  knowledge: CaseKnowledgeContext,
+  knownFacts: KnownFacts,
+  domains: string[],
+  missingDetails: string[]
+): string[] {
+  const correction = detectCorrectionSignals(messages);
+  const hypothesis = analyzeHypothesisEvidence(messages, correction);
+  const recentUnits = toSentenceUnits(messages).slice(-10);
+  const recentText = normalize(recentUnits.map((unit) => unit.text).join(" "));
+  const all = normalize(messages.map((message) => message.content).join(" "));
+  const threads: string[] = [];
+  const focalMap: Record<HypothesisKey, string> = {
+    "flow-disturbance": "flow/nozzle disturbance",
+    "water-chemistry": "water parameters and filtration stability",
+    "density-feeding": "feeding pressure and density load",
+    "system-maturity": "system maturity and biofilter stability",
+    "handling-disturbance": "handling and disturbance load",
+    infection: "possible infectious contribution under stress",
+  };
+
+  if (signalLedger.observedTop.length >= 2 || hypothesis.top.mentionPosts >= 2) {
+    threads.push("Likely shared system stressor remains active across repeated posts.");
+  }
+
+  if (hypothesis.dominant && hypothesis.top.combinedScore > 0) {
+    threads.push(`Repeated posts are converging on ${focalMap[hypothesis.top.key]}.`);
+  } else if (hypothesis.top.combinedScore > 0 && hypothesis.second && hypothesis.second.combinedScore > 0) {
+    threads.push(
+      `Current focal points are ${focalMap[hypothesis.top.key]} and ${focalMap[hypothesis.second.key]}.`
+    );
+  }
+
+  if (/(feeding|off food|not eating|appetite)/.test(all) && /(ph|conductivity|ammonia|biofilter|filtration|water chemistry)/.test(all)) {
+    threads.push("Thread is narrowing to feeding pressure and water parameters/filtration.");
+  }
+  if (/(tropicalis)/.test(all) && /(died first|died|mortality|deaths)/.test(all)) {
+    threads.push("Species pattern (tropicalis losses first) points toward an environmental load signal.");
+  }
+  if (/(vet|veterinary|veterinarian)/.test(all)) {
+    threads.push("Veterinary comments are reinforcing the current focal points.");
+  }
+
+  for (const row of signalLedger.observedTop.slice(0, 3)) {
+    if (row.recentMentions >= 1 && row.observedMentions >= 2) {
+      threads.push(`${row.label} is repeated across posts.`);
+    }
+  }
+  for (const row of signalLedger.mixedTop.slice(0, 1)) {
+    threads.push(`${row.label} is discussed with mixed confidence.`);
+  }
+
+  if (/(feeding|off food|not eating|appetite)/.test(recentText)) {
+    threads.push("Feeding trend is still being tracked.");
+  }
+  if (/(lesion|redness|ulcer|skin|abrasion)/.test(recentText)) {
+    threads.push("Skin findings remain under active review.");
+  }
+  if (/(density|competition|handling|disturbance|traffic)/.test(all)) {
+    threads.push("Density and disturbance load remains in background.");
+  }
+  return unique(threads.map((entry) => toFieldNoteText(entry)).filter(Boolean));
+}
+
 function buildCurrentStrategy(
   messages: CaseStateMessage[],
   fallbackSteps: string[],
@@ -620,6 +889,7 @@ function buildCurrentStrategy(
   const leadingHypothesis = evidence.top.key;
   const contextHint = anchors.context.length > 0 ? ` for ${joinAsList(anchors.context)}` : "";
   const symptomHint = anchors.symptoms.length > 0 ? ` with ${joinAsList(anchors.symptoms)}` : "";
+  const explicitDensityConcern = hasExplicitDensityConcern(messages);
 
   const baseSteps: Record<string, string> = {
     isolate_static:
@@ -631,7 +901,7 @@ function buildCurrentStrategy(
     water_validation:
       `Run paired pH and conductivity checks with a freshly calibrated meter before and after interventions, and keep one stable water recipe.`,
     feeding_density:
-      `Split high-density groups and increase feeding access/frequency to reduce competition, then monitor whether appetite recovers.`,
+      `Verify feeding access and appetite trend tank-by-tank without changing baseline population structure unless direct competition is observed.`,
     system_stability:
       `Simplify system load while biofilter/system maturity stabilizes (fewer changes at once), and hold conditions steady for trend interpretation.`,
   };
@@ -650,7 +920,7 @@ function buildCurrentStrategy(
     { pattern: /(disturbance|handling|traffic|clamping|injection|avoid stress)/i, key: "reduce_disturbance" },
     { pattern: /(nozzle|flow|splash|vibration|pump|noise)/i, key: "flow_vibration" },
     { pattern: /(ph|conductivity|calibrat|water source|remineral|buffer|daily water)/i, key: "water_validation" },
-    { pattern: /(feeding|competition|density|stocking|off food)/i, key: "feeding_density" },
+    { pattern: /(competition|density|stocking|crowd|outcompeted|uneven feeding|off food)/i, key: "feeding_density" },
     { pattern: /(biofilter|cycling|new system|system maturity|stability)/i, key: "system_stability" },
   ];
 
@@ -710,19 +980,29 @@ function buildCurrentStrategy(
     .map((entry) => entry.key)
     .filter((key) => key in baseSteps);
 
+  const filteredRankedKeys = rankedKeys.filter((key) => {
+    if (key !== "feeding_density") return true;
+    return explicitDensityConcern;
+  });
+
   const prioritized = unique(
-    rankedKeys
+    filteredRankedKeys
       .map((key) => baseSteps[key])
       .filter(Boolean)
   );
 
   const minStrategyItems = 3;
-  const fallbackOrdered = hypothesisToKeys[leadingHypothesis].map((key) => baseSteps[key]);
+  const fallbackOrdered = hypothesisToKeys[leadingHypothesis]
+    .filter((key) => (key === "feeding_density" ? explicitDensityConcern : true))
+    .map((key) => baseSteps[key]);
   const merged = unique([...prioritized, ...fallbackOrdered]).slice(0, 6);
   if (merged.length >= minStrategyItems) {
     return merged;
   }
-  return unique([...merged, ...Object.values(baseSteps)]).slice(0, minStrategyItems);
+  const fallbackAll = Object.entries(baseSteps)
+    .filter(([key]) => (key === "feeding_density" ? explicitDensityConcern : true))
+    .map(([, value]) => value);
+  return unique([...merged, ...fallbackAll]).slice(0, minStrategyItems);
 }
 
 interface CaseAnchors {
@@ -743,10 +1023,35 @@ const HYPOTHESIS_PATTERNS: Record<HypothesisKey, RegExp[]> = {
   "water-chemistry": [/\bammonia\b/, /\bnitrite\b/, /\bph\b/, /\bconductivity\b/, /\bwater chemistry\b/],
   infection: [/\bpathogen\b/, /\binfection\b/, /\bmycobacter\b/, /\bdisease\b/],
   "flow-disturbance": [/\bnozzle\b/, /\bflow\b/, /\bsplash\b/, /\bvibration\b/, /\bpump\b/, /\bnoise\b/],
-  "density-feeding": [/\bdensity\b/, /\bstocking\b/, /\bcompetition\b/, /\bfeeding\b/, /\boff food\b/],
+  "density-feeding": [/\bdensity\b/, /\bstocking\b/, /\bcompetition\b/, /\bcrowd(ing)?\b/, /\boff food\b/, /\boutcompeted\b/],
   "system-maturity": [/\bbiofilter\b/, /\bcycling\b/, /\bnew system\b/, /\bsystem maturity\b/],
   "handling-disturbance": [/\bhandling\b/, /\bdisturbance\b/, /\btraffic\b/, /\binjection\b/, /\bclamping\b/],
 };
+
+function hasExplicitDensityConcern(messages: CaseStateMessage[]): boolean {
+  const joined = normalize(messages.map((message) => message.content || "").join(" "));
+  const explicitConcernPatterns = [
+    /\bdensity\b/,
+    /\bstocking\b/,
+    /\bcompetition\b/,
+    /\bcrowd(ing|ed)?\b/,
+    /\boutcompeted\b/,
+    /\bnot getting food\b/,
+    /\buneven feeding\b/,
+    /\bfeeding access\b/,
+    /\boff food\b/,
+  ];
+  const explicitNoConcernPatterns = [
+    /\bswarm(?:ing)? on food\b/,
+    /\bstrong feeding response\b/,
+    /\bremarkably healthy\b/,
+    /\bhealthy colony\b/,
+  ];
+  if (explicitNoConcernPatterns.some((pattern) => pattern.test(joined)) && !explicitConcernPatterns.some((pattern) => pattern.test(joined))) {
+    return false;
+  }
+  return explicitConcernPatterns.some((pattern) => pattern.test(joined));
+}
 
 const CORRECTION_SIGNAL_REGEXES = [
   /\bthis is not accurate\b/i,
@@ -933,8 +1238,8 @@ function toDeepAction(step: string, anchors: CaseAnchors): string {
   if (/(ph|conductivity|calibrated|water recipe|water source)/.test(normalized)) {
     return "Run paired pH/conductivity checks with a freshly calibrated meter before and after interventions, and keep one stable water recipe so outcomes stay interpretable.";
   }
-  if (/(density|feeding|competition)/.test(normalized)) {
-    return "Split density pressure and increase feeding access/frequency so weaker frogs are not outcompeted, then reassess appetite and body condition by subgroup.";
+  if (/(density|competition|outcompeted|uneven feeding|feeding access)/.test(normalized)) {
+    return "Track feeding access and appetite by tank, and only change population structure if direct competition is observed.";
   }
   if (/(biofilter|system maturity|stability|cycling)/.test(normalized)) {
     return "Reduce simultaneous system changes and hold stable husbandry conditions while the system matures, so you can separate signal from noise.";
@@ -979,7 +1284,7 @@ function buildWhyDirection(
 }
 
 export function buildKeyStrategies(messages: CaseStateMessage[]): KeyStrategiesResult {
-  const title = "Emerging Strategy";
+  const title = "Emerging Threads";
   const meaningfulPostCount = countMeaningfulPosts(messages);
   const domains = inferDomainsInPlay(messages);
 
@@ -988,20 +1293,71 @@ export function buildKeyStrategies(messages: CaseStateMessage[]): KeyStrategiesR
       ready: false,
       title,
       message:
-        "More detail is needed before generating strong strategies. Consider adding feeding behavior, water parameters, system setup, or recent changes.",
+        "More repeated case detail is needed before focal threads can be verified.",
     };
   }
 
   const anchors = extractCaseAnchors(messages);
   const correction = detectCorrectionSignals(messages);
   const hypothesis = analyzeHypothesisEvidence(messages, correction);
-  const recap = buildCaseState(messages, messages[0]?.threadId ?? "thread");
+  const signalLedger = buildSignalLedger(messages);
+  const all = normalize(messages.map((message) => message.content).join(" "));
+  const focalMap: Record<HypothesisKey, string> = {
+    "flow-disturbance": "flow/nozzle disturbance",
+    "water-chemistry": "water parameters and filtration stability",
+    "density-feeding": "feeding pressure and density load",
+    "system-maturity": "system maturity and biofilter stability",
+    "handling-disturbance": "handling and disturbance load",
+    infection: "possible infectious contribution under stress",
+  };
 
-  const ranked = buildCurrentStrategy(messages, recap.suggestedNextSteps, correction).map((step) => toDeepAction(step, anchors));
-  const uniqueRanked = unique(ranked).slice(0, 6);
-  const primary = uniqueRanked[0] ?? "Stabilize immediate husbandry conditions and test one high-signal intervention first.";
-  const secondary = uniqueRanked[1] ?? "Track short-interval outcome changes to confirm or reject the working hypothesis.";
-  const supporting = uniqueRanked.slice(2, 5);
+  const topLabel = focalMap[hypothesis.top.key];
+  const secondLabel = hypothesis.second ? focalMap[hypothesis.second.key] : "";
+  const primary = hypothesis.dominant
+    ? `Likely shared system stressor: ${topLabel}.`
+    : secondLabel
+      ? `Likely shared stressor remains mixed: ${topLabel} and ${secondLabel}.`
+      : `Likely shared stressor remains mixed: ${topLabel}.`;
+
+  const repeatedSignals = signalLedger.observedTop
+    .filter((row) => row.observedMentions >= 2)
+    .map((row) => `${row.label} (${row.observedMentions} posts)`)
+    .slice(0, 3);
+  const supporting = repeatedSignals.length > 0
+    ? repeatedSignals
+    : ["Repeated case signals are still limited; continue collecting direct field observations."];
+
+  const focalLineParts: string[] = [];
+  if (/(feeding|off food|not eating|appetite)/.test(all)) {
+    focalLineParts.push("feeding");
+  }
+  if (/(ph|conductivity|ammonia|biofilter|filtration|water chemistry)/.test(all)) {
+    focalLineParts.push("water parameters/filtration");
+  }
+  if (/(disturbance|handling|traffic|vibration|flow|nozzle)/.test(all)) {
+    focalLineParts.push("environmental disturbance load");
+  }
+  const secondary = focalLineParts.length > 0
+    ? `Current focal points: ${joinAsList(unique(focalLineParts))}.`
+    : "Current focal points are still forming from repeated posts.";
+
+  const whyParts: string[] = [];
+  if (anchors.symptoms.length > 0) {
+    whyParts.push(`Repeated symptoms: ${joinAsList(anchors.symptoms)}.`);
+  }
+  if (anchors.environment.length > 0) {
+    whyParts.push(`Repeated context: ${joinAsList(anchors.environment)}.`);
+  }
+  if (/(tropicalis)/.test(all) && /(died first|died|mortality|deaths)/.test(all)) {
+    whyParts.push("Species pattern (tropicalis losses first) supports an environmental stress interpretation.");
+  }
+  if (/(vet|veterinary|veterinarian)/.test(all)) {
+    whyParts.push("Veterinary comments align with these focal points.");
+  }
+  if (correction.hasAnyCorrection) {
+    whyParts.push("Correction signals are present, so dominant-cause confidence remains intentionally limited.");
+  }
+  const why = whyParts.join(" ");
 
   return {
     ready: true,
@@ -1009,7 +1365,7 @@ export function buildKeyStrategies(messages: CaseStateMessage[]): KeyStrategiesR
     primaryIntervention: toFieldNoteText(sentenceCase(primary)),
     secondaryIntervention: toFieldNoteText(sentenceCase(secondary)),
     supportingActions: supporting.map((item) => toFieldNoteText(sentenceCase(item))).filter(Boolean),
-    whyThisDirection: toFieldNoteText(buildWhyDirection(hypothesis, anchors, correction)),
+    whyThisDirection: toFieldNoteText(why || buildWhyDirection(hypothesis, anchors, correction)),
   };
 }
 
@@ -1062,40 +1418,49 @@ function inferCurrentCaseStatus(
 
 function buildConversationalCaseUpdate(params: {
   messages: CaseStateMessage[];
+  signalLedger: SignalLedger;
+  hasSpeculation: boolean;
   outcomes: OutcomeSummary;
   domainsInPlay: string[];
+  missingDetails: string[];
 }): string {
-  const { messages, outcomes, domainsInPlay } = params;
-  const sentences: string[] = [];
+  const { messages, signalLedger, hasSpeculation, outcomes, domainsInPlay, missingDetails } = params;
 
   const anchors = extractCaseAnchors(messages);
-  if (anchors.symptoms.length > 0) {
-    sentences.push(`Observed issues: ${joinAsList(anchors.symptoms)}.`);
-  } else {
-    sentences.push("Observed issues are documented but remain non-specific.");
-  }
-  if (anchors.context.length > 0 || anchors.environment.length > 0) {
-    const contextLine = [
-      anchors.context.length > 0 ? `Context: ${joinAsList(anchors.context)}` : "",
-      anchors.environment.length > 0 ? `Conditions: ${joinAsList(anchors.environment)}` : "",
-    ]
-      .filter(Boolean)
-      .join(". ");
-    if (contextLine) sentences.push(sentenceCase(contextLine));
-  }
-  if (domainsInPlay.length > 0) {
-    sentences.push(`Domains: ${domainsInPlay.join(", ")}.`);
-  }
-  if (outcomes.topOutcomeSnippets.length > 0) {
-    sentences.push(`Recent outcomes: ${clipSentence(outcomes.topOutcomeSnippets[0], 120)}.`);
-  }
+  const observedSignals = signalLedger.observedTop.map((row) => row.label).slice(0, 2);
+  const currentPicture =
+    observedSignals.length > 0
+      ? `Current picture: ${joinAsList(observedSignals)}.`
+      : anchors.symptoms.length > 0
+        ? `Current picture: ${joinAsList(anchors.symptoms)}.`
+        : "";
+  const reportedContextParts: string[] = [];
+  if (anchors.context.length > 0) reportedContextParts.push(joinAsList(anchors.context.slice(0, 1)));
+  if (anchors.environment.length > 0) reportedContextParts.push(joinAsList(anchors.environment.slice(0, 2)));
+  if (domainsInPlay.length > 0) reportedContextParts.push(domainsInPlay.slice(0, 1).join(" + "));
+  const reportedContext =
+    reportedContextParts.length > 0
+      ? `Reported context: ${reportedContextParts.join("; ")}.`
+      : "";
+  const openPoints =
+    missingDetails.length > 0
+      ? `Open points: ${missingDetails.slice(0, 2).join(", ")}.`
+      : "";
+  const uncertaintyLine =
+    signalLedger.speculativeTop.length > 0
+      ? `Uncertain factors: ${signalLedger.speculativeTop.map((row) => row.label).slice(0, 1).join(", ")}.`
+      : hasSpeculation
+        ? "Uncertain factors: causal driver remains unconfirmed."
+        : "";
+  const outcomeLine = outcomes.topOutcomeSnippets.length > 0
+    ? `Recent outcomes: ${clipSentence(outcomes.topOutcomeSnippets[0], 90)}.`
+    : "";
 
-  const deduped = unique(
-    sentences
-      .map((sentence) => sentenceCase(sentence))
-      .filter(Boolean)
-  );
-  return toFieldNoteText(deduped.slice(0, 6).join(" "));
+  const lines = [currentPicture, reportedContext, openPoints, uncertaintyLine, outcomeLine].filter(Boolean);
+  if (lines.length === 0) {
+    return "Current picture: no clear signal logged in posts.";
+  }
+  return toFieldNoteText(lines.join("\n"));
 }
 
 function inferResolutionStatus(messages: CaseStateMessage[], outcomes: OutcomeSummary): ResolutionStatus {
@@ -1115,29 +1480,40 @@ function inferResolutionStatus(messages: CaseStateMessage[], outcomes: OutcomeSu
   return "open";
 }
 
-export function buildCaseState(messages: CaseStateMessage[], threadId: string): CaseState {
+export function buildCaseState(messages: CaseStateMessage[], threadId: string, knowledge: CaseKnowledgeContext = { knownChecks: [], memorySignals: [] }): CaseState {
   const knownFacts = extractKnownFacts(messages);
   const intents = scoreAndSelectByIntent(messages);
+  const signalLedger = buildSignalLedger(messages);
+  const hasSpeculation = hasSpeculativeDiscussion(messages);
   const outcomes = detectOutcomeSummary(messages);
   const correction = detectCorrectionSignals(messages);
   const domainsInPlay = inferDomainsInPlay(messages);
   const actionsTried = extractActionsTried(messages, intents.ACTION);
-  const missingDetails = buildMissingDetails(knownFacts, intents.CONTEXT);
+  const missingDetails = mergeKnowledgeChecks(
+    buildMissingDetails(knownFacts, intents.CONTEXT, messages),
+    knowledge.knownChecks,
+    messages
+  );
   const initialObservations = buildInitialObservations(messages, knownFacts, intents.OBSERVATION, outcomes.topOutcomeSnippets);
-  const situationSummary = buildSituationSummary(initialObservations, domainsInPlay, missingDetails, intents.CONTEXT, outcomes);
+  const situationSummary = buildSituationSummary(initialObservations, signalLedger, hasSpeculation, intents.CONTEXT, outcomes);
   const resolutionStatus = inferResolutionStatus(messages, outcomes);
   const suggestedNextSteps = buildSuggestedNextSteps(domainsInPlay, missingDetails, intents.PLAN);
+  const emergingThreads = buildEmergingThreads(messages, signalLedger, knowledge, knownFacts, domainsInPlay, missingDetails);
   const currentStrategy = buildCurrentStrategy(messages, suggestedNextSteps, correction);
   const currentStatus = inferCurrentCaseStatus(outcomes, resolutionStatus, actionsTried.length > 0);
   const caseUpdate = buildConversationalCaseUpdate({
     messages,
+    signalLedger,
+    hasSpeculation,
     outcomes,
     domainsInPlay,
+    missingDetails,
   });
 
   return {
     threadId,
     caseUpdate: toFieldNoteText(caseUpdate),
+    emergingThreads,
     currentStrategy,
     currentStatus,
     situationSummary: toFieldNoteText(situationSummary),

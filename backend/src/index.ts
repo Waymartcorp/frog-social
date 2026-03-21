@@ -8,6 +8,7 @@ import {
   handleNewMessage,
   listCases,
   getCaseById,
+  getCaseByNumber,
   getCaseByThreadId,
   submitCaseResolution,
   submitCaseFollowUp,
@@ -17,7 +18,14 @@ import {
   buildThreadVerificationReport,
   buildPersistenceReport,
   listMessagesByThreadId,
+  listAllMessages,
+  createCaseFromDirectIntake,
+  recallCases,
+  findSimilarCasesForThread,
+  findSimilarCasesForFeed,
+  buildGlobalFeedRecap,
   type CaseStatus,
+  type CaseRecallResult,
   type ForumMessage,
   type FollowUpInput,
   type ResolutionInput,
@@ -73,6 +81,28 @@ app.post("/api/messages", (req, res) => {
   res.json({ ok: true, threadId: message.threadId, messageId: message.id, frogCase });
 });
 
+app.get("/api/messages", (req, res) => {
+  const rawLimit = Number(req.query.limit || 200);
+  const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(1000, Math.floor(rawLimit))) : 200;
+  const rows = listAllMessages(limit);
+  res.json(rows);
+});
+
+app.get("/api/feed/summary", (req, res) => {
+  const recap = buildGlobalFeedRecap(120);
+  res.json({
+    generatedAt: new Date().toISOString(),
+    recap,
+  });
+});
+
+app.get("/api/feed/similar-cases", (req, res) => {
+  const rawLimit = Number(req.query.limit || 8);
+  const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(20, Math.floor(rawLimit))) : 8;
+  const payload = findSimilarCasesForFeed(limit);
+  res.json(payload);
+});
+
 app.get("/api/threads/:threadId/messages", (req, res) => {
   const messages = listMessagesByThreadId(req.params.threadId);
   res.json(messages);
@@ -89,6 +119,13 @@ app.get("/api/threads/:threadId/case", (req, res) => {
 app.get("/api/threads/:threadId/verify", (req, res) => {
   const report = buildThreadVerificationReport(req.params.threadId);
   return res.json(report);
+});
+
+app.get("/api/threads/:threadId/similar-cases", (req, res) => {
+  const rawLimit = Number(req.query.limit || 6);
+  const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(20, Math.floor(rawLimit))) : 6;
+  const payload = findSimilarCasesForThread(req.params.threadId, limit);
+  return res.json(payload);
 });
 
 app.get("/api/threads/:threadId/recap", (req, res) => {
@@ -114,16 +151,43 @@ app.get("/api/cases", (req, res) => {
   res.json(cases);
 });
 
+app.get("/api/cases/recall", (req, res) => {
+  const q = String(req.query.q || "");
+  const rawLimit = Number(req.query.limit || 12);
+  const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(50, Math.floor(rawLimit))) : 12;
+  const matches: CaseRecallResult[] = recallCases(q, limit);
+  res.json({ query: q, count: matches.length, matches });
+});
+
 app.get("/api/persistence/report", (req, res) => {
   const report = buildPersistenceReport();
   res.json(report);
 });
 
-// Single case
-app.get("/api/cases/:id", (req, res) => {
-  const frogCase = getCaseById(req.params.id);
-  if (!frogCase) return res.status(404).json({ error: "Case not found" });
-  res.json(frogCase);
+// Direct case intake: freeform narrative -> case memory pipeline.
+app.post("/api/cases/intake", (req, res) => {
+  const narrative = String(req.body.narrative ?? "").trim();
+  if (!narrative) {
+    return res.status(400).json({ error: "narrative is required" });
+  }
+  try {
+    const frogCase = createCaseFromDirectIntake({
+      userId: String(req.body.userId || "demo-user"),
+      title: typeof req.body.title === "string" ? req.body.title : undefined,
+      narrative,
+      threadId: typeof req.body.threadId === "string" ? req.body.threadId : undefined,
+    });
+    return res.json({
+      ok: true,
+      caseId: frogCase.caseId || frogCase.id,
+      threadId: frogCase.threadId,
+      admissionState: frogCase.admissionState,
+      frogCase,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create direct intake case";
+    return res.status(400).json({ error: message });
+  }
 });
 
 // Submit resolution
@@ -184,6 +248,27 @@ app.post("/api/cases/:id/follow-up", (req, res) => {
     const message = error instanceof Error ? error.message : "Invalid follow-up payload";
     return res.status(400).json({ error: message });
   }
+});
+
+// Single case
+app.get("/api/cases/:id", (req, res) => {
+  if (req.params.id === "recall") {
+    const q = String(req.query.q || "");
+    const rawLimit = Number(req.query.limit || 12);
+    const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(50, Math.floor(rawLimit))) : 12;
+    const matches: CaseRecallResult[] = recallCases(q, limit);
+    return res.json({ query: q, count: matches.length, matches });
+  }
+  const frogCase = getCaseById(req.params.id);
+  if (!frogCase) return res.status(404).json({ error: "Case not found" });
+  res.json(frogCase);
+});
+
+app.get("/api/cases/number/:caseNumber", (req, res) => {
+  const caseNumber = Number(req.params.caseNumber);
+  const frogCase = getCaseByNumber(caseNumber);
+  if (!frogCase) return res.status(404).json({ error: "Case not found" });
+  return res.json(frogCase);
 });
 
 const PORT = process.env.PORT || 4000;

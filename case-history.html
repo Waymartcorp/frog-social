@@ -117,6 +117,26 @@
       padding: 4px;
       border-radius: 12px;
     }
+    .search-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .search-row input {
+      min-width: 320px;
+      background: #0F172A;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 0.82rem;
+      color: var(--primary-text);
+    }
+    .search-row .hint {
+      font-size: 0.74rem;
+      color: var(--secondary-text);
+      width: 100%;
+    }
     .filter-tab {
       padding: 8px 16px;
       border-radius: 8px;
@@ -191,6 +211,9 @@
     .case-card.open {
       border-left: 3px solid var(--warning);
     }
+    .case-card.monitoring {
+      border-left: 3px solid var(--accent-cyan);
+    }
 
     .case-header {
       display: flex;
@@ -225,6 +248,14 @@
       background: rgba(52, 211, 153, 0.2);
       color: var(--accent-green);
     }
+    .case-status.monitoring {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent-cyan);
+    }
+    .case-status.unresolved {
+      background: rgba(251, 146, 60, 0.2);
+      color: #FB923C;
+    }
     .case-status.needs_followup {
       background: rgba(56, 189, 248, 0.2);
       color: var(--accent-cyan);
@@ -235,6 +266,54 @@
       color: var(--secondary-text);
       line-height: 1.5;
       margin-bottom: 16px;
+    }
+    .report-block {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .report-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--secondary-text);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .report-body {
+      font-size: 0.83rem;
+      color: var(--primary-text);
+      line-height: 1.55;
+    }
+    .report-list {
+      margin: 0;
+      padding-left: 16px;
+      color: var(--primary-text);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+    .report-list li {
+      margin-bottom: 4px;
+    }
+    .case-report-layout {
+      display: grid;
+      grid-template-columns: 1.4fr 0.9fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .full-status-window {
+      position: sticky;
+      top: 84px;
+    }
+    @media (max-width: 1024px) {
+      .case-report-layout {
+        grid-template-columns: 1fr;
+      }
+      .full-status-window {
+        position: static;
+      }
     }
     .case-detail-hint {
       font-size: 0.75rem;
@@ -484,10 +563,18 @@
         <h1>Case History</h1>
         <p>Track cases from intake through resolution. Resolved cases with detailed notes become learning resources for future troubleshooting.</p>
       </div>
-      <div class="filter-tabs">
-        <button class="filter-tab active" data-filter="all">All</button>
-        <button class="filter-tab" data-filter="open">Open</button>
-        <button class="filter-tab" data-filter="resolved">Resolved</button>
+      <div class="search-row">
+        <input id="caseSearchInput" type="text" placeholder="Search symptoms, lab, date, case #, or remembered detail..." />
+        <label style="font-size:0.78rem; color: var(--secondary-text); display:inline-flex; align-items:center; gap:6px;">
+          <input id="resolvedOnlyToggle" type="checkbox" style="width:auto;" />
+          What worked (resolved only)
+        </label>
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="open">Open</button>
+          <button class="filter-tab" data-filter="resolved">Resolved</button>
+        </div>
+        <div class="hint">Tip: search by symptom keywords and enable "What worked" to browse resolved outcomes first.</div>
       </div>
     </div>
 
@@ -517,6 +604,8 @@
     const API_BASE = "http://localhost:4000";
     const showSeedOrTestCases = new URLSearchParams(window.location.search).get("showSeedOrTest") === "1";
     let currentFilter = "all";
+    let resolvedOnly = false;
+    let searchQuery = "";
     let allCases = [];
 
     function escapeHtml(text) {
@@ -529,17 +618,19 @@
     function formatDate(isoString) {
       if (!isoString) return "Unknown";
       const date = new Date(isoString);
-      return date.toLocaleDateString("en-US", {
+      return date.toLocaleString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
-        hour: "2-digit",
+        hour: "numeric",
         minute: "2-digit",
       });
     }
 
     function normalizeCase(rawCase) {
       const statusRaw = String(rawCase.status || "OPEN").toUpperCase();
+      const normalizedStatus =
+        statusRaw === "RESOLVED" ? "resolved" : statusRaw === "MONITORING" ? "monitoring" : "unresolved";
       const caseId = rawCase.caseId || rawCase.id || "";
       const threadId = rawCase.threadId || rawCase.sourceThreadId || "";
       const rawTitle = String(rawCase.title || "Unlabeled Case");
@@ -549,15 +640,25 @@
       return {
         id: caseId,
         caseId,
+        caseNumber: Number(rawCase.caseNumber || 0),
         threadId,
+        admissionState: rawCase.admissionState || (Boolean(rawCase.isSeedOrTest) ? "hidden" : "admitted"),
         isSeedOrTest: Boolean(rawCase.isSeedOrTest),
         title: prefersThreadLabel ? threadId : rawTitle,
         caseSummary: rawCase.caseSummary || rawCase.currentSystemStatus || rawCase.resolutionSummary || "",
-        currentStatus: rawCase.currentStatus || (statusRaw === "RESOLVED" ? "improved" : statusRaw.toLowerCase()),
+        emergingThreads: Array.isArray(rawCase.emergingThreads) ? rawCase.emergingThreads : [],
+        runningObservations: Array.isArray(rawCase.runningObservations) ? rawCase.runningObservations : [],
+        currentStrategy: Array.isArray(rawCase.currentStrategy) ? rawCase.currentStrategy : [],
+        suggestedNextSteps: Array.isArray(rawCase.suggestedNextSteps) ? rawCase.suggestedNextSteps : [],
+        actionsTried: Array.isArray(rawCase.actionsTried) ? rawCase.actionsTried : [],
+        domainsInPlay: Array.isArray(rawCase.domainsInPlay) ? rawCase.domainsInPlay : [],
+        contributors: Array.isArray(rawCase.contributors) ? rawCase.contributors : [],
+        resolutionSummary: rawCase.resolutionSummary || "",
+        currentStatus: rawCase.currentStatus || normalizedStatus,
         createdAt: rawCase.createdAt || "",
         updatedAt: rawCase.updatedAt || rawCase.createdAt || "",
         statusRaw,
-        statusClass: statusRaw === "RESOLVED" ? "resolved" : "open",
+        statusClass: normalizedStatus,
       };
     }
 
@@ -568,13 +669,16 @@
       }
       const payload = await response.json();
       const mapped = Array.isArray(payload) ? payload.map(normalizeCase) : [];
-      const visible = showSeedOrTestCases ? mapped : mapped.filter((c) => !c.isSeedOrTest);
+      const hasArchiveFields = (c) => Number(c.caseNumber || 0) > 0 && Boolean(String(c.createdAt || "").trim());
+      const visible = showSeedOrTestCases
+        ? mapped.filter(hasArchiveFields)
+        : mapped.filter((c) => c.admissionState === "admitted" && hasArchiveFields(c));
       visible.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
       allCases = visible;
     }
 
     function updateStats() {
-      const openCount = allCases.filter((c) => c.statusRaw !== "RESOLVED").length;
+      const openCount = allCases.filter((c) => c.statusClass !== "resolved").length;
       const resolvedCount = allCases.filter((c) => c.statusRaw === "RESOLVED").length;
       document.getElementById("statTotal").textContent = String(allCases.length);
       document.getElementById("statOpen").textContent = String(openCount);
@@ -582,13 +686,34 @@
     }
 
     function getFilteredCases() {
+      let scoped = allCases;
+      if (resolvedOnly) {
+        scoped = scoped.filter((c) => c.statusClass === "resolved");
+      }
       if (currentFilter === "open") {
-        return allCases.filter((c) => c.statusRaw !== "RESOLVED");
+        scoped = scoped.filter((c) => c.statusClass !== "resolved");
+      } else if (currentFilter === "resolved") {
+        scoped = scoped.filter((c) => c.statusClass === "resolved");
       }
-      if (currentFilter === "resolved") {
-        return allCases.filter((c) => c.statusRaw === "RESOLVED");
-      }
-      return allCases;
+
+      const q = String(searchQuery || "").trim().toLowerCase();
+      if (!q) return scoped;
+
+      return scoped.filter((c) => {
+        const dateText = formatDate(c.updatedAt).toLowerCase();
+        const haystack = [
+          c.title,
+          c.threadId,
+          c.caseSummary,
+          c.currentStatus,
+          c.createdAt,
+          c.updatedAt,
+          dateText,
+        ]
+          .join(" ")
+          .toLowerCase();
+        return q.split(/\s+/).every((token) => haystack.includes(token));
+      });
     }
 
     function toPreview(text, max = 180) {
@@ -596,6 +721,114 @@
       if (!cleaned) return "No case summary available yet.";
       if (cleaned.length <= max) return cleaned;
       return `${cleaned.slice(0, max - 3).trimEnd()}...`;
+    }
+
+    function compactUnique(items, maxItems = 4, maxLen = 140) {
+      const seen = new Set();
+      const out = [];
+      for (const raw of Array.isArray(items) ? items : []) {
+        const cleaned = String(raw || "").replace(/\s+/g, " ").trim();
+        if (!cleaned) continue;
+        if (!isRenderableCaseLine(cleaned)) continue;
+        const key = cleaned.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(cleaned.length > maxLen ? `${cleaned.slice(0, maxLen - 3).trimEnd()}...` : cleaned);
+        if (out.length >= maxItems) break;
+      }
+      return out;
+    }
+
+    function isRenderableCaseLine(text) {
+      const source = String(text || "").trim();
+      if (!source) return false;
+      const lower = source.toLowerCase();
+      const blocked = [
+        /^describe update for\b/,
+        /^direct intake check\b/,
+        /^update pass\b/,
+        /^unified update test\b/,
+        /^case note update\b/,
+        /^second unified update test\b/,
+        /^\d+(\.\d+)?[,;: ]+\s*conductivity\b/,
+        /\bunify-e2e-\d+\b/,
+        /^lab\s+[a-z0-9 _-]{2,60}\s+observed\b/,
+      ];
+      return !blocked.some((pattern) => pattern.test(lower));
+    }
+
+    function renderListOrFallback(items, fallback) {
+      const compact = compactUnique(items, 4, 150);
+      if (!compact.length) {
+        return `<div class="report-body" style="color: var(--secondary-text);">${escapeHtml(fallback)}</div>`;
+      }
+      return `<ul class="report-list">${compact.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+    }
+
+    function inferCrossCaseRecommendations(targetCase, allVisibleCases) {
+      const others = allVisibleCases.filter((entry) => entry.caseId !== targetCase.caseId);
+      const targetDomainSet = new Set((targetCase.domainsInPlay || []).map((entry) => String(entry || "").toLowerCase()));
+      const scoreMap = new Map();
+      for (const entry of others) {
+        const entryDomains = (entry.domainsInPlay || []).map((d) => String(d || "").toLowerCase());
+        const sharedDomain = entryDomains.some((d) => targetDomainSet.has(d));
+        const summaryOverlap =
+          String(targetCase.caseSummary || "").toLowerCase().split(/\s+/).some((token) =>
+            token.length > 5 && String(entry.caseSummary || "").toLowerCase().includes(token)
+          );
+        if (!sharedDomain && !summaryOverlap) continue;
+        const candidateSteps = compactUnique(
+          [...(entry.currentStrategy || []), ...(entry.suggestedNextSteps || []), ...(entry.actionsTried || [])],
+          6,
+          140
+        );
+        for (const step of candidateSteps) {
+          const key = step.toLowerCase();
+          scoreMap.set(key, { text: step, score: (scoreMap.get(key)?.score || 0) + 1 });
+        }
+      }
+      return Array.from(scoreMap.values())
+        .sort((a, b) => b.score - a.score)
+        .map((entry) => entry.text)
+        .slice(0, 4);
+    }
+
+    function buildFullCaseReport(caseRow, allVisibleCases) {
+      const emerging = compactUnique(caseRow.emergingThreads, 4, 150);
+      const collaborative = compactUnique(caseRow.runningObservations, 5, 150);
+      const focus = compactUnique(
+        (caseRow.currentStrategy || []).length ? caseRow.currentStrategy : caseRow.suggestedNextSteps,
+        5,
+        150
+      );
+      const systemLearning = compactUnique(inferCrossCaseRecommendations(caseRow, allVisibleCases), 4, 150);
+      const tried = compactUnique(caseRow.actionsTried, 5, 150);
+      const activeNow = compactUnique([...focus, ...tried], 4, 150);
+      const outcome = caseRow.resolutionSummary ? toPreview(caseRow.resolutionSummary, 320) : "Outcome not finalized yet.";
+
+      const section = (title, items, fallback, asParagraph = false) => {
+        if (asParagraph) {
+          return `<div style="margin-bottom:10px;"><strong>${escapeHtml(title)}:</strong> ${escapeHtml(items || fallback)}</div>`;
+        }
+        const rows = Array.isArray(items) ? items : [];
+        if (!rows.length) {
+          return `<div style="margin-bottom:10px;"><strong>${escapeHtml(title)}:</strong> ${escapeHtml(fallback)}</div>`;
+        }
+        return `<div style="margin-bottom:10px;"><strong>${escapeHtml(title)}:</strong><ul class="report-list">${rows
+          .map((item) => `<li>${escapeHtml(item)}</li>`)
+          .join("")}</ul></div>`;
+      };
+
+      return `
+        ${section("Initial case description", toPreview(caseRow.caseSummary, 420), "No initial summary yet.", true)}
+        ${section("Emerging threads", emerging, "No emerging thread lines yet.")}
+        ${section("Collaborative / shared views", collaborative, "No collaborative social views captured yet.")}
+        ${section("Suggestions and recommendations", focus, "No recommendations captured yet.")}
+        ${section("System learning from prior cases", systemLearning, "No related prior-case learning captured yet.")}
+        ${section("Status and log", `Opened ${formatDate(caseRow.createdAt)}. Last update ${formatDate(caseRow.updatedAt)}. Current status ${caseRow.currentStatus || caseRow.statusRaw.toLowerCase()}. Contributors: ${(caseRow.contributors || []).join(", ") || "not listed"}.`, "", true)}
+        ${section("Actions being taken now", activeNow, "No active actions listed yet.")}
+        ${section("Final result / outcome", outcome, "Outcome not finalized yet.", true)}
+      `;
     }
 
     function renderCases() {
@@ -614,20 +847,66 @@
         return;
       }
 
-      container.innerHTML = filtered.map((c) => `
+      container.innerHTML = filtered.map((c, index) => `
         <div class="case-card ${c.statusClass}">
           <div class="case-header">
             <div>
-              <h3 class="case-title">${escapeHtml(c.title)}</h3>
+              <h3 class="case-title">Case ${c.caseNumber}: ${escapeHtml(c.title)}</h3>
               <div class="case-meta">
-                Last updated ${formatDate(c.updatedAt)} · Thread ${escapeHtml(c.threadId || "n/a")}
+                First interaction ${formatDate(c.createdAt)} · Last updated ${formatDate(c.updatedAt)} · Thread ${escapeHtml(c.threadId || "n/a")}
               </div>
             </div>
-            <span class="case-status ${c.statusClass}">${escapeHtml(c.currentStatus)}</span>
+            <span class="case-status ${c.statusClass}">${escapeHtml(c.statusClass)}</span>
           </div>
           <div class="case-description">${escapeHtml(toPreview(c.caseSummary))}</div>
+          <div class="case-report-layout">
+            <div>
+              <div class="report-block">
+                <div class="report-title">Case Description #${c.caseNumber}</div>
+                <div class="report-body">${escapeHtml(toPreview(c.caseSummary, 380))}</div>
+              </div>
+              <div class="report-block">
+                <div class="report-title">Emerging Threads</div>
+                ${renderListOrFallback(c.emergingThreads, "No emerging thread lines yet.")}
+              </div>
+              <div class="report-block">
+                <div class="report-title">Social Inputs and Shared Suggestions</div>
+                ${renderListOrFallback(c.runningObservations, "No shared social observations captured yet.")}
+              </div>
+              <div class="report-block">
+                <div class="report-title">Current Focus and Recommendations</div>
+                ${renderListOrFallback((c.currentStrategy || []).length ? c.currentStrategy : c.suggestedNextSteps, "No recommendation bundle available yet.")}
+              </div>
+              <div class="report-block">
+                <div class="report-title">System Learning from Other Cases</div>
+                ${renderListOrFallback(inferCrossCaseRecommendations(c, filtered), "No related case-memory recommendations identified yet.")}
+              </div>
+              <div class="report-block">
+                <div class="report-title">What Has Been Tried</div>
+                ${renderListOrFallback(c.actionsTried, "No concrete actions logged yet.")}
+              </div>
+              <div class="report-block">
+                <div class="report-title">Case Log / Status</div>
+                <div class="report-body">
+                  Opened: ${escapeHtml(formatDate(c.createdAt))}<br />
+                  Last update: ${escapeHtml(formatDate(c.updatedAt))}<br />
+                  Current status: ${escapeHtml(c.statusClass)}<br />
+                  Contributors: ${escapeHtml((c.contributors || []).join(", ") || "not listed")}
+                </div>
+              </div>
+              <div class="report-block">
+                <div class="report-title">Outcome</div>
+                <div class="report-body">${escapeHtml(c.resolutionSummary ? toPreview(c.resolutionSummary, 320) : "Outcome not finalized yet.")}</div>
+              </div>
+            </div>
+            <div class="report-block full-status-window">
+              <div class="report-title">Full Case Status</div>
+              <div class="report-body">${buildFullCaseReport(c, filtered)}</div>
+            </div>
+          </div>
           <div class="case-actions">
             <button class="btn-secondary" data-thread-id="${escapeHtml(c.threadId || "")}" onclick="viewOnSocial(this.dataset.threadId)">Open Thread</button>
+            <button class="btn-secondary" data-thread-id="${escapeHtml(c.threadId || "")}" data-title="${escapeHtml(c.title || "")}" onclick="updateFromDescribe(this.dataset.threadId, this.dataset.title)">Update in Describe</button>
           </div>
         </div>
       `).join("");
@@ -642,6 +921,16 @@
       window.location.href = `social.html?threadId=${encodeURIComponent(safeThreadId)}`;
     };
 
+    window.updateFromDescribe = function(threadId, title) {
+      const safeThreadId = String(threadId || "").trim();
+      const safeTitle = String(title || "").trim();
+      const qs = new URLSearchParams();
+      if (safeThreadId) qs.set("threadId", safeThreadId);
+      if (safeTitle) qs.set("title", safeTitle);
+      const suffix = qs.toString() ? `?${qs.toString()}` : "";
+      window.location.href = `case-intake.html${suffix}`;
+    };
+
     document.querySelectorAll(".filter-tab").forEach((tab) => {
       tab.addEventListener("click", () => {
         document.querySelectorAll(".filter-tab").forEach((t) => t.classList.remove("active"));
@@ -649,6 +938,21 @@
         currentFilter = tab.dataset.filter;
         renderCases();
       });
+    });
+
+    document.getElementById("caseSearchInput").addEventListener("input", (event) => {
+      searchQuery = String(event.target.value || "");
+      renderCases();
+    });
+    document.getElementById("resolvedOnlyToggle").addEventListener("change", (event) => {
+      resolvedOnly = Boolean(event.target.checked);
+      if (resolvedOnly) {
+        currentFilter = "resolved";
+        document.querySelectorAll(".filter-tab").forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.filter === "resolved");
+        });
+      }
+      renderCases();
     });
 
     (async function init() {

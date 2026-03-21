@@ -246,6 +246,18 @@
       } catch { return {}; }
     }
 
+    function formatDateTime(isoString) {
+      const date = new Date(isoString);
+      if (Number.isNaN(date.getTime())) return "Unknown date";
+      return date.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+
     function renderBulletList(elementId, items, emptyText) {
       const el = document.getElementById(elementId);
       if (!items || !items.length) {
@@ -272,7 +284,7 @@
         return;
       }
       const chunks = messages.map(m => {
-        const when = m.createdAt ? new Date(m.createdAt).toLocaleString() : "";
+        const when = m.createdAt ? formatDateTime(m.createdAt) : "";
         const who = m.author || m.userId || "user";
         const text = m.text || m.content || "";
         return `
