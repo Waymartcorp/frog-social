@@ -593,12 +593,12 @@ function extractActionsTried(messages: CaseStateMessage[], actionSnippets: strin
 
 function buildMissingDetails(facts: KnownFacts, contextSnippets: string[], messages: CaseStateMessage[]): string[] {
   const all = normalize(messages.map((message) => message.content).join("\n"));
-  const hasWaterSignals = /(ph|conductivity|ammonia|nitrite|water source|remineral|buffer|biofilter|filtration|water chemistry)/.test(all);
-  const hasFlowSignals = /(flow|nozzle|splash|vibration|pump|noise)/.test(all);
-  const hasFeedingSignals = /(feeding|not eating|off food|appetite|density|stocking|competition|crowd)/.test(all);
-  const hasHandlingSignals = /(handling|handled|injection|inject|disturbance|traffic|room entries|door|light)/.test(all);
-  const hasSkinSignals = /(lesion|redness|ulcer|skin|wound|abrasion)/.test(all);
-  const hasSystemSignals = /(system maturity|biofilter|cycling|new system|newly set up|recently modified)/.test(all);
+  const hasWaterSignals = /\b(ph|conductivity|ammonia|nitrite|water source|remineral|buffer|biofilter|filtration|water chemistry)\b/.test(all);
+  const hasFlowSignals = /\b(nozzle|splash|surface agitation)\b/.test(all) || /\b(vibration|pump)\b/.test(all);
+  const hasFeedingSignals = /\b(feeding|not eating|off food|appetite|density|stocking|competition|crowd)\b/.test(all);
+  const hasHandlingSignals = /\b(handling|handled|injection|inject|disturbance|traffic|room entries)\b/.test(all);
+  const hasSkinSignals = /\b(lesion|redness|ulcer|wound|abrasion)\b/.test(all);
+  const hasSystemSignals = /\b(system maturity|biofilter|cycling|new system|newly set up|recently modified)\b/.test(all);
   const missing: string[] = [];
   if (hasSystemSignals && (!facts.systemMaturity || !facts.biofilterStatus)) {
     missing.push("System maturity / biofilter status");
@@ -746,7 +746,11 @@ function buildSituationSummary(
     parts.push(`Reported conditions: ${contextFacts.join(" ")}`);
   }
   if (outcomeSummary.topOutcomeSnippets.length > 0) {
-    parts.push(`Recent outcomes: ${clipSentence(outcomeSummary.topOutcomeSnippets[0], 120)}`);
+    const outcomeSnippet = clipSentence(outcomeSummary.topOutcomeSnippets[0], 120);
+    const alreadyPresent = parts.some((p) => p.toLowerCase().includes(outcomeSnippet.toLowerCase().slice(0, 30)));
+    if (!alreadyPresent) {
+      parts.push(`Recent outcomes: ${outcomeSnippet}`);
+    }
   }
   if (parts.length === 0) {
     return "";
@@ -1451,8 +1455,13 @@ function buildConversationalCaseUpdate(params: {
       : hasSpeculation
         ? "Uncertain factors: causal driver remains unconfirmed."
         : "";
+  const currentPictureLower = currentPicture.toLowerCase();
   const outcomeLine = outcomes.topOutcomeSnippets.length > 0
-    ? `Recent outcomes: ${clipSentence(outcomes.topOutcomeSnippets[0], 90)}.`
+    ? (() => {
+        const snippet = clipSentence(outcomes.topOutcomeSnippets[0], 90);
+        if (currentPictureLower.includes(snippet.toLowerCase().slice(0, 30))) return "";
+        return `Recent outcomes: ${snippet}.`;
+      })()
     : "";
 
   const lines = [currentPicture, reportedContext, openPoints, uncertaintyLine, outcomeLine].filter(Boolean);
