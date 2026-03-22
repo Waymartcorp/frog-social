@@ -253,9 +253,6 @@ function inferAdmissionStateForCase(frogCase: FrogCase, messagesInThread: ForumM
   if (!threadId || isExcludedThreadId(threadId)) {
     return "hidden";
   }
-  if (frogCase.isSeedOrTest) {
-    return "hidden";
-  }
   if (!String(frogCase.title || "").trim() || !String(frogCase.caseSummary || "").trim()) {
     return "hidden";
   }
@@ -548,7 +545,7 @@ function syncCaseLearningFromThread(threadId: string, frogCase: FrogCase): FrogC
   frogCase.status = frogCase.status === "RESOLVED" ? "RESOLVED" : mapRecapStatus(recap.resolutionStatus);
   const admissionState = inferAdmissionStateForCase(frogCase, listThreadMessages(threadId, true));
   frogCase.admissionState = admissionState;
-  frogCase.isSeedOrTest = admissionState === "hidden" ? true : frogCase.isSeedOrTest;
+  frogCase.isSeedOrTest = admissionState === "hidden";
   enforceFormalCaseArchiveFields(frogCase);
   return frogCase;
 }
@@ -824,7 +821,7 @@ export async function createCaseFromSeed(input: CaseSeedInput): Promise<FrogCase
   };
   enforceCaseTitleFromThread(frogCase);
   frogCase.admissionState = inferAdmissionStateForCase(frogCase, listThreadMessages(sourceThreadId, true));
-  frogCase.isSeedOrTest = frogCase.admissionState === "hidden" ? true : frogCase.isSeedOrTest;
+  frogCase.isSeedOrTest = frogCase.admissionState === "hidden";
   enforceFormalCaseArchiveFields(frogCase);
 
   registerCaseInIndices(frogCase);
@@ -1030,7 +1027,7 @@ export async function handleNewMessage(message: ForumMessage): Promise<FrogCase 
   };
   enforceCaseTitleFromThread(frogCase);
   frogCase.admissionState = inferAdmissionStateForCase(frogCase, threadMessages);
-  frogCase.isSeedOrTest = frogCase.admissionState === "hidden" ? true : frogCase.isSeedOrTest;
+  frogCase.isSeedOrTest = frogCase.admissionState === "hidden";
   enforceFormalCaseArchiveFields(frogCase);
 
   registerCaseInIndices(frogCase);
