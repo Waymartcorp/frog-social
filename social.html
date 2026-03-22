@@ -1647,14 +1647,7 @@
       const selectedCluster = activeClusters.find((cluster) => cluster.key === activeThreadClusterKey) || null;
       const renderPost = (m, mutedByCluster = false) => {
         const text = String(m.text || m.content || "");
-        const note = extractFieldNote(text);
         const muted = Boolean(mutedByCluster);
-        const body = note.bodyLines.length ? note.bodyLines.join("\n") : toSummaryPreview(text);
-        const structuredRows = [
-          note.obs ? `<div class="note-line"><strong>OBS:</strong>${escapeHtml(note.obs)}</div>` : "",
-          note.ctx ? `<div class="note-line"><strong>CTX:</strong>${escapeHtml(note.ctx)}</div>` : "",
-          note.q ? `<div class="note-line"><strong>Q:</strong>${escapeHtml(note.q)}</div>` : "",
-        ].filter(Boolean).join("");
 
         return `
           <article class="field-note-post ${muted ? "is-muted" : ""}" data-message-id="${escapeHtml(String(m.id || ""))}" data-thread-id="${escapeHtml(String(m.threadId || ""))}">
@@ -1662,8 +1655,7 @@
               <span class="note-time">${formatTime(m.createdAt)} · ${formatDateTimeLabel(m.createdAt)}</span>
               <span class="note-author">${escapeHtml(String(m.author || m.userId || "anon"))}</span>
             </div>
-            <div class="note-body">${escapeHtml(body)}</div>
-            ${structuredRows ? `<div class="note-structured">${structuredRows}</div>` : ""}
+            <div class="note-body">${escapeHtml(text)}</div>
           </article>
         `;
       };
