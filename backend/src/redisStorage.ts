@@ -2,11 +2,24 @@ import { Redis } from "@upstash/redis";
 
 let redis: Redis | null = null;
 
+function stripQuotes(value: string): string {
+  let v = value.trim();
+  while (v.startsWith('"') && v.endsWith('"') && v.length >= 2) {
+    v = v.slice(1, -1).trim();
+  }
+  while (v.startsWith("'") && v.endsWith("'") && v.length >= 2) {
+    v = v.slice(1, -1).trim();
+  }
+  return v;
+}
+
 function getRedis(): Redis | null {
   if (redis) return redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
+  const rawUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const rawToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!rawUrl || !rawToken) return null;
+  const url = stripQuotes(rawUrl);
+  const token = stripQuotes(rawToken);
   redis = new Redis({ url, token });
   return redis;
 }
