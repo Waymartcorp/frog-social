@@ -1022,7 +1022,12 @@
       }
 
       if (!sections.currentPicture) {
-        sections.currentPicture = String(recap?.situationSummary || "").trim();
+        sections.currentPicture = String(recap?.situationSummary || "").trim()
+          .replace(/^Observed signals:\s*/i, "")
+          .replace(/^Still uncertain:\s*/i, "")
+          .replace(/^Recent outcomes:\s*/i, "")
+          .replace(/^Reported conditions:\s*/i, "")
+          .trim();
       }
 
       return sections;
