@@ -61,6 +61,20 @@ function readCasesFromFile(filePath: string): FrogCase[] {
   return parsed.map(deserializeCase);
 }
 
+function mergeById(local: SerializedFrogCase[], remote: SerializedFrogCase[]): SerializedFrogCase[] {
+  const byId = new Map<string, SerializedFrogCase>();
+  for (const c of remote) byId.set(c.id, c);
+  for (const c of local) {
+    const existing = byId.get(c.id);
+    if (!existing || new Date(c.updatedAt).getTime() >= new Date(existing.updatedAt).getTime()) {
+      byId.set(c.id, c);
+    }
+  }
+  return Array.from(byId.values()).sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+}
+
 export async function loadCasesFromDisk(): Promise<FrogCase[]> {
   if (isRedisConfigured()) {
     const stored = await redisGet<SerializedFrogCase[]>(REDIS_KEY);
@@ -80,12 +94,14 @@ export async function loadCasesFromDisk(): Promise<FrogCase[]> {
 }
 
 export async function saveCasesToDisk(frogCases: FrogCase[]): Promise<void> {
-  const serialized = frogCases.map(serializeCase);
+  const localSerialized = frogCases.map(serializeCase);
   if (isRedisConfigured()) {
     try {
-      const ok = await redisSet(REDIS_KEY, serialized);
+      const remote = await redisGet<SerializedFrogCase[]>(REDIS_KEY);
+      const merged = mergeById(localSerialized, Array.isArray(remote) ? remote : []);
+      const ok = await redisSet(REDIS_KEY, merged);
       if (ok) {
-        console.log(`[caseStorage] Saved ${frogCases.length} cases to Redis`);
+        console.log(`[caseStorage] Saved ${merged.length} cases to Redis (merged)`);
       }
     } catch (err) {
       console.error("[caseStorage] Redis save failed:", err);
@@ -94,7 +110,7 @@ export async function saveCasesToDisk(frogCases: FrogCase[]): Promise<void> {
   try {
     ensureCasesDataDir();
     const filePath = getCasesFilePath();
-    fs.writeFileSync(filePath, JSON.stringify(serialized, null, 2));
+    fs.writeFileSync(filePath, JSON.stringify(localSerialized, null, 2));
   } catch (err) {
     console.warn("[caseStorage] File write failed (non-fatal if Redis is primary):", err);
   }

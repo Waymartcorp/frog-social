@@ -1585,7 +1585,12 @@
         if (latestEmergingThreadsThreadId !== requestedThreadId) {
           latestEmergingThreadsPayload = null;
         }
-        currentThreadMessages = Array.isArray(messages) ? messages : [];
+        const serverMessages = Array.isArray(messages) ? messages : [];
+        const serverIds = new Set(serverMessages.map((m) => m.id));
+        const optimistic = (currentThreadMessages || []).filter((m) => m.id && !serverIds.has(m.id));
+        currentThreadMessages = [...serverMessages, ...optimistic].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
         renderLinkedCaseFromBackend(null);
         if (emerging) {
           latestEmergingThreadsPayload = emerging;

@@ -52,6 +52,15 @@ function readMessagesFromFile(filePath: string): ForumMessage[] {
   return parsed.map(deserializeMessage);
 }
 
+function mergeById(local: SerializedForumMessage[], remote: SerializedForumMessage[]): SerializedForumMessage[] {
+  const byId = new Map<string, SerializedForumMessage>();
+  for (const m of remote) byId.set(m.id, m);
+  for (const m of local) byId.set(m.id, m);
+  return Array.from(byId.values()).sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+}
+
 export async function loadMessagesFromDisk(): Promise<ForumMessage[]> {
   if (isRedisConfigured()) {
     const stored = await redisGet<SerializedForumMessage[]>(REDIS_KEY);
@@ -71,12 +80,14 @@ export async function loadMessagesFromDisk(): Promise<ForumMessage[]> {
 }
 
 export async function saveMessagesToDisk(messages: ForumMessage[]): Promise<void> {
-  const serialized = messages.map(serializeMessage);
+  const localSerialized = messages.map(serializeMessage);
   if (isRedisConfigured()) {
     try {
-      const ok = await redisSet(REDIS_KEY, serialized);
+      const remote = await redisGet<SerializedForumMessage[]>(REDIS_KEY);
+      const merged = mergeById(localSerialized, Array.isArray(remote) ? remote : []);
+      const ok = await redisSet(REDIS_KEY, merged);
       if (ok) {
-        console.log(`[messageStorage] Saved ${messages.length} messages to Redis`);
+        console.log(`[messageStorage] Saved ${merged.length} messages to Redis (merged)`);
       }
     } catch (err) {
       console.error("[messageStorage] Redis save failed:", err);
@@ -85,7 +96,7 @@ export async function saveMessagesToDisk(messages: ForumMessage[]): Promise<void
   try {
     ensureMessagesDataDir();
     const filePath = getMessagesFilePath();
-    fs.writeFileSync(filePath, JSON.stringify(serialized, null, 2));
+    fs.writeFileSync(filePath, JSON.stringify(localSerialized, null, 2));
   } catch (err) {
     console.warn("[messageStorage] File write failed (non-fatal if Redis is primary):", err);
   }
