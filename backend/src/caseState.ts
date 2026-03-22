@@ -625,7 +625,6 @@ function buildMissingDetails(facts: KnownFacts, contextSnippets: string[], messa
   if (hasSkinSignals && !facts.lesions) {
     missing.push("Lesion/skin finding details");
   }
-  if (contextSnippets.length === 0) missing.push("Current setup/system context details");
   return missing;
 }
 
@@ -635,6 +634,7 @@ function mergeKnowledgeChecks(
   messages: CaseStateMessage[]
 ): string[] {
   if (!knownChecks.length) return missingDetails;
+  if (missingDetails.length === 0) return missingDetails;
   const all = normalize(messages.map((message) => message.content).join(" "));
   const existing = new Set(missingDetails.map((entry) => normalize(entry)));
   const merged = [...missingDetails];
@@ -676,8 +676,6 @@ function buildInitialObservations(
     } else {
       observations.push("System maturity and biofilter context are being discussed as case factors.");
     }
-  } else {
-    observations.push("System maturity / biofilter status is not yet established in the thread.");
   }
 
   if (/(not eating|off food|reduced feeding|poor feeding)/.test(all)) {
@@ -751,7 +749,7 @@ function buildSituationSummary(
     parts.push(`Recent outcomes: ${clipSentence(outcomeSummary.topOutcomeSnippets[0], 120)}`);
   }
   if (parts.length === 0) {
-    return "Observed signals are limited. Additional field notes are needed.";
+    return "";
   }
   return toFieldNoteText(parts.join(" "));
 }
@@ -783,6 +781,7 @@ function clipSentence(text: string, maxLen = 180): string {
 }
 
 function buildSuggestedNextSteps(domains: string[], missingDetails: string[], planSnippets: string[]): string[] {
+  if (domains.length === 0 && missingDetails.length === 0 && planSnippets.length === 0) return [];
   const fromDomains = domains.flatMap((domain) => DOMAIN_TO_NEXT_STEPS[domain] ?? []);
   const fromMissing: string[] = [];
   const fromPlans = planSnippets
@@ -1458,7 +1457,15 @@ function buildConversationalCaseUpdate(params: {
 
   const lines = [currentPicture, reportedContext, openPoints, uncertaintyLine, outcomeLine].filter(Boolean);
   if (lines.length === 0) {
-    return "Current picture: no clear signal logged in posts.";
+    const recentContent = messages
+      .slice(-3)
+      .map((m) => m.content.trim())
+      .filter(Boolean)
+      .join(" | ");
+    if (recentContent) {
+      return toFieldNoteText(recentContent);
+    }
+    return "No posts yet.";
   }
   return toFieldNoteText(lines.join("\n"));
 }
