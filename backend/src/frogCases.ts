@@ -1472,7 +1472,7 @@ export async function ensureInitialized(): Promise<void> {
   return _initPromise;
 }
 
-async function rehydrateFromRedis(): Promise<void> {
+export async function rehydrateFromRedis(): Promise<void> {
   const freshMessages = await loadMessagesFromDisk();
   for (const msg of freshMessages) {
     if (!messages.has(msg.id)) {

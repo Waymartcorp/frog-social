@@ -7,6 +7,7 @@ import { randomUUID } from "crypto";
 import { isLLMConfigured, generateThreadSummary } from "./llmSummary";
 import {
   ensureInitialized,
+  rehydrateFromRedis,
   handleNewMessage,
   listCases,
   getCaseById,
@@ -65,6 +66,7 @@ app.use(bodyParser.json());
 app.use(async (_req, _res, next) => {
   try {
     await ensureInitialized();
+    await rehydrateFromRedis();
   } catch (err) {
     console.error("[init] Failed to initialize:", err);
   }
