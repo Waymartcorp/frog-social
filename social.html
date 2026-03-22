@@ -1823,12 +1823,14 @@
         }
       }
 
+      console.log("Post succeeded, reloading thread:", currentThreadId);
       input.value = "";
       if (contextInput) {
         contextInput.value = "";
       }
       renderReferencedCasesHint([]);
       await loadThread(currentThreadId);
+      console.log("Thread reloaded, messages:", currentThreadMessages.length);
       await fetchCasesFromApi().catch(() => caseMemory);
       populateCaseSelector();
       await refreshSimilarCasesForCurrentThread();
@@ -1942,15 +1944,21 @@
 
     // Initialize
     (async function initSocial() {
+      console.log("Frog Social init starting");
       try {
         await fetchCasesFromApi();
       } catch (error) {
         console.warn("Unable to preload case memory:", error);
       }
       populateCaseSelector();
-      renderMessages();
       checkForLinkedCase();
-      loadThread(getDefaultThreadId());
+      try {
+        await loadThread(getDefaultThreadId());
+        console.log("Frog Social init complete, messages:", currentThreadMessages.length);
+      } catch (error) {
+        console.error("Frog Social init loadThread failed:", error);
+        renderMessages();
+      }
     })();
   </script>
 </body>
