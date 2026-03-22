@@ -72,7 +72,12 @@ app.use(async (_req, _res, next) => {
 
 // Health check
 app.get("/api/health", (req, res) => {
-  res.json({ ok: true, status: "Frog Social backend running" });
+  res.json({
+    ok: true,
+    status: "Frog Social backend running",
+    redis: Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN),
+    vercel: Boolean(process.env.VERCEL),
+  });
 });
 
 // "Describe a problem" → create message + maybe new case
