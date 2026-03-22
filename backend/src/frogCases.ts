@@ -839,6 +839,7 @@ export async function createCaseFromSeed(input: CaseSeedInput): Promise<FrogCase
 }
 
 export async function createCaseFromDirectIntake(input: DirectCaseInput): Promise<FrogCase> {
+  await rehydrateFromRedis();
   const now = new Date();
   const narrative = String(input.narrative || "").trim();
   if (!narrative) {
@@ -951,6 +952,7 @@ export async function createCaseFromDirectIntake(input: DirectCaseInput): Promis
 
 // 1) Handle new message (create case or attach to existing)
 export async function handleNewMessage(message: ForumMessage): Promise<FrogCase | null> {
+  await rehydrateFromRedis();
   messages.set(message.id, message);
   await persistMessages();
 
@@ -1468,5 +1470,21 @@ export async function ensureInitialized(): Promise<void> {
     console.log("[frogCases] Initialization complete");
   })();
   return _initPromise;
+}
+
+async function rehydrateFromRedis(): Promise<void> {
+  const freshMessages = await loadMessagesFromDisk();
+  for (const msg of freshMessages) {
+    if (!messages.has(msg.id)) {
+      messages.set(msg.id, msg);
+    }
+  }
+  const freshCases = await loadCasesFromDisk();
+  for (const fc of freshCases) {
+    const existing = cases.get(fc.id);
+    if (!existing || fc.updatedAt.getTime() > existing.updatedAt.getTime()) {
+      registerCaseInIndices(fc);
+    }
+  }
 }
 
