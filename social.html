@@ -1792,48 +1792,67 @@
       if (profile.institution) submitBits.push("· " + profile.institution);
       const author = submitBits.length ? submitBits.join(" ") : "Local user";
 
+      const selectedCaseId = primaryReferencedCase ? (primaryReferencedCase.caseId || primaryReferencedCase.id) : linkedCaseId;
+      const linkedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(selectedCaseId));
+      const targetThreadId = linkedCase?.threadId || currentThreadId || getDefaultThreadId();
+      const fullContent = contextText ? `${text}\nContext: ${contextText}` : text;
+      const userName = profile.name ? profile.name : "demo-user";
+
+      let postedMessageId = "";
       try {
-        const selectedCaseId = primaryReferencedCase ? (primaryReferencedCase.caseId || primaryReferencedCase.id) : linkedCaseId;
-        const linkedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(selectedCaseId));
-        const targetThreadId = linkedCase?.threadId || currentThreadId || getDefaultThreadId();
         const response = await fetch(`${API_BASE}/api/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userId: profile.name ? profile.name : "demo-user",
+            userId: userName,
             threadId: targetThreadId,
-            content: contextText ? `${text}\nContext: ${contextText}` : text,
+            content: fullContent,
           }),
         });
 
         if (!response.ok) {
           throw new Error(`Post failed (${response.status})`);
         }
+        const result = await response.json();
+        postedMessageId = result.messageId || "";
       } catch (error) {
         setThreadNotice(error instanceof Error ? error.message : "Failed to post message.", true);
         return;
       }
 
+      // Optimistic local insert so post appears immediately
+      const optimisticMsg = {
+        id: postedMessageId || `local-${Date.now()}`,
+        userId: userName,
+        threadId: targetThreadId,
+        content: fullContent,
+        createdAt: new Date().toISOString(),
+      };
+      currentThreadMessages.push(optimisticMsg);
+      renderMessages();
+
       // If linked to a case, keep UI scoped to that case thread.
       if (linkedCaseId) {
-        const linkedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(linkedCaseId));
-        if (linkedCase?.threadId) {
-          currentThreadId = String(linkedCase.threadId);
+        const lc = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(linkedCaseId));
+        if (lc?.threadId) {
+          currentThreadId = String(lc.threadId);
           persistActiveThreadId(currentThreadId);
         }
       }
 
-      console.log("Post succeeded, reloading thread:", currentThreadId);
       input.value = "";
       if (contextInput) {
         contextInput.value = "";
       }
       renderReferencedCasesHint([]);
-      await loadThread(currentThreadId);
-      console.log("Thread reloaded, messages:", currentThreadMessages.length);
-      await fetchCasesFromApi().catch(() => caseMemory);
-      populateCaseSelector();
-      await refreshSimilarCasesForCurrentThread();
+
+      // Background refresh to get authoritative server state + updated summary
+      loadThread(currentThreadId).then(() => {
+        console.log("Thread reloaded, messages:", currentThreadMessages.length);
+        fetchCasesFromApi().catch(() => caseMemory);
+        populateCaseSelector();
+        refreshSimilarCasesForCurrentThread();
+      }).catch((err) => console.warn("Background reload failed:", err));
     }
 
     // Event listeners
