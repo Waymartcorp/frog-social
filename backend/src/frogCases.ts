@@ -525,23 +525,56 @@ function dedupeCasesByThread(casesToDedupe: FrogCase[]): FrogCase[] {
   return Array.from(latestByThread.values());
 }
 
-function syncCaseLearningFromThread(threadId: string, frogCase: FrogCase): FrogCase {
+async function syncCaseLearningFromThread(threadId: string, frogCase: FrogCase): Promise<FrogCase> {
   const recap = buildThreadRecap(threadId);
-  frogCase.title = frogCase.title || deriveTitleFromThread(listThreadMessages(threadId));
+  const threadMessages = listThreadMessages(threadId);
+  frogCase.title = frogCase.title || deriveTitleFromThread(threadMessages);
   enforceCaseTitleFromThread(frogCase);
-  frogCase.caseSummary = recap.caseUpdate;
-  frogCase.currentStrategy = (recap.currentStrategy || []).map((entry) => sanitizeStrategyLine(entry)).filter(Boolean);
+
+  let llmResult: import("./llmSummary").LLMSummaryResult | null = null;
+  try {
+    const { isLLMConfigured, generateThreadSummary } = await import("./llmSummary");
+    if (isLLMConfigured() && threadMessages.length > 0) {
+      llmResult = await generateThreadSummary({
+        threadId,
+        messages: threadMessages.map((m) => ({
+          userId: m.userId,
+          content: m.content,
+          createdAt: m.createdAt.toISOString(),
+        })),
+      });
+    }
+  } catch (err) {
+    console.warn("[syncCase] LLM call failed, using regex fallback:", err);
+  }
+
+  if (llmResult) {
+    frogCase.caseSummary = [
+      llmResult.currentPicture ? `Current picture: ${llmResult.currentPicture}` : "",
+      llmResult.context ? `Reported context: ${llmResult.context}` : "",
+      llmResult.openPoints ? `Open points: ${llmResult.openPoints}` : "",
+    ].filter(Boolean).join("\n") || recap.caseUpdate;
+    frogCase.currentSystemStatus = llmResult.currentPicture || recap.situationSummary;
+    frogCase.emergingThreads = llmResult.emergingThreads.length > 0 ? llmResult.emergingThreads : recap.emergingThreads;
+    frogCase.currentStrategy = [];
+    frogCase.suggestedNextSteps = [];
+    frogCase.missingDetails = llmResult.openPoints ? [llmResult.openPoints] : [];
+  } else {
+    frogCase.caseSummary = recap.caseUpdate;
+    frogCase.currentStrategy = (recap.currentStrategy || []).map((entry) => sanitizeStrategyLine(entry)).filter(Boolean);
+    frogCase.suggestedNextSteps = (recap.suggestedNextSteps || []).map((entry) => sanitizeStrategyLine(entry)).filter(Boolean);
+    frogCase.missingDetails = recap.missingDetails;
+    frogCase.currentSystemStatus = recap.situationSummary;
+    frogCase.emergingThreads = recap.emergingThreads;
+  }
+
   frogCase.currentStatus = recap.currentStatus;
   frogCase.runningObservations = recap.initialObservations;
-  frogCase.missingDetails = recap.missingDetails;
   frogCase.domainsInPlay = recap.domainsInPlay;
   frogCase.actionsTried = mergeUnique(
     (frogCase.actionsTried || []).filter((entry) => isReliableActionPhrase(entry)),
     (recap.actionsTried || []).filter((entry) => isReliableActionPhrase(entry))
   );
-  frogCase.suggestedNextSteps = (recap.suggestedNextSteps || []).map((entry) => sanitizeStrategyLine(entry)).filter(Boolean);
-  frogCase.currentSystemStatus = recap.situationSummary;
-  frogCase.emergingThreads = recap.emergingThreads;
   frogCase.status = frogCase.status === "RESOLVED" ? "RESOLVED" : mapRecapStatus(recap.resolutionStatus);
   const admissionState = inferAdmissionStateForCase(frogCase, listThreadMessages(threadId, true));
   frogCase.admissionState = admissionState;
@@ -676,7 +709,7 @@ async function hydrateCasesFromDisk() {
     if (threadKey) {
       const existingThreadMessages = listThreadMessages(threadKey);
       if (existingThreadMessages.length > 0) {
-        syncCaseLearningFromThread(threadKey, persisted);
+        await syncCaseLearningFromThread(threadKey, persisted);
       }
     }
     if (enforceFormalCaseArchiveFields(persisted)) {
@@ -892,7 +925,7 @@ export async function createCaseFromDirectIntake(input: DirectCaseInput): Promis
     existing.messageIds = mergeUnique(existing.messageIds, [intakeMessage.id]);
     existing.contributors = mergeUnique(existing.contributors, [input.userId]);
     existing.updatedAt = now;
-    syncCaseLearningFromThread(threadId, existing);
+    await syncCaseLearningFromThread(threadId, existing);
     registerCaseInIndices(existing);
     await persistCases();
     return existing;
@@ -957,7 +990,7 @@ export async function handleNewMessage(message: ForumMessage): Promise<FrogCase 
     frogCase.tags = refineTagsForCase(frogCase);
     frogCase.contributors = mergeUnique(frogCase.contributors, [message.userId]);
     frogCase.updatedAt = new Date();
-    syncCaseLearningFromThread(message.threadId, frogCase);
+    await syncCaseLearningFromThread(message.threadId, frogCase);
     registerCaseInIndices(frogCase);
     await persistCases();
     return frogCase;
@@ -975,7 +1008,7 @@ export async function handleNewMessage(message: ForumMessage): Promise<FrogCase 
     existing.messageIds.push(message.id);
     existing.contributors = mergeUnique(existing.contributors, [message.userId]);
     existing.updatedAt = new Date();
-    syncCaseLearningFromThread(message.threadId, existing);
+    await syncCaseLearningFromThread(message.threadId, existing);
     registerCaseInIndices(existing);
     await persistCases();
     return existing;
@@ -1104,7 +1137,7 @@ export async function addReplyToCase(message: ForumMessage, caseId: string): Pro
   frogCase.contributors = mergeUnique(frogCase.contributors, [message.userId]);
   frogCase.tags = refineTagsForCase(frogCase);
   frogCase.updatedAt = new Date();
-  syncCaseLearningFromThread(frogCase.sourceThreadId, frogCase);
+  await syncCaseLearningFromThread(frogCase.sourceThreadId, frogCase);
   registerCaseInIndices(frogCase);
   await persistCases();
   return frogCase;
