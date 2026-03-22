@@ -77,21 +77,25 @@ app.get("/api/health", (req, res) => {
 
 // "Describe a problem" → create message + maybe new case
 app.post("/api/messages", async (req, res) => {
-  const now = new Date();
-
-  const message: ForumMessage = {
-    id: randomUUID(),
-    userId: req.body.userId || "demo-user",
-    facilityId: req.body.facilityId,
-    threadId: req.body.threadId || randomUUID(),
-    content: req.body.content,
-    createdAt: now,
-    role: req.body.role,
-    correctionSignal: Boolean(req.body.correctionSignal),
-  };
-
-  const frogCase = await handleNewMessage(message);
-  res.json({ ok: true, threadId: message.threadId, messageId: message.id, frogCase });
+  try {
+    const now = new Date();
+    const message: ForumMessage = {
+      id: randomUUID(),
+      userId: req.body.userId || "demo-user",
+      facilityId: req.body.facilityId,
+      threadId: req.body.threadId || randomUUID(),
+      content: req.body.content,
+      createdAt: now,
+      role: req.body.role,
+      correctionSignal: Boolean(req.body.correctionSignal),
+    };
+    const frogCase = await handleNewMessage(message);
+    res.json({ ok: true, threadId: message.threadId, messageId: message.id, frogCase });
+  } catch (err) {
+    console.error("[POST /api/messages] Error:", err);
+    const msg = err instanceof Error ? err.message : "Failed to process message";
+    res.status(500).json({ ok: false, error: msg });
+  }
 });
 
 app.get("/api/messages", (req, res) => {
@@ -205,24 +209,30 @@ app.post("/api/cases/intake", async (req, res) => {
 
 // Submit resolution
 app.post("/api/cases/:id/resolution", async (req, res) => {
-  const rawOutcome = String(req.body.outcome ?? "").toUpperCase();
-  const mappedOutcome: CaseStatus =
-    rawOutcome === "RESOLVED"
-      ? "RESOLVED"
-      : rawOutcome === "PARTIAL" || rawOutcome === "MONITORING"
-        ? "MONITORING"
-        : "OPEN";
+  try {
+    const rawOutcome = String(req.body.outcome ?? "").toUpperCase();
+    const mappedOutcome: CaseStatus =
+      rawOutcome === "RESOLVED"
+        ? "RESOLVED"
+        : rawOutcome === "PARTIAL" || rawOutcome === "MONITORING"
+          ? "MONITORING"
+          : "OPEN";
 
-  const input: ResolutionInput = {
-    caseId: req.params.id,
-    userId: req.body.userId || "demo-user",
-    outcome: mappedOutcome,
-    freeText: req.body.freeText,
-  };
+    const input: ResolutionInput = {
+      caseId: req.params.id,
+      userId: req.body.userId || "demo-user",
+      outcome: mappedOutcome,
+      freeText: req.body.freeText,
+    };
 
-  const updated = await submitCaseResolution(input);
-  if (!updated) return res.status(404).json({ error: "Case not found" });
-  res.json(updated);
+    const updated = await submitCaseResolution(input);
+    if (!updated) return res.status(404).json({ error: "Case not found" });
+    res.json(updated);
+  } catch (err) {
+    console.error("[POST /api/cases/:id/resolution] Error:", err);
+    const msg = err instanceof Error ? err.message : "Resolution failed";
+    res.status(500).json({ ok: false, error: msg });
+  }
 });
 
 app.get("/api/cases/:id/follow-up-prompt", (req, res) => {

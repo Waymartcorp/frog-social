@@ -73,9 +73,13 @@ export async function loadMessagesFromDisk(): Promise<ForumMessage[]> {
 export async function saveMessagesToDisk(messages: ForumMessage[]): Promise<void> {
   const serialized = messages.map(serializeMessage);
   if (isRedisConfigured()) {
-    const ok = await redisSet(REDIS_KEY, serialized);
-    if (ok) {
-      console.log(`[messageStorage] Saved ${messages.length} messages to Redis`);
+    try {
+      const ok = await redisSet(REDIS_KEY, serialized);
+      if (ok) {
+        console.log(`[messageStorage] Saved ${messages.length} messages to Redis`);
+      }
+    } catch (err) {
+      console.error("[messageStorage] Redis save failed:", err);
     }
   }
   try {

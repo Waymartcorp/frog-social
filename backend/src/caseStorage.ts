@@ -82,9 +82,13 @@ export async function loadCasesFromDisk(): Promise<FrogCase[]> {
 export async function saveCasesToDisk(frogCases: FrogCase[]): Promise<void> {
   const serialized = frogCases.map(serializeCase);
   if (isRedisConfigured()) {
-    const ok = await redisSet(REDIS_KEY, serialized);
-    if (ok) {
-      console.log(`[caseStorage] Saved ${frogCases.length} cases to Redis`);
+    try {
+      const ok = await redisSet(REDIS_KEY, serialized);
+      if (ok) {
+        console.log(`[caseStorage] Saved ${frogCases.length} cases to Redis`);
+      }
+    } catch (err) {
+      console.error("[caseStorage] Redis save failed:", err);
     }
   }
   try {
