@@ -1282,7 +1282,9 @@
     }
 
     function renderRecap(recap) {
-      latestRecapPayload = recap || null;
+      if (recap && (recap.caseUpdate || recap.situationSummary || (recap.emergingThreads && recap.emergingThreads.length))) {
+        latestRecapPayload = recap;
+      }
       renderActiveCaseSummary();
       renderEmergingThreadClusters();
       renderLinkedCasesList();
@@ -1635,7 +1637,6 @@
       } catch (error) {
         currentThreadId = String(threadId || "").trim() || getDefaultThreadId();
         activeThreadClusterKey = "";
-        currentThreadMessages = [];
         currentThreadCase = null;
         latestSimilarCasesPayload = null;
         if (similarityRefreshIntervalId) {
