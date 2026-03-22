@@ -553,13 +553,13 @@ function extractKnownFacts(messages: CaseStateMessage[]): KnownFacts {
   const systemMaturity = /(system maturity|mature filter|cycled|cycling|new system|newly set up)/.test(all);
   const biofilterStatus = /(biofilter|seeded filter|mature filter|cycling)/.test(all);
   return {
-    waterSource: /(ro|di|reverse osmosis|well water|city water|tap water)/.test(all),
+    waterSource: /(\bro water\b|\bdi water\b|\breverse osmosis\b|\bwell water\b|\bcity water\b|\btap water\b|\bro system\b|\bro unit\b)/i.test(all),
     ph: /\bph\b/.test(all),
-    phCalibration: /(calibrat)/.test(all),
-    conductivity: /(conductivity|tds|ec|ppm|ms\/cm|us\/cm|µs\/cm)/.test(all),
-    buffering: /(buffer|buffering|gh|kh|bicarbonate|remineral)/.test(all),
-    flow: /(flow|nozzle|splash|surface agitation)/.test(all),
-    vibration: /(vibration|hum|noise|pump|rack)/.test(all),
+    phCalibration: /\bcalibrat/.test(all),
+    conductivity: /\b(conductivity|tds|ppm)\b|ms\/cm|us\/cm|µs\/cm|\bec\b/.test(all),
+    buffering: /\b(buffer|buffering|bicarbonate|remineral)\b|\bgh\b|\bkh\b/.test(all),
+    flow: /\b(flow|nozzle|splash|surface agitation)\b/.test(all),
+    vibration: /\b(vibration|hum|pump)\b|\bnoise\b/.test(all),
     density: /(density|stocking|crowd|competition)/.test(all),
     feeding: /(feeding|not eating|off food|uneaten|food left|feeding response)/.test(all),
     handling: /(handling|handled|grabbed|picked up|net|netting)/.test(all),
@@ -687,7 +687,7 @@ function buildInitialObservations(
   if (/(vibration|hum|noise|pump)/.test(all)) {
     observations.push("Mechanical disturbance signals are present.");
   }
-  if (/(ro|di|reverse osmosis|well water|city water|tap water)/.test(all)) {
+  if (/(\bro water\b|\bdi water\b|\breverse osmosis\b|\bwell water\b|\bcity water\b|\btap water\b|\bro system\b|\bro unit\b)/i.test(all)) {
     observations.push("Water-source details are present in the discussion.");
   }
 
