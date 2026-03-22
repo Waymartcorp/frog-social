@@ -16,7 +16,7 @@ function getClient(): OpenAI | null {
   const raw = process.env.OPENAI_API_KEY;
   if (!raw) return null;
   const key = stripQuotes(raw);
-  if (!key.startsWith("sk-")) return null;
+  if (key.length < 10) return null;
   openai = new OpenAI({ apiKey: key });
   return openai;
 }
@@ -24,7 +24,7 @@ function getClient(): OpenAI | null {
 export function isLLMConfigured(): boolean {
   const raw = process.env.OPENAI_API_KEY;
   if (!raw) return false;
-  return stripQuotes(raw).startsWith("sk-");
+  return stripQuotes(raw).length >= 10;
 }
 
 let cachedKnowledge = "";
