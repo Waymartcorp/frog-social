@@ -4,6 +4,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import { randomUUID } from "crypto";
+import { isLLMConfigured, generateThreadSummary } from "./llmSummary";
 import {
   ensureInitialized,
   handleNewMessage,
@@ -76,6 +77,7 @@ app.get("/api/health", (req, res) => {
     ok: true,
     status: "Frog Social backend running",
     redis: Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN),
+    llm: isLLMConfigured(),
     vercel: Boolean(process.env.VERCEL),
   });
 });
@@ -150,9 +152,48 @@ app.get("/api/threads/:threadId/similar-cases", (req, res) => {
   return res.json(payload);
 });
 
-app.get("/api/threads/:threadId/recap", (req, res) => {
-  const recap = buildThreadRecap(req.params.threadId);
-  console.log("RECAP DEBUG", Object.keys(recap), recap.suggestedNextSteps);
+app.get("/api/threads/:threadId/recap", async (req, res) => {
+  const threadId = req.params.threadId;
+  const recap = buildThreadRecap(threadId);
+
+  if (isLLMConfigured()) {
+    try {
+      const threadMessages = listMessagesByThreadId(threadId);
+      if (threadMessages.length > 0) {
+        const admittedCases = listCases()
+          .filter((c) => c.admissionState === "admitted" && c.threadId !== threadId)
+          .slice(0, 5)
+          .map((c) => `Case #${c.caseNumber}: ${c.title} — ${(c.caseSummary || "").slice(0, 100)}`);
+
+        const llmResult = await generateThreadSummary({
+          threadId,
+          messages: threadMessages.map((m) => ({
+            userId: m.userId,
+            content: m.content,
+            createdAt: m.createdAt.toISOString(),
+          })),
+          existingCaseSummaries: admittedCases.length > 0 ? admittedCases : undefined,
+        });
+
+        if (llmResult) {
+          recap.caseUpdate = [
+            llmResult.currentPicture ? `Current picture: ${llmResult.currentPicture}` : "",
+            llmResult.context ? `Reported context: ${llmResult.context}` : "",
+            llmResult.openPoints ? `Open points: ${llmResult.openPoints}` : "",
+          ].filter(Boolean).join("\n") || recap.caseUpdate;
+
+          recap.situationSummary = llmResult.currentPicture || recap.situationSummary;
+
+          if (llmResult.emergingThreads.length > 0) {
+            recap.emergingThreads = llmResult.emergingThreads;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[recap] LLM enhancement failed, using regex fallback:", err);
+    }
+  }
+
   res.json(recap);
 });
 
