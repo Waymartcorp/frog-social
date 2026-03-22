@@ -1,0 +1,12 @@
+{
+  "name": "frog-social",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "body-parser": "^2.2.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.1.0",
+    "zod": "^4.3.6"
+  }
+}

@@ -228,7 +228,11 @@
   </div>
 
   <script>
-    const API_BASE = "http://localhost:4000";
+    const API_BASE = (() => {
+      const fromQuery = new URLSearchParams(window.location.search).get("apiBase");
+      if (!fromQuery) return "";
+      return fromQuery.replace(/\/+$/, "");
+    })();
 
     function loadSocial() {
       try {

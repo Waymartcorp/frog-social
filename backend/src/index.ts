@@ -43,8 +43,11 @@ app.use(
       const isLocalhost =
         /^http:\/\/localhost:\d+$/.test(origin) ||
         /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
+      const isProductionFrontend =
+        origin === "https://frog-social.vercel.app" ||
+        origin === "https://www.frogsocial.org";
 
-      if (isLocalhost) {
+      if (isLocalhost || isProductionFrontend) {
         callback(null, true);
         return;
       }
@@ -271,8 +274,12 @@ app.get("/api/cases/number/:caseNumber", (req, res) => {
   return res.json(frogCase);
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Frog Social backend listening on port ${PORT}`);
-});
+export default app;
+
+if (require.main === module) {
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => {
+    console.log(`Frog Social backend listening on port ${PORT}`);
+  });
+}
 

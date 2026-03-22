@@ -10,8 +10,35 @@ interface SerializedFrogCase extends Omit<FrogCase, "createdAt" | "updatedAt" | 
 }
 
 function getCasesFilePath(): string {
+  const customDataDir = String(process.env.FROG_SOCIAL_DATA_DIR || "").trim();
+  if (customDataDir) {
+    return path.join(customDataDir, "cases.json");
+  }
+  if (process.env.VERCEL) {
+    return path.join("/tmp", "frog-social-data", "cases.json");
+  }
   const projectRoot = path.resolve(__dirname, "..");
   return path.join(projectRoot, "data", "cases.json");
+}
+
+function getBundledCasesFilePath(): string {
+  const projectRoot = path.resolve(__dirname, "..");
+  return path.join(projectRoot, "data", "cases.json");
+}
+
+function readCasesFromPath(filePath: string): FrogCase[] {
+  if (!fs.existsSync(filePath)) {
+    return [];
+  }
+  const raw = fs.readFileSync(filePath, "utf-8").trim();
+  if (!raw) {
+    return [];
+  }
+  const parsed = JSON.parse(raw) as SerializedFrogCase[];
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+  return parsed.map(deserializeCase);
 }
 
 function ensureCasesDataDir() {
@@ -45,18 +72,15 @@ function deserializeCase(serialized: SerializedFrogCase): FrogCase {
 export function loadCasesFromDisk(): FrogCase[] {
   try {
     const filePath = getCasesFilePath();
-    if (!fs.existsSync(filePath)) {
-      return [];
+    const primary = readCasesFromPath(filePath);
+    if (primary.length > 0) {
+      return primary;
     }
-    const raw = fs.readFileSync(filePath, "utf-8").trim();
-    if (!raw) {
-      return [];
+    if (process.env.VERCEL) {
+      const bundled = readCasesFromPath(getBundledCasesFilePath());
+      return bundled;
     }
-    const parsed = JSON.parse(raw) as SerializedFrogCase[];
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed.map(deserializeCase);
+    return primary;
   } catch {
     return [];
   }
