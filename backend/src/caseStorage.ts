@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { FrogCase } from "./frogCases";
+import { isRedisConfigured, redisGet, redisSet } from "./redisStorage";
+
+const REDIS_KEY = "frog-social:cases";
 
 interface SerializedFrogCase extends Omit<FrogCase, "createdAt" | "updatedAt" | "followUpDueAt" | "lastFollowUpSentAt"> {
   createdAt: string;
@@ -19,26 +22,6 @@ function getCasesFilePath(): string {
   }
   const projectRoot = path.resolve(__dirname, "..");
   return path.join(projectRoot, "data", "cases.json");
-}
-
-function getBundledCasesFilePath(): string {
-  const projectRoot = path.resolve(__dirname, "..");
-  return path.join(projectRoot, "data", "cases.json");
-}
-
-function readCasesFromPath(filePath: string): FrogCase[] {
-  if (!fs.existsSync(filePath)) {
-    return [];
-  }
-  const raw = fs.readFileSync(filePath, "utf-8").trim();
-  if (!raw) {
-    return [];
-  }
-  const parsed = JSON.parse(raw) as SerializedFrogCase[];
-  if (!Array.isArray(parsed)) {
-    return [];
-  }
-  return parsed.map(deserializeCase);
 }
 
 function ensureCasesDataDir() {
@@ -69,27 +52,46 @@ function deserializeCase(serialized: SerializedFrogCase): FrogCase {
   };
 }
 
-export function loadCasesFromDisk(): FrogCase[] {
+function readCasesFromFile(filePath: string): FrogCase[] {
+  if (!fs.existsSync(filePath)) return [];
+  const raw = fs.readFileSync(filePath, "utf-8").trim();
+  if (!raw) return [];
+  const parsed = JSON.parse(raw) as SerializedFrogCase[];
+  if (!Array.isArray(parsed)) return [];
+  return parsed.map(deserializeCase);
+}
+
+export async function loadCasesFromDisk(): Promise<FrogCase[]> {
+  if (isRedisConfigured()) {
+    const stored = await redisGet<SerializedFrogCase[]>(REDIS_KEY);
+    if (stored && Array.isArray(stored) && stored.length > 0) {
+      console.log(`[caseStorage] Loaded ${stored.length} cases from Redis`);
+      return stored.map(deserializeCase);
+    }
+  }
   try {
     const filePath = getCasesFilePath();
-    const primary = readCasesFromPath(filePath);
-    if (primary.length > 0) {
-      return primary;
-    }
-    if (process.env.VERCEL) {
-      const bundled = readCasesFromPath(getBundledCasesFilePath());
-      return bundled;
-    }
-    return primary;
+    const primary = readCasesFromFile(filePath);
+    if (primary.length > 0) return primary;
+    return [];
   } catch {
     return [];
   }
 }
 
-export function saveCasesToDisk(frogCases: FrogCase[]) {
-  ensureCasesDataDir();
-  const filePath = getCasesFilePath();
+export async function saveCasesToDisk(frogCases: FrogCase[]): Promise<void> {
   const serialized = frogCases.map(serializeCase);
-  fs.writeFileSync(filePath, JSON.stringify(serialized, null, 2));
+  if (isRedisConfigured()) {
+    const ok = await redisSet(REDIS_KEY, serialized);
+    if (ok) {
+      console.log(`[caseStorage] Saved ${frogCases.length} cases to Redis`);
+    }
+  }
+  try {
+    ensureCasesDataDir();
+    const filePath = getCasesFilePath();
+    fs.writeFileSync(filePath, JSON.stringify(serialized, null, 2));
+  } catch (err) {
+    console.warn("[caseStorage] File write failed (non-fatal if Redis is primary):", err);
+  }
 }
-

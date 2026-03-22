@@ -559,12 +559,12 @@ function syncCaseLearningFromThread(threadId: string, frogCase: FrogCase): FrogC
   return frogCase;
 }
 
-function persistCases() {
-  saveCasesToDisk(Array.from(cases.values()));
+async function persistCases() {
+  await saveCasesToDisk(Array.from(cases.values()));
 }
 
-function persistMessages() {
-  saveMessagesToDisk(Array.from(messages.values()));
+async function persistMessages() {
+  await saveMessagesToDisk(Array.from(messages.values()));
 }
 
 function registerCaseInIndices(frogCase: FrogCase) {
@@ -667,11 +667,11 @@ function assignCaseNumbers(casesToAssign: FrogCase[]): { assigned: number; resul
   return { assigned, result: casesToAssign };
 }
 
-function hydrateCasesFromDisk() {
+async function hydrateCasesFromDisk() {
   cases.clear();
   threadToCaseId.clear();
 
-  const persistedCases = loadCasesFromDisk().map(normalizeLoadedCase);
+  const persistedCases = (await loadCasesFromDisk()).map(normalizeLoadedCase);
   const dedupedCases = dedupeCasesByThread(persistedCases);
   const numbered = assignCaseNumbers(dedupedCases);
   for (const persisted of dedupedCases) {
@@ -712,13 +712,13 @@ function hydrateCasesFromDisk() {
     console.warn(`[frogCases] Backfilled archive-required fields for ${backfilledArchiveFieldCount} admitted case(s).`);
   }
   // Always rewrite the normalized deduped set so disk state is clean and canonical.
-  saveCasesToDisk(admitted.result);
-  saveMessagesToDisk(Array.from(messages.values()));
+  await saveCasesToDisk(admitted.result);
+  await saveMessagesToDisk(Array.from(messages.values()));
 }
 
-function hydrateMessagesFromDisk() {
+async function hydrateMessagesFromDisk() {
   messages.clear();
-  const persistedMessages = loadMessagesFromDisk();
+  const persistedMessages = await loadMessagesFromDisk();
   for (const message of persistedMessages) {
     messages.set(message.id, message);
   }
@@ -777,7 +777,7 @@ function backfillLegacyMessagesForCases(casesToBackfill: FrogCase[]): number {
   return backfilledCases;
 }
 
-export function createCaseFromSeed(input: CaseSeedInput): FrogCase {
+export async function createCaseFromSeed(input: CaseSeedInput): Promise<FrogCase> {
   const now = new Date();
   const caseId = generateId();
   const sourceThreadId = input.sourceThreadId ?? `seed-${generateId()}`;
@@ -789,7 +789,7 @@ export function createCaseFromSeed(input: CaseSeedInput): FrogCase {
       existing.contributors = mergeUnique(existing.contributors, [input.createdByUserId]);
       existing.tags = mergeUnique(existing.tags, input.tags ?? []);
       registerCaseInIndices(existing);
-      persistCases();
+      await persistCases();
       return existing;
     }
   }
@@ -834,11 +834,11 @@ export function createCaseFromSeed(input: CaseSeedInput): FrogCase {
   enforceFormalCaseArchiveFields(frogCase);
 
   registerCaseInIndices(frogCase);
-  persistCases();
+  await persistCases();
   return frogCase;
 }
 
-export function createCaseFromDirectIntake(input: DirectCaseInput): FrogCase {
+export async function createCaseFromDirectIntake(input: DirectCaseInput): Promise<FrogCase> {
   const now = new Date();
   const narrative = String(input.narrative || "").trim();
   if (!narrative) {
@@ -876,7 +876,7 @@ export function createCaseFromDirectIntake(input: DirectCaseInput): FrogCase {
   };
 
   messages.set(intakeMessage.id, intakeMessage);
-  persistMessages();
+  await persistMessages();
 
   const threadMessages = listThreadMessages(threadId);
   const recap = buildCaseState(
@@ -902,7 +902,7 @@ export function createCaseFromDirectIntake(input: DirectCaseInput): FrogCase {
     existing.updatedAt = now;
     syncCaseLearningFromThread(threadId, existing);
     registerCaseInIndices(existing);
-    persistCases();
+    await persistCases();
     return existing;
   }
 
@@ -945,14 +945,14 @@ export function createCaseFromDirectIntake(input: DirectCaseInput): FrogCase {
   frogCase.isSeedOrTest = frogCase.admissionState === "hidden";
   enforceFormalCaseArchiveFields(frogCase);
   registerCaseInIndices(frogCase);
-  persistCases();
+  await persistCases();
   return frogCase;
 }
 
 // 1) Handle new message (create case or attach to existing)
-export function handleNewMessage(message: ForumMessage): FrogCase | null {
+export async function handleNewMessage(message: ForumMessage): Promise<FrogCase | null> {
   messages.set(message.id, message);
-  persistMessages();
+  await persistMessages();
 
   const existingCaseId = findCaseIdByThreadId(message.threadId);
   if (existingCaseId) {
@@ -966,7 +966,7 @@ export function handleNewMessage(message: ForumMessage): FrogCase | null {
     frogCase.updatedAt = new Date();
     syncCaseLearningFromThread(message.threadId, frogCase);
     registerCaseInIndices(frogCase);
-    persistCases();
+    await persistCases();
     return frogCase;
   }
 
@@ -984,7 +984,7 @@ export function handleNewMessage(message: ForumMessage): FrogCase | null {
     existing.updatedAt = new Date();
     syncCaseLearningFromThread(message.threadId, existing);
     registerCaseInIndices(existing);
-    persistCases();
+    await persistCases();
     return existing;
   }
 
@@ -1038,7 +1038,7 @@ export function handleNewMessage(message: ForumMessage): FrogCase | null {
   enforceFormalCaseArchiveFields(frogCase);
 
   registerCaseInIndices(frogCase);
-  persistCases();
+  await persistCases();
   return frogCase;
 }
 
@@ -1101,9 +1101,9 @@ export function buildThreadKeyStrategies(threadId: string): KeyStrategiesResult 
 }
 
 // Optional explicit helper if you already know caseId
-export function addReplyToCase(message: ForumMessage, caseId: string): FrogCase | null {
+export async function addReplyToCase(message: ForumMessage, caseId: string): Promise<FrogCase | null> {
   messages.set(message.id, message);
-  persistMessages();
+  await persistMessages();
   const frogCase = cases.get(caseId);
   if (!frogCase) return null;
 
@@ -1113,7 +1113,7 @@ export function addReplyToCase(message: ForumMessage, caseId: string): FrogCase 
   frogCase.updatedAt = new Date();
   syncCaseLearningFromThread(frogCase.sourceThreadId, frogCase);
   registerCaseInIndices(frogCase);
-  persistCases();
+  await persistCases();
   return frogCase;
 }
 
@@ -1134,7 +1134,7 @@ export function getCasesNeedingFollowUp(now: Date): FrogCase[] {
 }
 
 // Mark that you've sent a follow-up ping
-export function markFollowUpSent(frogCase: FrogCase, sentAt: Date): FrogCase {
+export async function markFollowUpSent(frogCase: FrogCase, sentAt: Date): Promise<FrogCase> {
   frogCase.lastFollowUpSentAt = sentAt;
   frogCase.followUpCount += 1;
   frogCase.followUpDueAt =
@@ -1142,12 +1142,12 @@ export function markFollowUpSent(frogCase: FrogCase, sentAt: Date): FrogCase {
 
   frogCase.updatedAt = new Date();
   registerCaseInIndices(frogCase);
-  persistCases();
+  await persistCases();
   return frogCase;
 }
 
 // 3) Record case resolution
-export function submitCaseResolution(input: ResolutionInput): FrogCase | null {
+export async function submitCaseResolution(input: ResolutionInput): Promise<FrogCase | null> {
   const frogCase = cases.get(input.caseId);
   if (!frogCase) return null;
 
@@ -1167,7 +1167,7 @@ export function submitCaseResolution(input: ResolutionInput): FrogCase | null {
   }
 
   registerCaseInIndices(frogCase);
-  persistCases();
+  await persistCases();
   return frogCase;
 }
 
@@ -1180,7 +1180,7 @@ export function getCaseFollowUpPrompt(caseId: string): string | null {
   return null;
 }
 
-export function submitCaseFollowUp(input: FollowUpInput): FrogCase | null {
+export async function submitCaseFollowUp(input: FollowUpInput): Promise<FrogCase | null> {
   const frogCase = cases.get(input.caseId);
   if (!frogCase) return null;
 
@@ -1205,7 +1205,7 @@ export function submitCaseFollowUp(input: FollowUpInput): FrogCase | null {
   frogCase.contributors = mergeUnique(frogCase.contributors, [input.userId]);
 
   registerCaseInIndices(frogCase);
-  persistCases();
+  await persistCases();
   return frogCase;
 }
 
@@ -1455,6 +1455,18 @@ export function buildThreadVerificationReport(threadId: string): ThreadVerificat
   };
 }
 
-hydrateMessagesFromDisk();
-hydrateCasesFromDisk();
+let _initialized = false;
+let _initPromise: Promise<void> | null = null;
+
+export async function ensureInitialized(): Promise<void> {
+  if (_initialized) return;
+  if (_initPromise) return _initPromise;
+  _initPromise = (async () => {
+    await hydrateMessagesFromDisk();
+    await hydrateCasesFromDisk();
+    _initialized = true;
+    console.log("[frogCases] Initialization complete");
+  })();
+  return _initPromise;
+}
 

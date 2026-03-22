@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { ForumMessage } from "./frogCases";
+import { isRedisConfigured, redisGet, redisSet } from "./redisStorage";
+
+const REDIS_KEY = "frog-social:messages";
 
 interface SerializedForumMessage extends Omit<ForumMessage, "createdAt"> {
   createdAt: string;
@@ -16,26 +19,6 @@ function getMessagesFilePath(): string {
   }
   const projectRoot = path.resolve(__dirname, "..");
   return path.join(projectRoot, "data", "messages.json");
-}
-
-function getBundledMessagesFilePath(): string {
-  const projectRoot = path.resolve(__dirname, "..");
-  return path.join(projectRoot, "data", "messages.json");
-}
-
-function readMessagesFromPath(filePath: string): ForumMessage[] {
-  if (!fs.existsSync(filePath)) {
-    return [];
-  }
-  const raw = fs.readFileSync(filePath, "utf-8").trim();
-  if (!raw) {
-    return [];
-  }
-  const parsed = JSON.parse(raw) as SerializedForumMessage[];
-  if (!Array.isArray(parsed)) {
-    return [];
-  }
-  return parsed.map(deserializeMessage);
 }
 
 function ensureMessagesDataDir() {
@@ -60,27 +43,46 @@ function deserializeMessage(serialized: SerializedForumMessage): ForumMessage {
   };
 }
 
-export function loadMessagesFromDisk(): ForumMessage[] {
+function readMessagesFromFile(filePath: string): ForumMessage[] {
+  if (!fs.existsSync(filePath)) return [];
+  const raw = fs.readFileSync(filePath, "utf-8").trim();
+  if (!raw) return [];
+  const parsed = JSON.parse(raw) as SerializedForumMessage[];
+  if (!Array.isArray(parsed)) return [];
+  return parsed.map(deserializeMessage);
+}
+
+export async function loadMessagesFromDisk(): Promise<ForumMessage[]> {
+  if (isRedisConfigured()) {
+    const stored = await redisGet<SerializedForumMessage[]>(REDIS_KEY);
+    if (stored && Array.isArray(stored) && stored.length > 0) {
+      console.log(`[messageStorage] Loaded ${stored.length} messages from Redis`);
+      return stored.map(deserializeMessage);
+    }
+  }
   try {
     const filePath = getMessagesFilePath();
-    const primary = readMessagesFromPath(filePath);
-    if (primary.length > 0) {
-      return primary;
-    }
-    if (process.env.VERCEL) {
-      const bundled = readMessagesFromPath(getBundledMessagesFilePath());
-      return bundled;
-    }
-    return primary;
+    const primary = readMessagesFromFile(filePath);
+    if (primary.length > 0) return primary;
+    return [];
   } catch {
     return [];
   }
 }
 
-export function saveMessagesToDisk(messages: ForumMessage[]) {
-  ensureMessagesDataDir();
-  const filePath = getMessagesFilePath();
+export async function saveMessagesToDisk(messages: ForumMessage[]): Promise<void> {
   const serialized = messages.map(serializeMessage);
-  fs.writeFileSync(filePath, JSON.stringify(serialized, null, 2));
+  if (isRedisConfigured()) {
+    const ok = await redisSet(REDIS_KEY, serialized);
+    if (ok) {
+      console.log(`[messageStorage] Saved ${messages.length} messages to Redis`);
+    }
+  }
+  try {
+    ensureMessagesDataDir();
+    const filePath = getMessagesFilePath();
+    fs.writeFileSync(filePath, JSON.stringify(serialized, null, 2));
+  } catch (err) {
+    console.warn("[messageStorage] File write failed (non-fatal if Redis is primary):", err);
+  }
 }
-

@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import { randomUUID } from "crypto";
 import {
+  ensureInitialized,
   handleNewMessage,
   listCases,
   getCaseById,
@@ -60,27 +61,36 @@ app.use(
 );
 app.use(bodyParser.json());
 
+app.use(async (_req, _res, next) => {
+  try {
+    await ensureInitialized();
+  } catch (err) {
+    console.error("[init] Failed to initialize:", err);
+  }
+  next();
+});
+
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, status: "Frog Social backend running" });
 });
 
 // "Describe a problem" → create message + maybe new case
-app.post("/api/messages", (req, res) => {
+app.post("/api/messages", async (req, res) => {
   const now = new Date();
 
   const message: ForumMessage = {
     id: randomUUID(),
     userId: req.body.userId || "demo-user",
     facilityId: req.body.facilityId,
-    threadId: req.body.threadId || randomUUID(), // new thread if none provided
+    threadId: req.body.threadId || randomUUID(),
     content: req.body.content,
     createdAt: now,
     role: req.body.role,
     correctionSignal: Boolean(req.body.correctionSignal),
   };
 
-  const frogCase = handleNewMessage(message);
+  const frogCase = await handleNewMessage(message);
   res.json({ ok: true, threadId: message.threadId, messageId: message.id, frogCase });
 });
 
@@ -168,13 +178,13 @@ app.get("/api/persistence/report", (req, res) => {
 });
 
 // Direct case intake: freeform narrative -> case memory pipeline.
-app.post("/api/cases/intake", (req, res) => {
+app.post("/api/cases/intake", async (req, res) => {
   const narrative = String(req.body.narrative ?? "").trim();
   if (!narrative) {
     return res.status(400).json({ error: "narrative is required" });
   }
   try {
-    const frogCase = createCaseFromDirectIntake({
+    const frogCase = await createCaseFromDirectIntake({
       userId: String(req.body.userId || "demo-user"),
       title: typeof req.body.title === "string" ? req.body.title : undefined,
       narrative,
@@ -194,7 +204,7 @@ app.post("/api/cases/intake", (req, res) => {
 });
 
 // Submit resolution
-app.post("/api/cases/:id/resolution", (req, res) => {
+app.post("/api/cases/:id/resolution", async (req, res) => {
   const rawOutcome = String(req.body.outcome ?? "").toUpperCase();
   const mappedOutcome: CaseStatus =
     rawOutcome === "RESOLVED"
@@ -210,7 +220,7 @@ app.post("/api/cases/:id/resolution", (req, res) => {
     freeText: req.body.freeText,
   };
 
-  const updated = submitCaseResolution(input);
+  const updated = await submitCaseResolution(input);
   if (!updated) return res.status(404).json({ error: "Case not found" });
   res.json(updated);
 });
@@ -225,7 +235,7 @@ app.get("/api/cases/:id/follow-up-prompt", (req, res) => {
   return res.json({ prompt, status: "active" });
 });
 
-app.post("/api/cases/:id/follow-up", (req, res) => {
+app.post("/api/cases/:id/follow-up", async (req, res) => {
   const rawStatus = String(req.body.status ?? "").toUpperCase();
   const mappedStatus: CaseStatus | undefined =
     rawStatus === "RESOLVED"
@@ -244,7 +254,7 @@ app.post("/api/cases/:id/follow-up", (req, res) => {
   };
 
   try {
-    const updated = submitCaseFollowUp(input);
+    const updated = await submitCaseFollowUp(input);
     if (!updated) return res.status(404).json({ error: "Case not found" });
     return res.json(updated);
   } catch (error) {
