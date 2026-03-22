@@ -275,15 +275,17 @@ function inferAdmissionStateForCase(frogCase: FrogCase, messagesInThread: ForumM
   const hasNonPlaceholderTitle = !isPlaceholderNarrativeTitle(frogCase.title);
   const summaryLength = String(frogCase.caseSummary || "").trim().length;
 
+  if (meaningfulPosts >= 2 && hasNonPlaceholderTitle && summaryLength >= 20) {
+    return "admitted";
+  }
   if (
     hasCredibleSummary &&
-    ((meaningfulPosts >= 2 && hasNonPlaceholderTitle) ||
-      (hasIssueSignal && hasContextSignal && (meaningfulPosts >= 3 || summaryLength >= 180)) ||
+    ((hasIssueSignal && hasContextSignal && (meaningfulPosts >= 3 || summaryLength >= 180)) ||
       (hasStructuredCaseSignals && (hasDomains || hasMeaningfulCaseHistory) && hasNonPlaceholderTitle))
   ) {
     return "admitted";
   }
-  if (meaningfulPosts >= 1 && (hasIssueSignal || hasContextSignal || hasDomains || hasCredibleSummary)) {
+  if (meaningfulPosts >= 1 && summaryLength >= 20) {
     return "candidate";
   }
   return "hidden";
@@ -425,8 +427,7 @@ function isCanonicalThreadLabel(threadId: string): boolean {
 function isPlaceholderNarrativeTitle(title: string): boolean {
   const trimmed = title.trim();
   if (!trimmed) return true;
-  if (trimmed.length > 70) return true;
-  if (/^(we|this|post-shipment|msg one|test)\b/i.test(trimmed)) return true;
+  if (/^(msg one)$/i.test(trimmed)) return true;
   return false;
 }
 
@@ -465,17 +466,10 @@ function enforceCaseTitleFromThread(frogCase: FrogCase): FrogCase {
 }
 
 function shouldMarkCaseAsSeedOrTest(frogCase: FrogCase): boolean {
-  if (frogCase.isSeedOrTest) return true;
   if (isExcludedThreadId(frogCase.threadId) || isExcludedThreadId(frogCase.sourceThreadId)) {
     return true;
   }
-  if (/^(msg one|test)$/i.test(frogCase.title.trim())) {
-    return true;
-  }
-  const summaryText = String(frogCase.caseSummary || "");
-  const hasCaseSignal = SYMPTOM_SIGNAL_REGEX.test(summaryText) || ENVIRONMENT_SIGNAL_REGEX.test(summaryText);
-  const meaningfulCount = frogCase.runningObservations.filter((entry) => isMeaningfulPost(entry)).length;
-  if (!hasCaseSignal && meaningfulCount < 2) {
+  if (/^(msg one)$/i.test(frogCase.title.trim())) {
     return true;
   }
   return false;
