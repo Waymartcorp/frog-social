@@ -1146,6 +1146,25 @@
     function renderEmergingThreadClusters() {
       const el = document.getElementById("emergingThreadClusterList");
       if (!el) return;
+
+      const llmThreads = Array.isArray(latestRecapPayload?.emergingThreads)
+        ? latestRecapPayload.emergingThreads.filter((t) => typeof t === "string" && t.trim())
+        : [];
+
+      if (llmThreads.length > 0) {
+        const now = formatDateTimeLabel(new Date().toISOString());
+        const postCount = (currentThreadMessages || []).filter((m) => !isSystemGeneratedMessage(m)).length;
+        el.innerHTML = llmThreads
+          .map((thread) => `
+            <div class="thread-cluster-btn" style="cursor:default;">
+              <span>${escapeHtml(thread)}</span>
+              <span class="cluster-count">${escapeHtml(String(postCount))} posts · ${escapeHtml(now)}</span>
+            </div>
+          `)
+          .join("");
+        return;
+      }
+
       const messages = (currentThreadMessages || []).filter((message) => !isSystemGeneratedMessage(message));
       const clusters = buildEmergingThreadClusters(messages);
       if (!clusters.length) {
