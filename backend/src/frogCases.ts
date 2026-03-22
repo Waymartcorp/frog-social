@@ -711,9 +711,9 @@ async function hydrateCasesFromDisk() {
   if (backfilledArchiveFieldCount > 0) {
     console.warn(`[frogCases] Backfilled archive-required fields for ${backfilledArchiveFieldCount} admitted case(s).`);
   }
-  // Always rewrite the normalized deduped set so disk state is clean and canonical.
+  // Rewrite cases to disk/Redis for normalization. Do NOT rewrite messages
+  // during init — that can overwrite Redis with a stale in-memory snapshot.
   await saveCasesToDisk(admitted.result);
-  await saveMessagesToDisk(Array.from(messages.values()));
 }
 
 async function hydrateMessagesFromDisk() {
