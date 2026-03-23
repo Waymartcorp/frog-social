@@ -1383,10 +1383,27 @@ export function findSimilarCasesForThread(threadId: string, limit = 6): ThreadSi
     .filter(Boolean)
     .join(" ");
   const query = `${recapParts} ${recentMessageParts}`.replace(/\s+/g, " ").trim();
-  const rawMatches = recallCases(query, Math.max(1, Math.min(limit, 20)));
-  const matches = rawMatches
+  const rawMatches = recallCases(query, Math.max(1, Math.min(limit + 5, 25)));
+  const currentThreadCase = getCaseByThreadId(threadId);
+  const otherMatches = rawMatches
     .filter((entry) => String(entry.threadId || "").trim() !== String(threadId || "").trim())
     .slice(0, Math.max(1, Math.min(limit, 20)));
+  const matches: CaseRecallResult[] = [];
+  if (currentThreadCase && currentThreadCase.admissionState === "admitted") {
+    matches.push({
+      caseId: currentThreadCase.caseId || currentThreadCase.id,
+      caseNumber: currentThreadCase.caseNumber,
+      threadId: currentThreadCase.threadId,
+      title: `[Current] ${currentThreadCase.title}`,
+      summaryPreview: (currentThreadCase.caseSummary || "").slice(0, 220),
+      updatedAt: currentThreadCase.updatedAt.toISOString(),
+      status: currentThreadCase.status,
+      entryMode: currentThreadCase.entryMode,
+      matchScore: 100,
+      matchReasons: ["current thread case"],
+    });
+  }
+  matches.push(...otherMatches);
   return { threadId, query, matches };
 }
 
