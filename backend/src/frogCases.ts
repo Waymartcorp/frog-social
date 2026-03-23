@@ -560,11 +560,16 @@ async function syncCaseLearningFromThread(threadId: string, frogCase: FrogCase):
     frogCase.suggestedNextSteps = llmResult.recommendations.length > 0 ? llmResult.recommendations : [];
     frogCase.missingDetails = llmResult.openPoints ? [llmResult.openPoints] : [];
   } else {
-    frogCase.caseSummary = recap.caseUpdate;
+    const recentPosts = threadMessages
+      .slice(-4)
+      .map((m) => m.content.trim())
+      .filter(Boolean)
+      .join(" | ");
+    frogCase.caseSummary = recentPosts || recap.caseUpdate;
     frogCase.currentStrategy = [];
     frogCase.suggestedNextSteps = [];
     frogCase.missingDetails = [];
-    frogCase.currentSystemStatus = recap.situationSummary;
+    frogCase.currentSystemStatus = recentPosts || recap.situationSummary;
     frogCase.emergingThreads = recap.emergingThreads;
   }
 
@@ -573,9 +578,11 @@ async function syncCaseLearningFromThread(threadId: string, frogCase: FrogCase):
     const views: string[] = [];
     if (llmResult.context) views.push(llmResult.context);
     if (llmResult.recommendations.length > 0) views.push(...llmResult.recommendations);
-    frogCase.runningObservations = views.length > 0 ? views : recap.initialObservations;
+    frogCase.runningObservations = views.length > 0 ? views : [];
   } else {
-    frogCase.runningObservations = recap.initialObservations;
+    frogCase.runningObservations = (recap.initialObservations || []).filter(
+      (entry) => !entry.trim().endsWith("?") && !/\b(any advice|any suggestion|any recommendation|do you have)\b/i.test(entry)
+    );
   }
   frogCase.domainsInPlay = recap.domainsInPlay;
   frogCase.actionsTried = mergeUnique(
