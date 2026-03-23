@@ -912,6 +912,17 @@
           <div class="case-actions">
             <button class="btn-secondary" data-thread-id="${escapeHtml(c.threadId || "")}" onclick="viewOnSocial(this.dataset.threadId)">Open Thread</button>
             <button class="btn-secondary" data-thread-id="${escapeHtml(c.threadId || "")}" data-title="${escapeHtml(c.title || "")}" onclick="updateFromDescribe(this.dataset.threadId, this.dataset.title)">Update in Describe</button>
+            <button class="btn-secondary" style="background:rgba(52,211,153,0.15);color:#6EE7B7;border-color:rgba(52,211,153,0.4);" data-case-id="${escapeHtml(c.id)}" onclick="toggleResolutionForm(this.dataset.caseId)">Update Status / Resolve</button>
+          </div>
+          <div class="resolution-form" id="resolution-form-${escapeHtml(c.id)}" style="display:none; margin-top:12px; padding:16px; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
+            <div style="margin-bottom:10px; font-size:0.85rem; font-weight:600; color:var(--primary-text);">Update Case Status</div>
+            <div style="display:flex; gap:8px; margin-bottom:10px;">
+              <button class="btn-secondary resolution-status-btn" data-status="RESOLVED" data-case-id="${escapeHtml(c.id)}" style="background:rgba(52,211,153,0.2);color:#6EE7B7;">Resolved</button>
+              <button class="btn-secondary resolution-status-btn" data-status="MONITORING" data-case-id="${escapeHtml(c.id)}" style="background:rgba(56,189,248,0.2);color:#38BDF8;">Monitoring</button>
+              <button class="btn-secondary resolution-status-btn" data-status="OPEN" data-case-id="${escapeHtml(c.id)}" style="background:rgba(251,146,60,0.2);color:#FB923C;">Still Open</button>
+            </div>
+            <textarea id="resolution-text-${escapeHtml(c.id)}" rows="3" placeholder="What was tried? What worked? What is the current state?" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px;font-size:0.85rem;color:var(--primary-text);font-family:inherit;resize:vertical;margin-bottom:10px;"></textarea>
+            <div id="resolution-status-${escapeHtml(c.id)}" style="font-size:0.75rem;color:var(--secondary-text);"></div>
           </div>
         </div>
       `).join("");
@@ -935,6 +946,46 @@
       const suffix = qs.toString() ? `?${qs.toString()}` : "";
       window.location.href = `case-intake.html${suffix}`;
     };
+
+    window.toggleResolutionForm = function(caseId) {
+      const form = document.getElementById(`resolution-form-${caseId}`);
+      if (form) {
+        form.style.display = form.style.display === "none" ? "block" : "none";
+      }
+    };
+
+    document.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".resolution-status-btn");
+      if (!btn) return;
+      const caseId = btn.dataset.caseId;
+      const status = btn.dataset.status;
+      const textEl = document.getElementById(`resolution-text-${caseId}`);
+      const statusEl = document.getElementById(`resolution-status-${caseId}`);
+      const freeText = textEl ? textEl.value.trim() : "";
+
+      if (!freeText && status === "RESOLVED") {
+        if (statusEl) statusEl.textContent = "Please describe what worked before marking as resolved.";
+        return;
+      }
+
+      if (statusEl) statusEl.textContent = "Submitting...";
+      try {
+        const response = await fetch(`${API_BASE}/api/cases/${encodeURIComponent(caseId)}/resolution`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ outcome: status, freeText, userId: "demo-user" }),
+        });
+        if (!response.ok) throw new Error(`Failed (${response.status})`);
+        if (statusEl) statusEl.textContent = `Status updated to ${status}. Reloading...`;
+        setTimeout(async () => {
+          await loadCasesFromApi();
+          updateStats();
+          renderCases();
+        }, 1000);
+      } catch (err) {
+        if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+      }
+    });
 
     document.querySelectorAll(".filter-tab").forEach((tab) => {
       tab.addEventListener("click", () => {
