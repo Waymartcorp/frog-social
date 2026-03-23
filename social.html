@@ -1842,6 +1842,11 @@
         }
         const result = await response.json();
         postedMessageId = result.messageId || "";
+        if (result.threadId && result.threadId !== targetThreadId) {
+          currentThreadId = result.threadId;
+          persistActiveThreadId(currentThreadId);
+          setThreadNotice(`New topic detected — started thread: ${result.threadId}`, false);
+        }
       } catch (error) {
         setThreadNotice(error instanceof Error ? error.message : "Failed to post message.", true);
         return;
@@ -1851,7 +1856,7 @@
       const optimisticMsg = {
         id: postedMessageId || `local-${Date.now()}`,
         userId: userName,
-        threadId: targetThreadId,
+        threadId: currentThreadId,
         content: fullContent,
         createdAt: new Date().toISOString(),
       };

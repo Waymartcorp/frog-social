@@ -136,3 +136,61 @@ export async function generateThreadSummary(input: LLMSummaryInput): Promise<LLM
     return null;
   }
 }
+
+export interface TopicCheckResult {
+  isNewTopic: boolean;
+  reason: string;
+  suggestedThreadLabel: string;
+}
+
+export async function checkIfNewTopic(
+  newPostContent: string,
+  recentPosts: Array<{ userId: string; content: string }>,
+): Promise<TopicCheckResult | null> {
+  const client = getClient();
+  if (!client) return null;
+  if (recentPosts.length === 0) return null;
+
+  const recentBlock = recentPosts
+    .slice(-5)
+    .map((m) => `[${m.userId}]: ${m.content}`)
+    .join("\n");
+
+  try {
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.1,
+      max_tokens: 150,
+      messages: [
+        {
+          role: "system",
+          content: `You determine whether a new post is about the same topic as the recent discussion, or a completely different topic.
+
+Rules:
+- If the new post is clearly about a different subject (e.g., switching from feeding to water chemistry, or from lesions to system setup), it is a new topic.
+- If the new post is a follow-up, reply, or continuation of the current discussion, it is NOT a new topic.
+- Be conservative: only mark as new topic when the subject clearly changes.
+
+Respond with JSON only (no markdown fences):
+{"isNewTopic": true/false, "reason": "brief explanation", "suggestedThreadLabel": "short label for the new topic, or empty string"}`,
+        },
+        {
+          role: "user",
+          content: `Recent discussion:\n${recentBlock}\n\nNew post:\n${newPostContent}`,
+        },
+      ],
+    });
+
+    const raw = response.choices[0]?.message?.content?.trim() || "";
+    const cleaned = raw.replace(/^```json?\s*/i, "").replace(/```\s*$/, "").trim();
+    const parsed = JSON.parse(cleaned);
+    return {
+      isNewTopic: Boolean(parsed.isNewTopic),
+      reason: String(parsed.reason || ""),
+      suggestedThreadLabel: String(parsed.suggestedThreadLabel || ""),
+    };
+  } catch (err) {
+    console.error("[llmSummary] Topic check failed:", err);
+    return null;
+  }
+}

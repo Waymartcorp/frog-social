@@ -991,6 +991,27 @@ export async function createCaseFromDirectIntake(input: DirectCaseInput): Promis
 // 1) Handle new message (create case or attach to existing)
 export async function handleNewMessage(message: ForumMessage): Promise<FrogCase | null> {
   await rehydrateFromRedis();
+
+  const existingThreadMessages = listThreadMessages(message.threadId);
+  if (existingThreadMessages.length >= 2) {
+    try {
+      const { isLLMConfigured, checkIfNewTopic } = await import("./llmSummary");
+      if (isLLMConfigured()) {
+        const topicCheck = await checkIfNewTopic(
+          message.content,
+          existingThreadMessages.slice(-5).map((m) => ({ userId: m.userId, content: m.content })),
+        );
+        if (topicCheck?.isNewTopic && topicCheck.suggestedThreadLabel) {
+          const newThreadId = `topic-${topicCheck.suggestedThreadLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}-${Date.now().toString(36)}`;
+          console.log(`[handleNewMessage] New topic detected: "${topicCheck.reason}". Redirecting to thread ${newThreadId}`);
+          message.threadId = newThreadId;
+        }
+      }
+    } catch (err) {
+      console.warn("[handleNewMessage] Topic detection failed:", err);
+    }
+  }
+
   messages.set(message.id, message);
   await persistMessages();
 
