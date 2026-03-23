@@ -569,7 +569,14 @@ async function syncCaseLearningFromThread(threadId: string, frogCase: FrogCase):
   }
 
   frogCase.currentStatus = recap.currentStatus;
-  frogCase.runningObservations = recap.initialObservations;
+  if (llmResult) {
+    const views: string[] = [];
+    if (llmResult.context) views.push(llmResult.context);
+    if (llmResult.recommendations.length > 0) views.push(...llmResult.recommendations);
+    frogCase.runningObservations = views.length > 0 ? views : recap.initialObservations;
+  } else {
+    frogCase.runningObservations = recap.initialObservations;
+  }
   frogCase.domainsInPlay = recap.domainsInPlay;
   frogCase.actionsTried = mergeUnique(
     (frogCase.actionsTried || []).filter((entry) => isReliableActionPhrase(entry)),
