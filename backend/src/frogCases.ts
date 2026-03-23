@@ -556,8 +556,8 @@ async function syncCaseLearningFromThread(threadId: string, frogCase: FrogCase):
     ].filter(Boolean).join("\n") || recap.caseUpdate;
     frogCase.currentSystemStatus = llmResult.currentPicture || recap.situationSummary;
     frogCase.emergingThreads = llmResult.emergingThreads.length > 0 ? llmResult.emergingThreads : recap.emergingThreads;
-    frogCase.currentStrategy = [];
-    frogCase.suggestedNextSteps = [];
+    frogCase.currentStrategy = llmResult.recommendations.length > 0 ? llmResult.recommendations : [];
+    frogCase.suggestedNextSteps = llmResult.recommendations.length > 0 ? llmResult.recommendations : [];
     frogCase.missingDetails = llmResult.openPoints ? [llmResult.openPoints] : [];
   } else {
     frogCase.caseSummary = recap.caseUpdate;

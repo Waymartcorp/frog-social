@@ -59,6 +59,7 @@ export interface LLMSummaryResult {
   context: string;
   openPoints: string;
   emergingThreads: string[];
+  recommendations: string[];
   isQuestion: boolean;
   questionTopic: string;
 }
@@ -77,6 +78,7 @@ RULES:
   - If topics are clearly related in the knowledge base, say so in the context field.
 - Do NOT inject UNRELATED topics. Only connect things the knowledge base actually links together.
 - emergingThreads should capture the developing themes across posts — what people seem to be converging on, or what the discussion is building toward. Include knowledge-base connections when relevant.
+- recommendations: based on the discussion AND the knowledge base, provide 1-3 practical, specific recommendations. These should be actionable steps the user can take. Draw from the knowledge base when it has relevant guidance. If the discussion is a question, recommend answers from the knowledge base. If it's a problem, recommend next steps. If there's nothing useful to recommend, return an empty array.
 - Be concise. Field-note style. No AI phrasing like "it appears that" or "this suggests."
 - If there is not enough information for a meaningful summary, say so plainly.
 
@@ -86,6 +88,7 @@ Respond with JSON only (no markdown fences):
   "context": "relevant background from the knowledge base that connects to what was discussed, or empty string",
   "openPoints": "what is still unknown or unanswered, or empty string",
   "emergingThreads": ["theme 1", "theme 2"],
+  "recommendations": ["actionable recommendation 1", "actionable recommendation 2"],
   "isQuestion": true/false,
   "questionTopic": "the topic of the question, or empty string"
 }`;
@@ -124,6 +127,7 @@ export async function generateThreadSummary(input: LLMSummaryInput): Promise<LLM
       context: String(parsed.context || ""),
       openPoints: String(parsed.openPoints || ""),
       emergingThreads: Array.isArray(parsed.emergingThreads) ? parsed.emergingThreads.map(String) : [],
+      recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.map(String) : [],
       isQuestion: Boolean(parsed.isQuestion),
       questionTopic: String(parsed.questionTopic || ""),
     };
