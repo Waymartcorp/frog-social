@@ -561,9 +561,9 @@ async function syncCaseLearningFromThread(threadId: string, frogCase: FrogCase):
     frogCase.missingDetails = llmResult.openPoints ? [llmResult.openPoints] : [];
   } else {
     frogCase.caseSummary = recap.caseUpdate;
-    frogCase.currentStrategy = (recap.currentStrategy || []).map((entry) => sanitizeStrategyLine(entry)).filter(Boolean);
-    frogCase.suggestedNextSteps = (recap.suggestedNextSteps || []).map((entry) => sanitizeStrategyLine(entry)).filter(Boolean);
-    frogCase.missingDetails = recap.missingDetails;
+    frogCase.currentStrategy = [];
+    frogCase.suggestedNextSteps = [];
+    frogCase.missingDetails = [];
     frogCase.currentSystemStatus = recap.situationSummary;
     frogCase.emergingThreads = recap.emergingThreads;
   }
