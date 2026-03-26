@@ -326,8 +326,21 @@ Current work should be prioritized in this order:
 
 ---
 
-## 8. Outer-World / Real-World Readiness Rules
+## 8. Environment Truth Rules
 
+### Canonical production environments
+- **https://www.frogsocial.org**
+- **https://frog-social.vercel.app**
+
+Production is the truth environment. All verification must target production unless explicitly debugging local-only behavior.
+
+### Localhost rules
+- Do NOT treat localhost as the primary truth environment.
+- Do NOT present localhost results as if they prove production behavior.
+- Only use localhost if explicitly debugging local-only behavior, and label all localhost results clearly as **LOCAL-ONLY**.
+- Deploy path: `git push origin main` → Vercel GitHub auto-deploy → production.
+
+### Real-world readiness
 Even if local logic appears to work, the system is not fully proven until real-world conditions are addressed.
 
 The agent must keep track of:
