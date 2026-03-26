@@ -743,23 +743,29 @@
       <!-- RIGHT COLUMN: Context rail -->
       <div class="right-column">
         <div class="ai-panel">
-          <div class="ai-panel-header">Live Chat Summary</div>
-          <div class="ai-panel-content" id="activeCaseSummary">
-            <p style="margin: 0; color: var(--secondary-text);">No live summary yet.</p>
+          <div class="ai-panel-header">Social Session</div>
+          <div class="ai-panel-content" id="socialSessionSummary">
+            <p style="margin: 0; color: var(--secondary-text);">No active session.</p>
           </div>
         </div>
 
         <div class="ai-panel">
-          <div class="ai-panel-header">Emerging Threads (Live)</div>
+          <div class="ai-panel-header">Current Cases</div>
+          <div class="ai-panel-content">
+            <div id="currentCasesList" class="recall-list">
+              <p style="margin: 0; color: var(--secondary-text);">No cases created from this session yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ai-panel">
+          <div class="ai-panel-header">Emerging Threads</div>
           <div class="ai-panel-content">
             <div id="emergingThreadClusterList" class="thread-cluster-list">
               <p style="margin: 0; color: var(--secondary-text);">No active thread clusters yet.</p>
             </div>
-            <p style="margin: 8px 0 0 0; color: var(--secondary-text); font-size: 0.72rem;">
-              Click a thread to highlight related posts.
-            </p>
             <p style="margin: 4px 0 0 0; color: var(--secondary-text); font-size: 0.66rem; opacity: 0.75;">
-              (Recent only — older threads move to Case History)
+              Recent only — mature threads become cases above.
             </p>
           </div>
         </div>
@@ -768,16 +774,7 @@
           <div class="ai-panel-header">Related Cases</div>
           <div class="ai-panel-content">
             <div id="similarCasesLive" class="recall-list">
-              <p style="margin: 0; color: var(--secondary-text);">No similar cases found yet.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="ai-panel">
-          <div class="ai-panel-header">Linked Cases / Summaries</div>
-          <div class="ai-panel-content">
-            <div id="linkedCasesList" class="recall-list">
-              <p style="margin: 0; color: var(--secondary-text);">Linked and referenced cases will appear here.</p>
+              <p style="margin: 0; color: var(--secondary-text);">No prior archive matches yet.</p>
             </div>
           </div>
         </div>
@@ -1211,170 +1208,80 @@
         .join("");
     }
 
-    function renderTopicTrackCards(recap) {
-      const tracks = Array.isArray(recap?.topicTracks) ? [...recap.topicTracks] : [];
-      if (!tracks.length) return "";
-      const sorted = tracks.sort((a, b) => {
-        if (a.isActive && !b.isActive) return -1;
-        if (!a.isActive && b.isActive) return 1;
-        const tb = new Date(b.lastPostAt || 0).getTime();
-        const ta = new Date(a.lastPostAt || 0).getTime();
-        return tb - ta;
-      });
-      return sorted.slice(0, 2)
-        .map((t) => {
-          const head = t.isActive ? "Current focus" : "Earlier in this thread";
-          const slug = String(t.topicLabel || "").replace(/-/g, " ");
-          const range =
-            t.firstPostAt && t.lastPostAt
+    function renderSocialSession() {
+      const container = document.getElementById("socialSessionSummary");
+      if (!container) return;
+      const postCount = (currentThreadMessages || []).filter((m) => !isSystemGeneratedMessage(m)).length;
+      const lastPost = currentThreadMessages.length > 0 ? currentThreadMessages[currentThreadMessages.length - 1] : null;
+      const firstPost = currentThreadMessages.length > 0 ? currentThreadMessages[0] : null;
+      const summary = parseSummaryFields(latestRecapPayload || {});
+      const refinementHint = threadRecapRefinementPending
+        ? `<p style="margin: 0 0 8px 0; font-size: 0.72rem; color: var(--secondary-text);">Refining (full model)...</p>`
+        : "";
+      const rows = [
+        ["Session", currentThreadId || "No active session"],
+        ["Posts", `${postCount} post${postCount === 1 ? "" : "s"}`],
+        ["Started", formatDateTimeLabel(firstPost?.createdAt || "")],
+        ["Last activity", formatDateTimeLabel(lastPost?.createdAt || "")],
+      ];
+      const currentPicture = String(summary.currentPicture || "").trim();
+      if (currentPicture && currentPicture !== "No current picture yet.") {
+        rows.push(["Current picture", currentPicture]);
+      }
+      container.innerHTML = refinementHint + rows.map(([key, value]) => `
+        <div class="context-row">
+          <div class="context-key">${escapeHtml(key)}</div>
+          <div class="context-value">${escapeHtml(toSummaryPreview(value))}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderCurrentCases() {
+      const container = document.getElementById("currentCasesList");
+      if (!container) return;
+      const cases = Array.isArray(latestSimilarCasesPayload?.currentCases) ? latestSimilarCasesPayload.currentCases : [];
+      if (!cases.length) {
+        const tracks = Array.isArray(latestRecapPayload?.topicTracks) ? latestRecapPayload.topicTracks : [];
+        if (tracks.length > 0) {
+          container.innerHTML = tracks.slice(0, 2).map((t) => {
+            const slug = String(t.topicLabel || "").replace(/-/g, " ");
+            const range = t.firstPostAt && t.lastPostAt
               ? `${formatDateTimeLabel(t.firstPostAt)} \u2192 ${formatDateTimeLabel(t.lastPostAt)}`
               : "";
-          const border = t.isActive ? "rgba(52, 211, 153, 0.35)" : "rgba(255,255,255,0.08)";
-          const bg = t.isActive ? "rgba(52, 211, 153, 0.06)" : "transparent";
-          return `
-        <div class="topic-track-card" style="margin: 10px 0 0 0; padding: 10px 12px; border-radius: 10px; border: 1px solid ${border}; background: ${bg};">
-          <div style="font-size: 0.68rem; color: var(--secondary-text); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;">
-            ${escapeHtml(head)} · ${escapeHtml(slug)}
-          </div>
-          ${range ? `<div style="font-size: 0.65rem; color: var(--secondary-text); margin: 6px 0 8px 0;">${escapeHtml(range)}</div>` : ""}
-          <div class="context-row"><div class="context-key">Summary</div><div class="context-value">${escapeHtml(toSummaryPreview(t.summary || ""))}</div></div>
-          ${String(t.context || "").trim() ? `<div class="context-row"><div class="context-key">Knowledge base</div><div class="context-value">${escapeHtml(toSummaryPreview(t.context))}</div></div>` : ""}
-          ${String(t.openPoints || "").trim() ? `<div class="context-row"><div class="context-key">Open</div><div class="context-value">${escapeHtml(toSummaryPreview(t.openPoints))}</div></div>` : ""}
-        </div>`;
-        })
-        .join("");
+            const border = t.isActive ? "rgba(52, 211, 153, 0.35)" : "rgba(255,255,255,0.08)";
+            const bg = t.isActive ? "rgba(52, 211, 153, 0.06)" : "transparent";
+            return `
+              <div style="margin: 0 0 8px 0; padding: 10px 12px; border-radius: 10px; border: 1px solid ${border}; background: ${bg};">
+                <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--secondary-text);">${escapeHtml(slug)}</div>
+                ${range ? `<div style="font-size: 0.65rem; color: var(--secondary-text); margin: 4px 0 6px 0;">${escapeHtml(range)}</div>` : ""}
+                <div class="context-row"><div class="context-key">Summary</div><div class="context-value">${escapeHtml(toSummaryPreview(t.summary || ""))}</div></div>
+                ${String(t.context || "").trim() ? `<div class="context-row"><div class="context-key">Knowledge base</div><div class="context-value">${escapeHtml(toSummaryPreview(t.context))}</div></div>` : ""}
+                ${String(t.openPoints || "").trim() ? `<div class="context-row"><div class="context-key">Open</div><div class="context-value">${escapeHtml(toSummaryPreview(t.openPoints))}</div></div>` : ""}
+              </div>`;
+          }).join("");
+          return;
+        }
+        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">No cases created from this session yet. Cases form when emerging threads reach maturity.</p>`;
+        return;
+      }
+      container.innerHTML = cases.slice(0, 2).map((c) => {
+        const resolved = String(c.status || "").toUpperCase() === "RESOLVED";
+        return `
+          <div class="recall-item">
+            <div class="recall-item-title">Case ${escapeHtml(String(c.caseNumber || "—"))}: ${escapeHtml(c.title || "")} ${resolved ? '<span style="margin-left:6px;padding:2px 8px;border-radius:999px;background:rgba(52,211,153,0.2);color:#6EE7B7;font-size:0.64rem;">resolved</span>' : ""}</div>
+            <div class="recall-item-meta">Last activity ${escapeHtml(formatDateTimeLabel(c.updatedAt))} · ${escapeHtml(c.status || "open")}</div>
+            <div class="recall-item-preview">${escapeHtml(toSummaryPreview(c.summaryPreview || ""))}</div>
+          </div>`;
+      }).join("");
     }
 
     function renderActiveCaseSummary() {
-      const container = document.getElementById("activeCaseSummary");
-      if (!container) return;
-      const selectedCaseId = document.getElementById("linkCase")?.value || "";
-      const linkedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(selectedCaseId)) || currentThreadCase;
-      const summary = parseSummaryFields(latestRecapPayload || {});
-      const hasTopicTracks =
-        Array.isArray(latestRecapPayload?.topicTracks) && latestRecapPayload.topicTracks.length > 0;
-      const messageCorpus = (currentThreadMessages || [])
-        .filter((message) => !isSystemGeneratedMessage(message))
-        .map((message) => String(message.text || message.content || ""))
-        .join(" ")
-        .toLowerCase();
-      const normalizeForCompare = (text) =>
-        String(text || "")
-          .toLowerCase()
-          .replace(/[^a-z0-9\s]/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-      const overlapScore = (a, b) => {
-        const ta = normalizeForCompare(a).split(" ").filter((t) => t.length >= 4);
-        const tb = new Set(normalizeForCompare(b).split(" ").filter((t) => t.length >= 4));
-        if (!ta.length || !tb.size) return 0;
-        const hits = ta.filter((token) => tb.has(token)).length;
-        return hits / Math.max(ta.length, 1);
-      };
-      const contextGrounded = (() => {
-        const context = String(summary.reportedContext || "").trim();
-        if (!context) return "";
-        const contextTokens = normalizeForCompare(context).split(" ").filter((token) => token.length >= 4);
-        const hasGroundingToken = contextTokens.some((token) => messageCorpus.includes(token));
-        if (!hasGroundingToken) return "";
-        if (overlapScore(context, summary.currentPicture || "") >= 0.72) return "";
-        return context;
-      })();
-      const status = String(linkedCase?.currentStatus || linkedCase?.status || latestRecapPayload?.currentStatus || "open");
-      const lastUpdate = linkedCase?.updatedAt || (currentThreadMessages[currentThreadMessages.length - 1]?.createdAt ?? "");
-      const chatDate = currentThreadMessages[0]?.createdAt || linkedCase?.createdAt || "";
-      const title = linkedCase?.title || linkedCase?.threadId || currentThreadId || "Active feed";
-      const caseNum = Number(linkedCase?.caseNumber || 0);
-      const caseArchiveLine = linkedCase
-        ? caseNum > 0
-          ? `Case ${caseNum} · ${linkedCase.admissionState || "—"}`
-          : `Case record (number pending) · ${linkedCase.admissionState || "candidate"}`
-        : "No case record for this thread yet — after one substantive post (about 35+ chars, real detail).";
-      const baseRows = [
-        ["Thread", title],
-        ["Case archive", caseArchiveLine],
-        ["Chat date", formatDateTimeLabel(chatDate)],
-        ["Status", status],
-        ["Last update", formatDateTimeLabel(lastUpdate)],
-      ];
-      const legacyRows = hasTopicTracks
-        ? []
-        : [
-            ["Current", summary.currentPicture || "No current picture yet."],
-            ["Knowledge base", contextGrounded || "No Knowledge base yet — grounded synthesis from posts, cases, or husbandry framework will appear here."],
-            ["Open", summary.openPoints || "No open points logged from posts."],
-          ];
-      const rows = [...baseRows, ...legacyRows];
-      const topicNote = hasTopicTracks
-        ? `<p style="margin: 8px 0 0 0; font-size: 0.68rem; color: var(--secondary-text); line-height: 1.45;">Topics are split by <strong>strict operational tags</strong> (e.g. feeding vs biofilter/ammonia). The same topic can appear in multiple dated blocks if discussion was idle over <strong>7 days</strong>.</p>`
-        : "";
-      const topicCards = hasTopicTracks ? renderTopicTrackCards(latestRecapPayload) : "";
-      const refinementHint = threadRecapRefinementPending
-        ? `<p style="margin: 0 0 10px 0; font-size: 0.72rem; color: var(--secondary-text);">Refining summary (full model)...</p>`
-        : "";
-      container.innerHTML =
-        refinementHint +
-        rows
-          .map(([key, value]) => `
-          <div class="context-row">
-            <div class="context-key">${escapeHtml(key)}</div>
-            <div class="context-value">${escapeHtml(toSummaryPreview(value))}</div>
-          </div>
-        `)
-          .join("") +
-        topicNote +
-        topicCards;
+      renderSocialSession();
+      renderCurrentCases();
     }
 
     function renderLinkedCasesList() {
-      const container = document.getElementById("linkedCasesList");
-      if (!container) return;
-      const scopedMessages = (currentThreadMessages || []).filter((message) => !isSystemGeneratedMessage(message));
-      const selectedCaseId = document.getElementById("linkCase")?.value || "";
-      const selectedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(selectedCaseId));
-      const byThread = scopedMessages
-        .flatMap((message) => {
-          const msgTid = String(message.threadId || "").trim();
-          return caseMemory.filter((entry) => {
-            const caseTid = String(entry.threadId || "").trim();
-            const caseSrc = String(entry.sourceThreadId || "").trim();
-            return caseTid === msgTid || caseSrc === msgTid || caseTid.startsWith(msgTid + "#");
-          });
-        })
-        .filter(Boolean);
-      const byNumber = scopedMessages.flatMap((message) =>
-        findReferencedCaseNumbers(String(message.text || message.content || ""))
-          .map((num) => findCaseByNumber(num))
-          .filter(Boolean)
-      );
-      const deduped = new Map();
-      for (const entry of [selectedCase, ...byThread, ...byNumber].filter(Boolean)) {
-        const id = String(entry.caseId || entry.id || "");
-        if (!id || deduped.has(id)) continue;
-        deduped.set(id, {
-          id,
-          title: entry.title || entry.threadId || "Unlabeled",
-          caseNumber: Number(entry.caseNumber || 0),
-          updatedAt: entry.updatedAt || "",
-        });
-      }
-      const rows = Array.from(deduped.values())
-        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-        .slice(0, 4);
-
-      if (!rows.length) {
-        container.innerHTML = `<p style="margin:0; color: var(--secondary-text);">No linked cases in this thread yet.</p>`;
-        return;
-      }
-      container.innerHTML = rows.map((row) => `
-        <div class="recall-item">
-          <div class="recall-item-title">${escapeHtml(row.title)}</div>
-          <div class="recall-item-meta">${row.caseNumber > 0 ? `Case ${escapeHtml(String(row.caseNumber))} · ` : ""}last activity ${escapeHtml(formatDateTimeLabel(row.updatedAt))}</div>
-          <div class="recall-item-actions">
-            <button class="btn-secondary linked-case-open" type="button" data-case-id="${escapeHtml(String(row.id || ""))}">Open case</button>
-          </div>
-        </div>
-      `).join("");
+      // Removed — linked cases panel was redundant with Current Cases.
     }
 
     function renderRecap(recap) {
@@ -1531,22 +1438,19 @@
     }
 
     function renderSimilarCases(payload) {
+      renderCurrentCases();
       const container = document.getElementById("similarCasesLive");
       if (!container) return;
       const matches = Array.isArray(payload?.matches) ? payload.matches : [];
       if (!matches.length) {
-        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text); line-height: 1.45;">No similar archived cases matched yet. This uses recall over <strong>admitted</strong> Case History entries — with few or no archives, matches stay empty until the library grows.</p>`;
+        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text); line-height: 1.45;">No prior archive matches yet.</p>`;
         return;
       }
       container.innerHTML = matches.slice(0, 2).map((item) => `
         <div class="recall-item">
           <div class="recall-item-title">Case ${escapeHtml(String(item.caseNumber || "n/a"))}: ${escapeHtml(item.title || item.threadId)} ${String(item.status || "").toUpperCase() === "RESOLVED" ? '<span style="margin-left:6px;padding:2px 8px;border-radius:999px;background:rgba(52,211,153,0.2);color:#6EE7B7;font-size:0.64rem;">resolved</span>' : ""}</div>
-          <div class="recall-item-meta">${escapeHtml(item.threadId)} · ${escapeHtml(formatDateTimeLabel(item.updatedAt))} · score ${escapeHtml(String(item.matchScore || 0))} · ${escapeHtml(item.status || "")}</div>
+          <div class="recall-item-meta">${escapeHtml(formatDateTimeLabel(item.updatedAt))} · ${escapeHtml(item.status || "open")}</div>
           <div class="recall-item-preview">${escapeHtml(toSummaryPreview(item.summaryPreview || ""))}</div>
-          <div class="recall-item-actions">
-            <button class="btn-secondary sim-open-btn" type="button" data-thread-id="${encodeURIComponent(String(item.threadId || ""))}">Open linked case</button>
-            <button class="btn-secondary sim-bring-btn" type="button" data-thread-id="${encodeURIComponent(String(item.threadId || ""))}">Bring into discussion</button>
-          </div>
         </div>
       `).join("");
     }

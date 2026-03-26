@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import fs from "node:fs";
 import path from "node:path";
+import { sanitizeGeneratedText } from "./caseState.js";
 
 let openai: OpenAI | null = null;
 
@@ -253,7 +254,11 @@ GLOBAL FIELDS (backward compatibility — these describe the LAST segment ONLY):
 
 STYLE:
 - Summarize what people actually said. Never invent facts.
-- Field-note style. No filler AI phrasing.
+- Field-note style: concise, direct, lab-note quality.
+- No filler phrasing: avoid "it seems", "potentially", "importantly", "overall", "keep in mind", "it's worth noting".
+- No spelling errors. Double-check: ammonia (not amonia), biofilter (not biofiliter), Xenopus (not Xenpous), nitrite, nitrate.
+- Knowledge base content must be clearly grounded. If you cannot trace a claim to a post, case, or framework doc, do not include it.
+- Do not inherit signals from one segment into another. Feeding and water chemistry are separate operational domains.
 
 Respond with JSON only (no markdown fences):
 {
@@ -376,16 +381,22 @@ export async function generateThreadSummary(input: LLMSummaryInput): Promise<LLM
       (parsed as { topicTracks?: unknown }).topicTracks,
       segments,
     );
+    const sanitizedTracks = topicTracks?.map((t) => ({
+      ...t,
+      summary: sanitizeGeneratedText(t.summary),
+      context: sanitizeGeneratedText(t.context),
+      openPoints: sanitizeGeneratedText(t.openPoints),
+    }));
     return {
-      currentPicture: String(parsed.currentPicture || ""),
-      context: String(parsed.context || ""),
-      openPoints: String(parsed.openPoints || ""),
-      emergingThreads: Array.isArray(parsed.emergingThreads) ? parsed.emergingThreads.map(String) : [],
-      recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.map(String) : [],
+      currentPicture: sanitizeGeneratedText(String(parsed.currentPicture || "")),
+      context: sanitizeGeneratedText(String(parsed.context || "")),
+      openPoints: sanitizeGeneratedText(String(parsed.openPoints || "")),
+      emergingThreads: Array.isArray(parsed.emergingThreads) ? parsed.emergingThreads.map((s) => sanitizeGeneratedText(String(s))) : [],
+      recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.map((s) => sanitizeGeneratedText(String(s))) : [],
       isQuestion: Boolean(parsed.isQuestion),
       questionTopic: String(parsed.questionTopic || ""),
       caseWorthiness,
-      topicTracks,
+      topicTracks: sanitizedTracks,
     };
   } catch (err) {
     console.error("[llmSummary] LLM call failed:", err);

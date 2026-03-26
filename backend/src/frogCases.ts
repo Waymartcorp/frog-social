@@ -146,6 +146,7 @@ export interface ThreadSimilarCasesResult {
   threadId: string;
   query: string;
   matches: CaseRecallResult[];
+  currentCases?: CaseRecallResult[];
 }
 
 export interface FeedSimilarCasesResult {
@@ -2296,44 +2297,26 @@ export function findSimilarCasesForThread(threadId: string, limit = 6): ThreadSi
   const rawMatches = recallCases(query, Math.max(1, Math.min(limit + 5, 25)));
   const threadCases = getCasesForChatThread(threadId);
   const currentCaseIds = new Set(threadCases.map((c) => c.caseId || c.id));
-  const otherMatches = rawMatches
+
+  const currentCases: CaseRecallResult[] = threadCases.slice(0, 2).map((tc) => ({
+    caseId: tc.caseId || tc.id,
+    caseNumber: tc.caseNumber,
+    threadId: tc.threadId,
+    title: tc.title,
+    summaryPreview: (tc.caseSummary || "").slice(0, 220),
+    updatedAt: tc.updatedAt.toISOString(),
+    status: tc.status,
+    entryMode: tc.entryMode,
+    matchScore: 100,
+    matchReasons: ["current session case"],
+  }));
+
+  const relatedCases: CaseRecallResult[] = rawMatches
     .filter((entry) => !currentCaseIds.has(String(entry.caseId || "")) &&
       String(entry.threadId || "").trim() !== String(threadId || "").trim())
     .slice(0, 2);
-  const matches: CaseRecallResult[] = [];
-  for (const tc of threadCases) {
-    matches.push({
-      caseId: tc.caseId || tc.id,
-      caseNumber: tc.caseNumber,
-      threadId: tc.threadId,
-      title: `[Current] ${tc.title}`,
-      summaryPreview: (tc.caseSummary || "").slice(0, 220),
-      updatedAt: tc.updatedAt.toISOString(),
-      status: tc.status,
-      entryMode: tc.entryMode,
-      matchScore: 100,
-      matchReasons: ["current thread case"],
-    });
-  }
-  if (!matches.length) {
-    const fallback = getCaseByThreadId(threadId);
-    if (fallback) {
-      matches.push({
-        caseId: fallback.caseId || fallback.id,
-        caseNumber: fallback.caseNumber,
-        threadId: fallback.threadId,
-        title: `[Current] ${fallback.title}`,
-        summaryPreview: (fallback.caseSummary || "").slice(0, 220),
-        updatedAt: fallback.updatedAt.toISOString(),
-        status: fallback.status,
-        entryMode: fallback.entryMode,
-        matchScore: 100,
-        matchReasons: ["current thread case"],
-      });
-    }
-  }
-  matches.push(...otherMatches);
-  return { threadId, query, matches };
+
+  return { threadId, query, matches: relatedCases, currentCases };
 }
 
 export function findSimilarCasesForFeed(limit = 8): FeedSimilarCasesResult {

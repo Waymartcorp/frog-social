@@ -183,11 +183,14 @@ Primary structure:
 - **Left side** = live discussion feed
 - **Right side** = context rail
 
-Right rail should support:
-1. **Active Case Summary** (max 2 topic track cards)
-2. **Emerging Threads** (max 3, recent only)
-3. **Related Cases** (max 2, age-out after ~3 days)
-4. **Linked Cases / Summaries** (max 4)
+Right rail panels (in order):
+1. **Social Session** — session metadata (thread name, post count, date range). Not a case view.
+2. **Current Cases** — cases created from mature emerging topics in this session (max 2). These are formal cases, not topic labels.
+3. **Emerging Threads** — temporary topic clusters from recent posts (max 3). Mature threads become cases above.
+4. **Related Cases** — prior archive matches recalled by similarity (max 2, age-out after ~3 days). NOT current session cases.
+
+Removed:
+- "Linked Cases / Summaries" — was redundant with Current Cases and Related Cases.
 
 ### Tone and style rules
 All UI text should feel like:

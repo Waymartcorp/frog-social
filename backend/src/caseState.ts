@@ -452,14 +452,7 @@ function sentenceCase(text: string): string {
 }
 
 function toFieldNoteText(text: string): string {
-  const cleaned = String(text || "")
-    .replace(/\bcurrent thinking\b/gi, "")
-    .replace(/\binterpretation\b/gi, "")
-    .replace(/\bunder review\b/gi, "")
-    .replace(/\bthis suggests\b/gi, "")
-    .replace(/\bthis direction is based on\b/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  const cleaned = sanitizeGeneratedText(text);
   if (!cleaned) return "";
 
   const sentences = cleaned
@@ -470,6 +463,64 @@ function toFieldNoteText(text: string): string {
     .map((part) => sentenceCase(part));
 
   return unique(sentences).slice(0, 6).join(" ");
+}
+
+const LOW_TRUST_PHRASES = [
+  /\bcurrent thinking\b/gi,
+  /\binterpretation\b/gi,
+  /\bunder review\b/gi,
+  /\bthis suggests\b/gi,
+  /\bthis direction is based on\b/gi,
+  /\bit seems? (?:that |like )/gi,
+  /\bthis could potentially\b/gi,
+  /\bthe ai (?:believes?|thinks?|suggests?)\b/gi,
+  /\bpotentially indicate\b/gi,
+  /\bimportantly\b/gi,
+  /\bit'?s (?:important|worth noting|crucial) (?:to note |that )/gi,
+  /\boverall[,.]?\s*/gi,
+  /\bin summary[,.]?\s*/gi,
+  /\bas mentioned (?:earlier|above|before)\b/gi,
+  /\bplease note that\b/gi,
+  /\bremember that\b/gi,
+  /\bkeep in mind\b/gi,
+  /\blet me know if\b/gi,
+  /\bhope this helps\b/gi,
+  /\bdon't hesitate\b/gi,
+];
+
+const SPELLING_FIXES: Array<[RegExp, string]> = [
+  [/\bamonia\b/gi, "ammonia"],
+  [/\bammona\b/gi, "ammonia"],
+  [/\bbiofiliter\b/gi, "biofilter"],
+  [/\bnitirte\b/gi, "nitrite"],
+  [/\bntirate\b/gi, "nitrate"],
+  [/\bXenpous\b/g, "Xenopus"],
+  [/\bXenoupus\b/g, "Xenopus"],
+  [/\bXenopous\b/g, "Xenopus"],
+  [/\brecircualting\b/gi, "recirculating"],
+  [/\brecircualtion\b/gi, "recirculation"],
+  [/\bhusbandary\b/gi, "husbandry"],
+  [/\bmortaliy\b/gi, "mortality"],
+  [/\btemperture\b/gi, "temperature"],
+  [/\bconductivty\b/gi, "conductivity"],
+  [/\bfeedig\b/gi, "feeding"],
+];
+
+export function sanitizeGeneratedText(text: string): string {
+  let out = String(text || "");
+  for (const pattern of LOW_TRUST_PHRASES) {
+    out = out.replace(pattern, "");
+  }
+  for (const [pattern, fix] of SPELLING_FIXES) {
+    out = out.replace(pattern, fix);
+  }
+  out = out
+    .replace(/\s+/g, " ")
+    .replace(/\s+([.,;:!?])/g, "$1")
+    .replace(/([.,;:!?])\1+/g, "$1")
+    .replace(/^\s*[.,;:!?]\s*/, "")
+    .trim();
+  return out;
 }
 
 function scoreAndSelectByIntent(
