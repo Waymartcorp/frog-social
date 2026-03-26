@@ -310,8 +310,10 @@
       return response.json();
     }
 
-    async function fetchThreadRecap(threadId) {
-      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/recap`);
+    async function fetchThreadRecap(threadId, opts = {}) {
+      const fast = Boolean(opts.fast);
+      const q = fast ? "?fast=1" : "";
+      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/recap${q}`);
       if (!response.ok) throw new Error("Failed to fetch thread recap");
       return response.json();
     }
@@ -319,12 +321,17 @@
     async function refreshThreadView() {
       const threadId = getActiveThreadId();
       try {
-        const [messages, recap] = await Promise.all([
-          fetchThreadMessages(threadId),
-          fetchThreadRecap(threadId),
-        ]);
+        const messages = await fetchThreadMessages(threadId);
         renderSocial(messages);
-        renderRecap(recap);
+        try {
+          const fastRecap = await fetchThreadRecap(threadId, { fast: true });
+          renderRecap(fastRecap);
+        } catch {
+          /* fast recap optional */
+        }
+        fetchThreadRecap(threadId)
+          .then((recap) => renderRecap(recap))
+          .catch(() => {});
       } catch {
         renderSocial(loadSocial());
         renderRecap({

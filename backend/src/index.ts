@@ -4,7 +4,8 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import { randomUUID } from "crypto";
-import { isLLMConfigured, generateThreadSummary } from "./llmSummary";
+import path from "node:path";
+import { isLLMConfigured, generateThreadSummary, segmentThreadByStrictTopic } from "./llmSummary";
 import {
   ensureInitialized,
   rehydrateFromRedis,
@@ -27,6 +28,9 @@ import {
   findSimilarCasesForThread,
   findSimilarCasesForFeed,
   buildGlobalFeedRecap,
+  buildHeuristicTopicTracksForThread,
+  getCasesForChatThread,
+  buildTopicTracksFromCases,
   type CaseStatus,
   type CaseRecallResult,
   type ForumMessage,
@@ -62,6 +66,7 @@ app.use(
   })
 );
 app.use(bodyParser.json());
+app.use(express.static(path.resolve(__dirname, "..", "..")));
 
 app.use(async (_req, _res, next) => {
   try {
@@ -157,42 +162,120 @@ app.get("/api/threads/:threadId/similar-cases", (req, res) => {
 app.get("/api/threads/:threadId/recap", async (req, res) => {
   const threadId = req.params.threadId;
   const recap = buildThreadRecap(threadId);
+  /** Skip OpenAI for instant regex/heuristic recap (client shows this first, then upgrades). */
+  const skipLlm = String(req.query.fast || "") === "1";
 
-  if (isLLMConfigured()) {
-    try {
-      const threadMessages = listMessagesByThreadId(threadId);
-      if (threadMessages.length > 0) {
-        const admittedCases = listCases()
-          .filter((c) => c.admissionState === "admitted" && c.threadId !== threadId)
-          .slice(0, 5)
-          .map((c) => `Case #${c.caseNumber}: ${c.title} — ${(c.caseSummary || "").slice(0, 100)}`);
-
-        const llmResult = await generateThreadSummary({
-          threadId,
-          messages: threadMessages.map((m) => ({
+  const threadMessages = listMessagesByThreadId(threadId);
+  const segments =
+    threadMessages.length > 0
+      ? segmentThreadByStrictTopic(
+          threadMessages.map((m) => ({
             userId: m.userId,
             content: m.content,
             createdAt: m.createdAt.toISOString(),
           })),
-          existingCaseSummaries: admittedCases.length > 0 ? admittedCases : undefined,
-        });
+        )
+      : [];
 
-        if (llmResult) {
-          recap.caseUpdate = [
-            llmResult.currentPicture ? `Current picture: ${llmResult.currentPicture}` : "",
-            llmResult.context ? `Reported context: ${llmResult.context}` : "",
-            llmResult.openPoints ? `Open points: ${llmResult.openPoints}` : "",
-          ].filter(Boolean).join("\n") || recap.caseUpdate;
+  const multiTopicThread = segments.length > 1;
+  const attachHeuristicSplitSummaries = () => {
+    if (!multiTopicThread) return;
+    const tracks = buildHeuristicTopicTracksForThread(threadId);
+    if (tracks.length > 1) {
+      recap.topicTracks = tracks;
+    }
+  };
 
-          recap.situationSummary = llmResult.currentPicture || recap.situationSummary;
+  const hasMultipleTopicCards = () =>
+    Array.isArray(recap.topicTracks) && recap.topicTracks.length > 1;
 
-          if (llmResult.emergingThreads.length > 0) {
-            recap.emergingThreads = llmResult.emergingThreads;
-          }
+  if (skipLlm) {
+    attachHeuristicSplitSummaries();
+    const fastCaseTracks = buildTopicTracksFromCases(threadId);
+    if (fastCaseTracks.length >= 2) {
+      recap.topicTracks = fastCaseTracks;
+      const lastTrack = fastCaseTracks[fastCaseTracks.length - 1];
+      if (lastTrack) {
+        recap.caseUpdate = [
+          lastTrack.summary ? `Current picture: ${lastTrack.summary}` : "",
+          lastTrack.context ? `Knowledge base: ${lastTrack.context}` : "",
+          lastTrack.openPoints ? `Open points: ${lastTrack.openPoints}` : "",
+        ].filter(Boolean).join("\n") || recap.caseUpdate;
+        recap.situationSummary = lastTrack.summary || recap.situationSummary;
+      }
+    }
+    return res.json(recap);
+  }
+
+  if (isLLMConfigured() && threadMessages.length > 0) {
+    try {
+      const admittedCases = listCases()
+        .filter((c) => c.admissionState === "admitted" && c.threadId !== threadId)
+        .slice(0, 5)
+        .map((c) => `Case #${c.caseNumber}: ${c.title} — ${(c.caseSummary || "").slice(0, 100)}`);
+
+      const llmResult = await generateThreadSummary({
+        threadId,
+        messages: threadMessages.map((m) => ({
+          userId: m.userId,
+          content: m.content,
+          createdAt: m.createdAt.toISOString(),
+        })),
+        existingCaseSummaries: admittedCases.length > 0 ? admittedCases : undefined,
+      });
+
+      if (llmResult) {
+        recap.caseUpdate = [
+          llmResult.currentPicture ? `Current picture: ${llmResult.currentPicture}` : "",
+          llmResult.context ? `Knowledge base: ${llmResult.context}` : "",
+          llmResult.openPoints ? `Open points: ${llmResult.openPoints}` : "",
+        ].filter(Boolean).join("\n") || recap.caseUpdate;
+
+        recap.situationSummary = llmResult.currentPicture || recap.situationSummary;
+
+        if (llmResult.emergingThreads.length > 0) {
+          recap.emergingThreads = llmResult.emergingThreads;
+        }
+
+        const activeIdx = segments.length;
+        if (llmResult.topicTracks && llmResult.topicTracks.length > 0) {
+          recap.topicTracks = llmResult.topicTracks.map((t) => ({
+            topicLabel: t.topicLabel,
+            firstPostAt: t.firstPostAt,
+            lastPostAt: t.lastPostAt,
+            summary: t.summary,
+            context: t.context ? t.context : undefined,
+            openPoints: t.openPoints ? t.openPoints : undefined,
+            isActive: t.segmentIndex === activeIdx,
+          }));
         }
       }
     } catch (err) {
       console.error("[recap] LLM enhancement failed, using regex fallback:", err);
+    }
+  }
+
+  /** Mixed-topic threads must not show one merged slab if LLM omitted topicTracks. */
+  if (multiTopicThread && !hasMultipleTopicCards()) {
+    attachHeuristicSplitSummaries();
+  }
+
+  /** If this thread has 2+ formal case records, override topicTracks with case-derived tracks. */
+  const caseDerivedTracks = buildTopicTracksFromCases(threadId);
+  if (caseDerivedTracks.length >= 2) {
+    recap.topicTracks = caseDerivedTracks;
+  }
+
+  /** When topicTracks exist, rewrite top-level fields from the last track to prevent cross-segment leaking. */
+  if (Array.isArray(recap.topicTracks) && recap.topicTracks.length >= 2) {
+    const lastTrack = recap.topicTracks[recap.topicTracks.length - 1];
+    if (lastTrack) {
+      recap.caseUpdate = [
+        lastTrack.summary ? `Current picture: ${lastTrack.summary}` : "",
+        lastTrack.context ? `Knowledge base: ${lastTrack.context}` : "",
+        lastTrack.openPoints ? `Open points: ${lastTrack.openPoints}` : "",
+      ].filter(Boolean).join("\n") || recap.caseUpdate;
+      recap.situationSummary = lastTrack.summary || recap.situationSummary;
     }
   }
 

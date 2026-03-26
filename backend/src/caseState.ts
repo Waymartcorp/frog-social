@@ -16,6 +16,18 @@ export interface CaseStateMessage {
   correctionSignal?: boolean;
 }
 
+/** Strict topic / time-bucket summaries for mixed threads (e.g. feeding vs ammonia). */
+export interface TopicTrackSummary {
+  topicLabel: string;
+  firstPostAt?: string;
+  lastPostAt?: string;
+  summary: string;
+  context?: string;
+  openPoints?: string;
+  /** Segment that contains the chronologically latest post in the thread */
+  isActive?: boolean;
+}
+
 export interface CaseState {
   threadId: string;
   caseUpdate: string;
@@ -30,6 +42,8 @@ export interface CaseState {
   suggestedNextSteps: string[];
   resolutionStatus: ResolutionStatus;
   sourceMessageIds: string[];
+  /** Present when LLM recap used strict per-segment summaries */
+  topicTracks?: TopicTrackSummary[];
 }
 
 export interface KeyStrategiesResult {
@@ -1428,7 +1442,7 @@ function buildConversationalCaseUpdate(params: {
   if (domainsInPlay.length > 0) reportedContextParts.push(domainsInPlay.slice(0, 1).join(" + "));
   const reportedContext =
     reportedContextParts.length > 0
-      ? `Reported context: ${reportedContextParts.join("; ")}.`
+      ? `Knowledge base: ${reportedContextParts.join("; ")}.`
       : "";
   const openPoints =
     missingDetails.length > 0

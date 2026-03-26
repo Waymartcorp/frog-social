@@ -658,6 +658,9 @@
         actionsTried: Array.isArray(rawCase.actionsTried) ? rawCase.actionsTried : [],
         domainsInPlay: Array.isArray(rawCase.domainsInPlay) ? rawCase.domainsInPlay : [],
         contributors: Array.isArray(rawCase.contributors) ? rawCase.contributors : [],
+        worthinessPriorDiscussion: String(rawCase.worthinessPriorDiscussion || "").trim(),
+        worthinessSharedProblem: String(rawCase.worthinessSharedProblem || "").trim(),
+        worthinessAnalogies: Array.isArray(rawCase.worthinessAnalogies) ? rawCase.worthinessAnalogies : [],
         resolutionSummary: rawCase.resolutionSummary || "",
         currentStatus: rawCase.currentStatus || normalizedStatus,
         createdAt: rawCase.createdAt || "",
@@ -714,6 +717,9 @@
           c.createdAt,
           c.updatedAt,
           dateText,
+          c.worthinessPriorDiscussion,
+          c.worthinessSharedProblem,
+          ...(c.worthinessAnalogies || []),
         ]
           .join(" ")
           .toLowerCase();
@@ -810,6 +816,19 @@
       const tried = compactUnique(caseRow.actionsTried, 5, 150);
       const activeNow = compactUnique([...focus, ...tried], 4, 150);
       const outcome = caseRow.resolutionSummary ? toPreview(caseRow.resolutionSummary, 320) : "Outcome not finalized yet.";
+      const wPrior = String(caseRow.worthinessPriorDiscussion || "").trim();
+      const wScale = String(caseRow.worthinessSharedProblem || "").trim();
+      const wAnalog = Array.isArray(caseRow.worthinessAnalogies) ? caseRow.worthinessAnalogies.filter(Boolean) : [];
+      const worthinessParagraph = (() => {
+        if (!wPrior && !wScale && !wAnalog.length) {
+          return "No case-worthiness assessment stored yet (populates when the LLM syncs this thread).";
+        }
+        const bits = [];
+        if (wPrior) bits.push(`Prior discussion / recurrence: ${wPrior}`);
+        if (wScale) bits.push(`Shared problem scale: ${wScale}`);
+        if (wAnalog.length) bits.push(`Analogous contexts: ${wAnalog.join("; ")}`);
+        return bits.join(" ");
+      })();
 
       const section = (title, items, fallback, asParagraph = false) => {
         if (asParagraph) {
@@ -826,6 +845,7 @@
 
       return `
         ${section("Initial case description", toPreview(caseRow.caseSummary, 420), "No initial summary yet.", true)}
+        ${section("Case worthiness signals", worthinessParagraph, "No worthiness signals yet.", true)}
         ${section("Emerging threads", emerging, "No emerging thread lines yet.")}
         ${section("Collaborative / shared views", collaborative, "No collaborative social views captured yet.")}
         ${section("Suggestions and recommendations", focus, "No recommendations captured yet.")}
@@ -869,6 +889,26 @@
               <div class="report-block">
                 <div class="report-title">Case Description #${c.caseNumber}</div>
                 <div class="report-body">${escapeHtml(toPreview(c.caseSummary, 380))}</div>
+              </div>
+              <div class="report-block">
+                <div class="report-title">Case worthiness signals</div>
+                <div class="report-body">${
+                  (() => {
+                    const p = String(c.worthinessPriorDiscussion || "").trim();
+                    const s = String(c.worthinessSharedProblem || "").trim();
+                    const a = Array.isArray(c.worthinessAnalogies) ? c.worthinessAnalogies.filter(Boolean) : [];
+                    if (!p && !s && !a.length) {
+                      return '<span style="color:var(--secondary-text);">No assessment stored yet.</span>';
+                    }
+                    let h = "";
+                    if (p) h += `<div><strong>Prior discussion / recurrence:</strong> ${escapeHtml(toPreview(p, 300))}</div>`;
+                    if (s) h += `<div style="margin-top:8px;"><strong>Shared problem scale:</strong> ${escapeHtml(toPreview(s, 300))}</div>`;
+                    if (a.length) {
+                      h += `<ul class="report-list" style="margin-top:8px;">${a.map((x) => `<li>${escapeHtml(toPreview(x, 200))}</li>`).join("")}</ul>`;
+                    }
+                    return h;
+                  })()
+                }</div>
               </div>
               <div class="report-block">
                 <div class="report-title">Emerging Threads</div>

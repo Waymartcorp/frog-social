@@ -21,6 +21,7 @@ It is a live husbandry/problem-discussion system that:
 The product must preserve a clear distinction between:
 - live discussion,
 - live interpretation,
+- **GENERAL KNOWLEDGE** (authoritative synthesis layer — see below),
 - emerging thread,
 - linked prior cases,
 - and archived formal cases.
@@ -42,6 +43,21 @@ The product must preserve a clear distinction between:
 11. **UI language must be concise, field-note style, and avoid generic AI prose.**
 12. **Do not let formatting changes silently alter persistence or case logic.**
 
+### GENERAL KNOWLEDGE (authoritative layer)
+
+**GENERAL KNOWLEDGE** is the product term for anything **deduced or strongly inferred** and presented as stable, reference-grade guidance — not raw chat.
+
+It may draw from, in combination:
+- **Posts** and **chat / thread history** (what was actually said, synthesized),
+- **Case history** (admitted cases, summaries, patterns the system legitimately recalls),
+- The **husbandry knowledge base** (framework docs),
+- **LLM synthesis** where the model connects dots that are **explicitly grounded** in the above (never invented facts).
+
+It is intentionally **subtle and authoritative**: when used properly it shapes how people think without pretending to be a transcript, and it **builds trust** by separating “what people said” from “what the system reasonably treats as known or well-supported here.”
+
+- **User-visible label:** the Live Chat Summary row and recap prefix use **Knowledge base** for this content (signals assertions backed by framework, cases, or grounded synthesis — e.g. feeding-behavior links to density).
+- Reserve this layer for **GENERAL KNOWLEDGE** (the concept) / **Knowledge base** (the UI term) — not generic filler or ungrounded speculation.
+
 ---
 
 ## 3. Correct Chat / Case Creation Logic
@@ -59,6 +75,7 @@ The live dynamics of chat are:
 
 3. **Running summary**
    - the system maintains a live parallel summary of the discussion
+   - **Knowledge base** (row) carries **GENERAL KNOWLEDGE**-class content: deduced / strongly inferred from posts, thread history, case recall, husbandry framework, and grounded LLM synthesis (see §2).
 
 4. **Emerging thread**
    - this is the live developing issue
@@ -77,10 +94,24 @@ The live dynamics of chat are:
 6. **Threshold to formal case**
    - once the live discussion passes threshold, it becomes a formal case
 
+### Case creation path (code-enforced)
+
+Cases are created from **topic segments**, not from the whole chat blob.
+
+1. `handleNewMessage` receives a new post.
+2. First: try to route the message to an existing open segment case (follow-up window: 10 days).
+3. If no existing case: run `promoteEmergingThreadsToCases` which:
+   a. Segments the thread by strict topic (`segmentThreadByStrictTopic`)
+   b. For each segment, evaluates maturity (`evaluateSegmentMaturity`, threshold >= 4)
+   c. Maturity signals: domain specificity, meaningful post count, distinct participants, KB/guideline support, related prior cases
+   d. Mature segments become formal cases with case number, date, structured summary
+4. Fallback: if segment promotion creates nothing (single topic, insufficient maturity), create a single-topic case from the thread.
+
 ### Minimum threshold for formal case creation
 At minimum:
 - a clear problem statement
 - plus at least one meaningful suggestion, comment, or response
+- maturity score >= 4 (from: domain specificity, post depth, KB support, related cases, participants)
 
 ### When threshold is crossed, the system must:
 - create a structured case record
@@ -114,11 +145,33 @@ Only the structured case is pushed to the archive.
 ## 4. Social Page Product Rules
 
 The Social page is a live, legible, field-note-style environment.
+**It is not the archive.** It must remain lightweight and current.
+
+### State model layers (do not collapse together)
+
+| Layer | Lifetime | Visible on Social | Storage |
+|---|---|---|---|
+| Social posts | Permanent | Always (feed) | messages.json |
+| Emerging threads | Temporary | Recent only (max 3) | Computed per request, not stored separately |
+| Topic track cards | Temporary | Max 2 active | Derived from formal cases, capped in UI |
+| Related/recalled cases | Temporary, age-out | Max 2 | Computed per request, score-penalized after 3 days |
+| Linked cases | Temporary | Max 4 | Computed from thread references |
+| Formal cases (Case History) | Permanent | Not directly — referenced via cards | cases.json |
+
+### Retention rules (code-enforced, not LLM-judged)
+
+- **Emerging threads**: max 3 shown, 2-hour window for local fallback. Note in UI: "Recent only — older threads move to Case History."
+- **Topic track cards**: max 2 shown on social page (sorted: active first, then by recency).
+- **Related/recalled cases**: max 2 shown. Backend applies age penalty: cases >3 days old get 50% score reduction, >7 days get 75% reduction. They naturally drop off the social page as they age.
+- **Linked cases**: max 4 shown, sorted by recency.
+- **Follow-up window**: 10 days. New relevant comments update an existing case within this window instead of creating duplicates. After 10 days, a new case is created.
 
 ### Required Social behavior
 - concise case summary on the right
-- live Emerging Threads on the right
-- linked summaries/cases from chat
+- live Emerging Threads on the right (max 3, recent only)
+- linked summaries/cases from chat (max 4)
+- related/recalled cases (max 2, age out after ~3 days)
+- topic track cards (max 2 active)
 - clean layout
 - less repetitive text
 - less generic AI language
@@ -131,9 +184,10 @@ Primary structure:
 - **Right side** = context rail
 
 Right rail should support:
-1. **Active Case Summary**
-2. **Emerging Threads**
-3. **Linked Cases / Summaries**
+1. **Active Case Summary** (max 2 topic track cards)
+2. **Emerging Threads** (max 3, recent only)
+3. **Related Cases** (max 2, age-out after ~3 days)
+4. **Linked Cases / Summaries** (max 4)
 
 ### Tone and style rules
 All UI text should feel like:
@@ -165,6 +219,18 @@ Not:
 ## 5. Archive / Case History Rules
 
 Case History is the archive of formalized cases.
+
+**Admission gate:** A case **record** can start from **one** meaningful Social post (`candidate` — visible in Social / API, not the main archive flood). **`admitted`** (shown in Case History default list) requires **≥2 meaningful posts**, so single posts or long auto-summaries alone cannot promote noise into the archive. **Extra admission path:** ≥2 meaningful posts plus strong **recurrence** (≥2 similar **admitted** prior cases in recall) **or** ≥1 similar admitted case **and** ≥2 **distinct participants** in the thread — still capped by the 2-post floor.
+
+### Case worthiness (validity) signals
+
+These **inform** promotion and user trust; they are **not** a substitute for grounded posts.
+
+1. **Prior discussion / recurrence** — Has this theme (or close variants) shown up in stored cases or repeated threads? Higher recurrence supports treating the topic as institutionally useful, not a one-off typo.
+2. **Shared problem scale** — Does the thread read as a narrow local nuance vs something many facilities could hit? Ground only in what posters said; never invent census or “how many labs.”
+3. **Analogous contexts** — Clear parallels the LLM can justify (e.g. ammonia / biofilter loading in other recirc systems such as finfish RAS) to connect dots and suggest transferable monitoring — **only** when relevant; no free-association.
+
+Implementation stores LLM `caseWorthiness` on the case record and passes **admitted** case titles/summaries into the summarizer as context. Recall-based counts feed the extra admission branch above.
 
 Case History should contain:
 - case number
@@ -430,4 +496,4 @@ If there is any ambiguity between:
 
 Do not collapse them together.
 
-They are distinct product layers and must remain distinct unless explicitly redesigned.
+They are distinct product layers and must remain distinct unless explicitly redesigned.l====
