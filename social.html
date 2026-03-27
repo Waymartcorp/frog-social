@@ -770,14 +770,7 @@
           </div>
         </div>
 
-        <div class="ai-panel">
-          <div class="ai-panel-header">Related Cases</div>
-          <div class="ai-panel-content">
-            <div id="similarCasesLive" class="recall-list">
-              <p style="margin: 0; color: var(--secondary-text);">No prior archive matches yet.</p>
-            </div>
-          </div>
-        </div>
+        <!-- Related Cases panel disabled for this stabilization pass -->
       </div>
     </div>
   </div>
@@ -1249,38 +1242,31 @@
     function renderCurrentCases() {
       const container = document.getElementById("currentCasesList");
       if (!container) return;
-      const cases = Array.isArray(latestSimilarCasesPayload?.currentCases) ? latestSimilarCasesPayload.currentCases : [];
-      if (!cases.length) {
-        const tracks = Array.isArray(latestRecapPayload?.topicTracks) ? latestRecapPayload.topicTracks : [];
-        if (tracks.length > 0) {
-          container.innerHTML = tracks.slice(0, 2).map((t) => {
-            const slug = String(t.topicLabel || "").replace(/-/g, " ");
-            const range = t.firstPostAt && t.lastPostAt
-              ? `${formatDateTimeLabel(t.firstPostAt)} \u2192 ${formatDateTimeLabel(t.lastPostAt)}`
-              : "";
-            const border = t.isActive ? "rgba(52, 211, 153, 0.35)" : "rgba(255,255,255,0.08)";
-            const bg = t.isActive ? "rgba(52, 211, 153, 0.06)" : "transparent";
-            return `
-              <div style="margin: 0 0 8px 0; padding: 10px 12px; border-radius: 10px; border: 1px solid ${border}; background: ${bg};">
-                <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--secondary-text);">${escapeHtml(slug)}</div>
-                ${range ? `<div style="font-size: 0.65rem; color: var(--secondary-text); margin: 4px 0 6px 0;">${escapeHtml(range)}</div>` : ""}
-                <div class="context-row"><div class="context-key">Summary</div><div class="context-value">${escapeHtml(toSummaryPreview(t.summary || ""))}</div></div>
-                ${String(t.context || "").trim() ? `<div class="context-row"><div class="context-key">Knowledge base</div><div class="context-value">${escapeHtml(toSummaryPreview(t.context))}</div></div>` : ""}
-                ${String(t.openPoints || "").trim() ? `<div class="context-row"><div class="context-key">Open</div><div class="context-value">${escapeHtml(toSummaryPreview(t.openPoints))}</div></div>` : ""}
-              </div>`;
-          }).join("");
-          return;
-        }
-        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">No cases created from this session yet. Cases form when emerging threads reach maturity.</p>`;
+      const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      const threadBase = String(currentThreadId || "").split("#")[0];
+      const currentCases = (caseMemory || [])
+        .filter((c) => {
+          const tid = String(c.threadId || "").split("#")[0];
+          const src = String(c.sourceThreadId || "").split("#")[0];
+          if (tid !== threadBase && src !== threadBase) return false;
+          const age = now - new Date(c.updatedAt || c.createdAt || 0).getTime();
+          return age <= FIVE_DAYS_MS;
+        })
+        .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+        .slice(0, 2);
+      if (!currentCases.length) {
+        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">No cases from this session yet. Cases form when emerging threads reach maturity.</p>`;
         return;
       }
-      container.innerHTML = cases.slice(0, 2).map((c) => {
-        const resolved = String(c.status || "").toUpperCase() === "RESOLVED";
+      container.innerHTML = currentCases.map((c) => {
+        const resolved = String(c.status || c.currentStatus || "").toUpperCase() === "RESOLVED";
+        const caseNum = Number(c.caseNumber || 0);
         return `
           <div class="recall-item">
-            <div class="recall-item-title">Case ${escapeHtml(String(c.caseNumber || "—"))}: ${escapeHtml(c.title || "")} ${resolved ? '<span style="margin-left:6px;padding:2px 8px;border-radius:999px;background:rgba(52,211,153,0.2);color:#6EE7B7;font-size:0.64rem;">resolved</span>' : ""}</div>
-            <div class="recall-item-meta">Last activity ${escapeHtml(formatDateTimeLabel(c.updatedAt))} · ${escapeHtml(c.status || "open")}</div>
-            <div class="recall-item-preview">${escapeHtml(toSummaryPreview(c.summaryPreview || ""))}</div>
+            <div class="recall-item-title">${caseNum > 0 ? `Case ${caseNum}: ` : ""}${escapeHtml(c.title || "Untitled")} ${resolved ? '<span style="margin-left:6px;padding:2px 8px;border-radius:999px;background:rgba(52,211,153,0.2);color:#6EE7B7;font-size:0.64rem;">resolved</span>' : ""}</div>
+            <div class="recall-item-meta">Last activity ${escapeHtml(formatDateTimeLabel(c.updatedAt))} · ${escapeHtml(c.status || c.currentStatus || "open")}</div>
+            <div class="recall-item-preview">${escapeHtml(toSummaryPreview(c.caseSummary || ""))}</div>
           </div>`;
       }).join("");
     }
@@ -1447,48 +1433,16 @@
       return response.json();
     }
 
-    function renderSimilarCases(payload) {
-      renderCurrentCases();
-      const container = document.getElementById("similarCasesLive");
-      if (!container) return;
-      const matches = Array.isArray(payload?.matches) ? payload.matches : [];
-      if (!matches.length) {
-        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text); line-height: 1.45;">No prior archive matches yet.</p>`;
-        return;
-      }
-      container.innerHTML = matches.slice(0, 2).map((item) => `
-        <div class="recall-item">
-          <div class="recall-item-title">Case ${escapeHtml(String(item.caseNumber || "n/a"))}: ${escapeHtml(item.title || item.threadId)} ${String(item.status || "").toUpperCase() === "RESOLVED" ? '<span style="margin-left:6px;padding:2px 8px;border-radius:999px;background:rgba(52,211,153,0.2);color:#6EE7B7;font-size:0.64rem;">resolved</span>' : ""}</div>
-          <div class="recall-item-meta">${escapeHtml(formatDateTimeLabel(item.updatedAt))} · ${escapeHtml(item.status || "open")}</div>
-          <div class="recall-item-preview">${escapeHtml(toSummaryPreview(item.summaryPreview || ""))}</div>
-        </div>
-      `).join("");
+    function renderSimilarCases() {
+      // Disabled for stabilization pass — no similar-case auto-calling.
     }
 
     async function refreshSimilarCasesForCurrentThread() {
-      if (!currentThreadId) return;
-      const container = document.getElementById("similarCasesLive");
-      if (container && !latestSimilarCasesPayload) {
-        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">Searching related cases...</p>`;
-      }
-      try {
-        const payload = await fetchThreadSimilarCases(currentThreadId);
-        latestSimilarCasesPayload = payload;
-        renderSimilarCases(payload);
-      } catch (error) {
-        if (container) {
-          container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">No similar cases found yet.</p>`;
-        }
-      }
+      // Disabled for stabilization pass.
     }
 
     function startSimilarityAutoRefresh() {
-      if (similarityRefreshIntervalId) {
-        clearInterval(similarityRefreshIntervalId);
-      }
-      similarityRefreshIntervalId = setInterval(() => {
-        refreshSimilarCasesForCurrentThread();
-      }, 15000);
+      // Disabled for stabilization pass.
     }
 
     function renderEmergingThreadsResult(payload) {
@@ -1643,11 +1597,6 @@
         renderMessages();
         rehydrationStatus = { label: `Thread ${requestedThreadId} · ${currentThreadMessages.length} posts`, tone: "ok" };
 
-        const simEl = document.getElementById("similarCasesLive");
-        if (simEl) {
-          simEl.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">Searching archived cases...</p>`;
-        }
-
         try {
           const fastRecap = await fetchThreadRecap(requestedThreadId, { fast: true });
           if (String(currentThreadId) === String(requestedThreadId)) {
@@ -1661,14 +1610,13 @@
 
         Promise.allSettled([
           fetchThreadRecap(requestedThreadId),
-          fetchThreadSimilarCases(requestedThreadId),
           fetchThreadEmergingThreads(requestedThreadId).catch((error) => {
             console.warn("Emerging strategy preload failed:", error);
             return null;
           }),
         ]).then((results) => {
           if (String(currentThreadId) !== String(requestedThreadId)) return;
-          const [recapResult, similarResult, emergingResult] = results;
+          const [recapResult, emergingResult] = results;
           threadRecapRefinementPending = false;
           if (recapResult.status === "fulfilled") {
             renderRecap(recapResult.value);
@@ -1676,20 +1624,12 @@
             console.warn("Full recap failed:", recapResult.reason);
             renderActiveCaseSummary();
           }
-          const similarCases = similarResult.status === "fulfilled" ? similarResult.value : { matches: [] };
-          if (similarResult.status === "rejected") {
-            console.warn("Similar-case preload failed:", similarResult.reason);
-          }
-          latestSimilarCasesPayload = similarCases;
-          renderSimilarCases(similarCases);
           const emerging = emergingResult.status === "fulfilled" ? emergingResult.value : null;
           if (emerging) {
             latestEmergingThreadsPayload = emerging;
             latestEmergingThreadsThreadId = requestedThreadId;
           }
         });
-
-        startSimilarityAutoRefresh();
       } catch (error) {
         threadRecapRefinementPending = false;
         currentThreadId = String(threadId || "").trim() || getDefaultThreadId();
@@ -1951,7 +1891,6 @@
         console.log("Thread reloaded, messages:", currentThreadMessages.length);
         fetchCasesFromApi().catch(() => caseMemory);
         populateCaseSelector();
-        refreshSimilarCasesForCurrentThread();
       }).catch((err) => console.warn("Background reload failed:", err));
     }
 
