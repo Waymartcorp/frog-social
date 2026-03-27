@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import fs from "node:fs";
 import path from "node:path";
-import { sanitizeGeneratedText } from "./caseState.js";
+import { sanitizeGeneratedText } from "./caseState";
 
 let openai: OpenAI | null = null;
 

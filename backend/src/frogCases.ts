@@ -1230,11 +1230,16 @@ export async function createCaseFromDirectIntake(input: DirectCaseInput): Promis
 
 /**
  * Maturity scoring for a single topic segment.
- * A segment is mature enough for case promotion when it has:
- * - specific domain coherence (not "general")
- * - sufficient post depth (even 1 substantive post, given other signals)
- * - support from knowledge base / MD guidelines
- * - related prior admitted cases
+ *
+ * A segment is case-worthy when it has enough combined signal from:
+ * - domain coherence (specific topic, not "general")
+ * - meaningful discussion (even 1 substantive post if other signals are strong)
+ * - KB / MD guideline relevance
+ * - similarity to prior cases or emerging threads
+ * - multiple participants
+ *
+ * Threshold is 3 — deliberately low so the system promotes early when
+ * the pattern is clearly case-worthy, even with limited posts.
  */
 function evaluateSegmentMaturity(
   segment: { domainId: string; topicLabel: string; messages: Array<{ userId: string; content: string; createdAt: string }> },
@@ -1284,12 +1289,13 @@ function evaluateSegmentMaturity(
   const kbLower = kbText.toLowerCase();
   const kbHits = terms.filter((t) => kbLower.includes(t)).length;
   if (kbHits >= 2) {
-    score += 2;
+    score += 3;
     reasons.push("strong KB/guideline support");
   } else if (kbHits >= 1) {
-    score += 1;
+    score += 2;
     reasons.push("some KB/guideline support");
   }
+
   if ((kbContext.memorySignals || []).length >= 2) {
     score += 1;
     reasons.push("prior cases cover related domains");
@@ -1312,7 +1318,7 @@ function evaluateSegmentMaturity(
     }
   }
 
-  const MATURITY_THRESHOLD = 4;
+  const MATURITY_THRESHOLD = 3;
   return {
     mature: score >= MATURITY_THRESHOLD,
     score,
