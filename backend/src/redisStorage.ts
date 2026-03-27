@@ -51,3 +51,15 @@ export async function redisSet<T>(key: string, value: T): Promise<boolean> {
     return false;
   }
 }
+
+export async function redisDel(key: string): Promise<boolean> {
+  const client = getRedis();
+  if (!client) return false;
+  try {
+    await client.del(key);
+    return true;
+  } catch (err) {
+    console.error(`[redisStorage] DEL ${key} failed:`, err);
+    return false;
+  }
+}

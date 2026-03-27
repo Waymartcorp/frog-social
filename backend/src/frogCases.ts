@@ -13,6 +13,7 @@ import {
 import { segmentThreadByStrictTopic, slugifyTopicLabel } from "./llmSummary";
 import { loadCasesFromDisk, saveCasesToDisk } from "./caseStorage";
 import { loadMessagesFromDisk, saveMessagesToDisk } from "./messageStorage";
+import { redisDel, isRedisConfigured } from "./redisStorage";
 import { buildKnowledgeContextForThread } from "./knowledgeContext";
 
 export type CaseStatus = "OPEN" | "MONITORING" | "RESOLVED";
@@ -798,6 +799,38 @@ async function persistCases() {
 
 async function persistMessages() {
   await saveMessagesToDisk(Array.from(messages.values()));
+}
+
+export async function resetAllState(): Promise<{ cleared: string[] }> {
+  const cleared: string[] = [];
+
+  cases.clear();
+  threadToCaseId.clear();
+  messages.clear();
+  cleared.push("in-memory: cases, threadToCaseId, messages");
+
+  await saveCasesToDisk([]);
+  cleared.push("file: cases.json (written empty)");
+
+  await saveMessagesToDisk([]);
+  cleared.push("file: messages.json (written empty)");
+
+  if (isRedisConfigured()) {
+    const delCases = await redisDel("frog-social:cases");
+    const delMessages = await redisDel("frog-social:messages");
+    if (delCases) cleared.push("redis: frog-social:cases deleted");
+    if (delMessages) cleared.push("redis: frog-social:messages deleted");
+    if (!delCases) cleared.push("redis: frog-social:cases DELETE FAILED");
+    if (!delMessages) cleared.push("redis: frog-social:messages DELETE FAILED");
+  } else {
+    cleared.push("redis: not configured (skipped)");
+  }
+
+  _initialized = false;
+  _initPromise = null;
+  cleared.push("initialization flag reset");
+
+  return { cleared };
 }
 
 function registerCaseInIndices(frogCase: FrogCase) {

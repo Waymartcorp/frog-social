@@ -31,6 +31,7 @@ import {
   buildHeuristicTopicTracksForThread,
   getCasesForChatThread,
   buildTopicTracksFromCases,
+  resetAllState,
   type CaseStatus,
   type CaseRecallResult,
   type ForumMessage,
@@ -423,6 +424,17 @@ app.get("/api/cases/number/:caseNumber", (req, res) => {
   const frogCase = getCaseByNumber(caseNumber);
   if (!frogCase) return res.status(404).json({ error: "Case not found" });
   return res.json(frogCase);
+});
+
+app.post("/api/admin/reset", async (_req, res) => {
+  try {
+    const result = await resetAllState();
+    console.log("[admin/reset] State cleared:", result.cleared);
+    res.json({ ok: true, cleared: result.cleared });
+  } catch (err) {
+    console.error("[admin/reset] Failed:", err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
 });
 
 export default app;

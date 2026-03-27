@@ -791,6 +791,16 @@
     })();
     const DEFAULT_THREAD_ID = "social-feed";
     const ACTIVE_THREAD_STORAGE_KEY = "frogSocialActiveThreadId";
+
+    if (new URLSearchParams(window.location.search).get("reset") === "1") {
+      try {
+        ["frogSocialProfile", "frogSocialStream", "frogSocialCases", "frogSocialColonies", "frogSocialActiveThreadId"].forEach((k) => localStorage.removeItem(k));
+        sessionStorage.clear();
+        console.log("[reset] Browser storage cleared");
+        window.history.replaceState({}, "", window.location.pathname);
+      } catch (e) { console.warn("[reset] Browser clear failed:", e); }
+    }
+
     let currentThreadId = "";
     let currentThreadMessages = [];
     let currentThreadCase = null;
