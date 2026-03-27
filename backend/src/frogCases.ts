@@ -10,7 +10,16 @@ import {
   type KeyStrategiesResult,
   type TopicTrackSummary,
 } from "./caseState";
-import { segmentThreadByStrictTopic, slugifyTopicLabel } from "./llmSummary";
+import {
+  segmentThreadByStrictTopic,
+  slugifyTopicLabel,
+  isLLMConfigured,
+  generateThreadSummary,
+  evaluateCaseSplitFromSegments,
+  heuristicTopicDivergence,
+  checkIfNewTopic,
+  type LLMSummaryResult,
+} from "./llmSummary";
 import { loadCasesFromDisk, saveCasesToDisk } from "./caseStorage";
 import { loadMessagesFromDisk, saveMessagesToDisk } from "./messageStorage";
 import { redisDel, isRedisConfigured } from "./redisStorage";
@@ -711,9 +720,8 @@ async function syncCaseLearningFromThread(frogCase: FrogCase): Promise<FrogCase>
     })
     .filter((line) => line.length > 12);
 
-  let llmResult: import("./llmSummary").LLMSummaryResult | null = null;
+  let llmResult: LLMSummaryResult | null = null;
   try {
-    const { isLLMConfigured, generateThreadSummary } = await import("./llmSummary");
     if (isLLMConfigured() && threadMessages.length > 0) {
       llmResult = await generateThreadSummary({
         threadId: sourceThreadId,
@@ -1531,7 +1539,6 @@ export async function ensureTopicSplitCasesForThread(chatThreadId: string): Prom
 
   let allowSplit = true;
   try {
-    const { isLLMConfigured, evaluateCaseSplitFromSegments } = await import("./llmSummary");
     if (isLLMConfigured()) {
       const ev = await evaluateCaseSplitFromSegments({
         threadId: base,
@@ -1675,13 +1682,6 @@ export async function handleNewMessage(message: ForumMessage): Promise<FrogCase 
 
   // Split threads when the post is clearly a new case topic (second post onward).
   if (existingThreadMessages.length >= 1) {
-    const {
-      isLLMConfigured,
-      checkIfNewTopic,
-      heuristicTopicDivergence,
-      slugifyTopicLabel,
-    } = await import("./llmSummary");
-
     let splitLabel: string | null = null;
     let splitReason = "";
 
