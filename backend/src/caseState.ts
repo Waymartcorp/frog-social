@@ -879,7 +879,7 @@ function buildEmergingThreads(
     if (/(feeding|off food|not eating|appetite)/.test(text)) signals.push("feeding behavior");
     if (/(ammonia|nitrite|nitrate|biofilter|nitrogen)/.test(text)) signals.push("nitrogen / biofilter");
     if (/(lesion|redness|ulcer|skin|abrasion)/.test(text)) signals.push("skin findings");
-    if (/(ph|conductivity|water source|ro|reverse osmosis)/.test(text)) signals.push("water parameters");
+    if (/((?:^|\s)ph(?:\s|$)|conductivity|water source|\bro\b|reverse osmosis|water chemistry)/.test(text)) signals.push("water parameters");
     if (/(density|competition|stocking)/.test(text)) signals.push("stocking density");
     if (/(mortality|death|died)/.test(text)) signals.push("mortality");
     if (signals.length === 0) return [];
