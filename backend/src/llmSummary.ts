@@ -244,7 +244,8 @@ GLOBAL FIELDS (backward compatibility — these describe the LAST segment ONLY):
 - "currentPicture" = copy the summary text of topicTracks[LAST].summary. Do NOT combine multiple segments.
 - Top-level "context" = copy topicTracks[LAST].context. Do NOT combine multiple segments.
 - Top-level "openPoints" = copy topicTracks[LAST].openPoints. Do NOT include open points from other segments.
-- emergingThreads: cross-segment themes are OK here (short labels), but do not contradict segment boundaries.
+- emergingThreads: short labels for developing themes.
+  CRITICAL: With only 1 post, return at most 1 emerging thread grounded to explicit content. Do NOT infer background themes, expand from MD files, or use canned phrasing like "is still being tracked" or "remains in background" unless multiple posts support that continuity.
 - recommendations: 1-3 actionable items for the LAST segment only; may reference KB. Empty array if none.
 - isQuestion / questionTopic: about the last segment if applicable.
 - caseWorthiness: assess the thread as a whole for archiving signals (honest uncertainty is OK):

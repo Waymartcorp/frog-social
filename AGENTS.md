@@ -107,11 +107,17 @@ Cases are created from **topic segments**, not from the whole chat blob.
    d. Mature segments become formal cases with case number, date, structured summary
 4. Fallback: if segment promotion creates nothing (single topic, insufficient maturity), create a single-topic case from the thread.
 
-### Minimum threshold for formal case creation
-At minimum:
-- a clear problem statement
-- plus at least one meaningful suggestion, comment, or response
-- maturity score >= 4 (from: domain specificity, post depth, KB support, related cases, participants)
+### Maturity criteria for case creation
+Case creation is NOT gated by post count alone.
+A case may be created when an emerging thread is mature enough based on any combination of:
+- meaningful discussion in chat (even a single substantive post)
+- coherent topic formation (specific domain, not "general")
+- similarity to prior emerging threads or prior cases
+- strong relevance to Frog Social MD files / system guidance
+
+This means the system may create a case even with limited posts if the problem pattern is clearly case-worthy.
+
+Maturity score threshold: **3** (from: domain specificity +2, post depth +1–3, KB/guideline support +2–3, related cases +1–2, multiple participants +1, prior case memory +1)
 
 ### When threshold is crossed, the system must:
 - create a structured case record

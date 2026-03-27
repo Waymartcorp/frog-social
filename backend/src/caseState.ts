@@ -870,6 +870,23 @@ function buildEmergingThreads(
   domains: string[],
   missingDetails: string[]
 ): string[] {
+  const postCount = messages.length;
+
+  if (postCount <= 1) {
+    if (postCount === 0) return [];
+    const text = normalize(messages[0].content);
+    const signals: string[] = [];
+    if (/(feeding|off food|not eating|appetite)/.test(text)) signals.push("feeding behavior");
+    if (/(ammonia|nitrite|nitrate|biofilter|nitrogen)/.test(text)) signals.push("nitrogen / biofilter");
+    if (/(lesion|redness|ulcer|skin|abrasion)/.test(text)) signals.push("skin findings");
+    if (/(ph|conductivity|water source|ro|reverse osmosis)/.test(text)) signals.push("water parameters");
+    if (/(density|competition|stocking)/.test(text)) signals.push("stocking density");
+    if (/(mortality|death|died)/.test(text)) signals.push("mortality");
+    if (signals.length === 0) return [];
+    if (signals.length === 1) return [`Initial observation: ${signals[0]}.`];
+    return [`Initial observation: ${signals.slice(0, 2).join(" and ")}.`];
+  }
+
   const correction = detectCorrectionSignals(messages);
   const hypothesis = analyzeHypothesisEvidence(messages, correction);
   const recentUnits = toSentenceUnits(messages).slice(-10);
@@ -886,44 +903,46 @@ function buildEmergingThreads(
   };
 
   if (signalLedger.observedTop.length >= 2 || hypothesis.top.mentionPosts >= 2) {
-    threads.push("Likely shared system stressor remains active across repeated posts.");
+    threads.push("Shared system stressor across repeated posts.");
   }
 
   if (hypothesis.dominant && hypothesis.top.combinedScore > 0) {
-    threads.push(`Repeated posts are converging on ${focalMap[hypothesis.top.key]}.`);
+    threads.push(`Posts converging on ${focalMap[hypothesis.top.key]}.`);
   } else if (hypothesis.top.combinedScore > 0 && hypothesis.second && hypothesis.second.combinedScore > 0) {
     threads.push(
-      `Current focal points are ${focalMap[hypothesis.top.key]} and ${focalMap[hypothesis.second.key]}.`
+      `Focal points: ${focalMap[hypothesis.top.key]} and ${focalMap[hypothesis.second.key]}.`
     );
   }
 
   if (/(feeding|off food|not eating|appetite)/.test(all) && /(ph|conductivity|ammonia|biofilter|filtration|water chemistry)/.test(all)) {
-    threads.push("Thread is narrowing to feeding pressure and water parameters/filtration.");
+    threads.push("Feeding pressure and water parameters discussed across posts.");
   }
   if (/(tropicalis)/.test(all) && /(died first|died|mortality|deaths)/.test(all)) {
-    threads.push("Species pattern (tropicalis losses first) points toward an environmental load signal.");
+    threads.push("Species pattern (tropicalis losses first) suggests environmental load.");
   }
   if (/(vet|veterinary|veterinarian)/.test(all)) {
-    threads.push("Veterinary comments are reinforcing the current focal points.");
+    threads.push("Veterinary input present.");
   }
 
   for (const row of signalLedger.observedTop.slice(0, 3)) {
     if (row.recentMentions >= 1 && row.observedMentions >= 2) {
-      threads.push(`${row.label} is repeated across posts.`);
+      threads.push(`${row.label} repeated across posts.`);
     }
   }
   for (const row of signalLedger.mixedTop.slice(0, 1)) {
-    threads.push(`${row.label} is discussed with mixed confidence.`);
+    if (postCount >= 3) {
+      threads.push(`${row.label} discussed with mixed confidence.`);
+    }
   }
 
-  if (/(feeding|off food|not eating|appetite)/.test(recentText)) {
-    threads.push("Feeding trend is still being tracked.");
+  if (postCount >= 3 && /(feeding|off food|not eating|appetite)/.test(recentText)) {
+    threads.push("Feeding trend active across multiple posts.");
   }
-  if (/(lesion|redness|ulcer|skin|abrasion)/.test(recentText)) {
-    threads.push("Skin findings remain under active review.");
+  if (postCount >= 3 && /(lesion|redness|ulcer|skin|abrasion)/.test(recentText)) {
+    threads.push("Skin findings under active review.");
   }
-  if (/(density|competition|handling|disturbance|traffic)/.test(all)) {
-    threads.push("Density and disturbance load remains in background.");
+  if (postCount >= 3 && /(density|competition|handling|disturbance|traffic)/.test(all)) {
+    threads.push("Density and disturbance load noted.");
   }
   return unique(threads.map((entry) => toFieldNoteText(entry)).filter(Boolean));
 }
