@@ -29,6 +29,13 @@ export type CaseStatus = "OPEN" | "MONITORING" | "RESOLVED";
 export type CaseAdmissionState = "candidate" | "admitted" | "hidden";
 export type CaseEntryMode = "social" | "direct" | "seed";
 
+export type SignalType = "observation" | "context" | "measurement" | "uncertain-measurement" | "suggestion";
+
+export interface PostSignal {
+  type: SignalType;
+  text: string;
+}
+
 export interface ForumMessage {
   id: string;
   userId: string;
@@ -38,6 +45,45 @@ export interface ForumMessage {
   createdAt: Date;
   role?: "expert" | "trusted" | "standard";
   correctionSignal?: boolean;
+  signals?: PostSignal[];
+}
+
+const MEASUREMENT_PATTERN = /\b(\d+\.?\d*)\s*(°?[cCfF]|ppm|mg\/[lL]|µS|us|mS|g\/[lL]|mm|cm|[lL](?:iters?|itres?)?|gal(?:lons?)?)\b/;
+const PH_PATTERN = /\bp[hH]\s*(?:=|is|reads?|of|around|~|:)?\s*\d+\.?\d*/;
+const UNCERTAINTY_PATTERN = /\b(uncalibrated|not calibrated|old (?:meter|probe|strip)|test strip|approximate|roughly|guess|unsure|not sure|don['']t know|haven['']t checked|maybe)\b/i;
+const SUGGESTION_PATTERN = /\b(recommend|should|suggest|try|consider|might want|advise|best (?:to|if)|priority|next step|plan to|worth|hypothesis|suspect|theory|could be|might be|may be|possibly|if it['']s|check whether)\b/i;
+const OBSERVATION_PATTERN = /\b(noticed|observed|saw|seeing|appears?|looks? like|found|spotted|dull|lethargic|ignoring|refusing|not (?:eating|feeding|responding)|reduced|swollen|redness|lesion|ulcer|mortality|died|death|bloated|listless|floating|hiding)\b/i;
+const CONTEXT_PATTERN = /\b(tank|rack|system|facility|colony|species|tropicalis|laevis|setup|recirculating|static|received|shipped|arrived|shipment|new frogs|stocking|density|adults? per|room|building|schedule|protocol|history|background|been (?:running|using|keeping)|for \d+ (?:weeks?|months?|years?|days?))\b/i;
+
+export function classifyPostSignals(text: string): PostSignal[] {
+  const sentences = text
+    .split(/(?<=[.!?;])\s+|(?:\r?\n)+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  const signals: PostSignal[] = [];
+
+  for (const sentence of sentences) {
+    const hasMeasurement = MEASUREMENT_PATTERN.test(sentence) || PH_PATTERN.test(sentence);
+    const hasUncertainty = UNCERTAINTY_PATTERN.test(sentence);
+    const hasSuggestion = SUGGESTION_PATTERN.test(sentence);
+    const hasObservation = OBSERVATION_PATTERN.test(sentence);
+    const hasContext = CONTEXT_PATTERN.test(sentence);
+
+    if (hasMeasurement && hasUncertainty) {
+      signals.push({ type: "uncertain-measurement", text: sentence });
+    } else if (hasMeasurement) {
+      signals.push({ type: "measurement", text: sentence });
+    } else if (hasSuggestion) {
+      signals.push({ type: "suggestion", text: sentence });
+    } else if (hasObservation) {
+      signals.push({ type: "observation", text: sentence });
+    } else if (hasContext) {
+      signals.push({ type: "context", text: sentence });
+    } else {
+      signals.push({ type: "observation", text: sentence });
+    }
+  }
+  return signals;
 }
 
 export interface FrogCase {
@@ -1021,6 +1067,9 @@ async function hydrateMessagesFromDisk() {
   messages.clear();
   const persistedMessages = await loadMessagesFromDisk();
   for (const message of persistedMessages) {
+    if (!message.signals || message.signals.length === 0) {
+      message.signals = classifyPostSignals(message.content);
+    }
     messages.set(message.id, message);
   }
 }
@@ -1298,6 +1347,8 @@ function evaluateSegmentMaturity(
     reasons.push(`${distinctUsers.size} participants`);
   }
 
+  // KB influence is intentionally light at the emerging-thread stage.
+  // Full KB enrichment happens later during case formation (buildCaseState).
   const kbContext = buildThreadKnowledgeContext(chatThreadId);
   const kbText = (kbContext.knownChecks || []).join(" ") + " " + (kbContext.memorySignals || []).join(" ");
   const segText = segment.messages.map((m) => m.content).join(" ").toLowerCase();
@@ -1311,34 +1362,9 @@ function evaluateSegmentMaturity(
   const terms = domainTerms[segment.domainId] || [];
   const kbLower = kbText.toLowerCase();
   const kbHits = terms.filter((t) => kbLower.includes(t)).length;
-  if (kbHits >= 2) {
-    score += 3;
-    reasons.push("strong KB/guideline support");
-  } else if (kbHits >= 1) {
-    score += 2;
-    reasons.push("some KB/guideline support");
-  }
-
-  if ((kbContext.memorySignals || []).length >= 2) {
+  if (kbHits >= 1) {
     score += 1;
-    reasons.push("prior cases cover related domains");
-  }
-
-  const segQuery = segText.slice(0, 300);
-  if (segQuery.length >= 30) {
-    const pool = Array.from(cases.values()).filter((c) => c.admissionState === "admitted");
-    const segLower = segQuery.toLowerCase();
-    const related = pool.filter((c) => {
-      const hay = `${c.title} ${c.caseSummary} ${c.domainsInPlay.join(" ")}`.toLowerCase();
-      return terms.some((t) => hay.includes(t) && segLower.includes(t));
-    });
-    if (related.length >= 3) {
-      score += 2;
-      reasons.push(`${related.length} related prior cases`);
-    } else if (related.length >= 1) {
-      score += 1;
-      reasons.push(`${related.length} related prior case(s)`);
-    }
+    reasons.push("KB/guideline relevance noted");
   }
 
   const MATURITY_THRESHOLD = 3;
@@ -1737,6 +1763,10 @@ export async function handleNewMessage(message: ForumMessage): Promise<FrogCase 
     }
   }
 
+  if (!message.signals || message.signals.length === 0) {
+    message.signals = classifyPostSignals(message.content);
+  }
+
   messages.set(message.id, message);
   await persistMessages();
 
@@ -2081,6 +2111,9 @@ export function buildThreadKeyStrategies(threadId: string): KeyStrategiesResult 
 
 // Optional explicit helper if you already know caseId
 export async function addReplyToCase(message: ForumMessage, caseId: string): Promise<FrogCase | null> {
+  if (!message.signals || message.signals.length === 0) {
+    message.signals = classifyPostSignals(message.content);
+  }
   messages.set(message.id, message);
   await persistMessages();
   const frogCase = cases.get(caseId);

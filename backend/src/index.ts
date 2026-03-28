@@ -105,7 +105,7 @@ app.post("/api/messages", async (req, res) => {
       correctionSignal: Boolean(req.body.correctionSignal),
     };
     const frogCase = await handleNewMessage(message);
-    res.json({ ok: true, threadId: message.threadId, messageId: message.id, frogCase });
+    res.json({ ok: true, threadId: message.threadId, messageId: message.id, signals: message.signals, frogCase });
   } catch (err) {
     console.error("[POST /api/messages] Error:", err);
     const msg = err instanceof Error ? err.message : "Failed to process message";

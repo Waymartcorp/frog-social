@@ -325,6 +325,16 @@
       border-radius: 9999px;
       font-size: 0.7rem;
     }
+    .signal-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .signal-badge {
+      display: inline-block; font-size: 0.6rem; font-weight: 600;
+      padding: 1px 7px; border-radius: 9999px; line-height: 1.6;
+    }
+    .signal-badge.observation { background: rgba(168,85,247,0.15); color: #A855F7; }
+    .signal-badge.context { background: rgba(100,116,139,0.2); color: #94A3B8; }
+    .signal-badge.measurement { background: rgba(52,211,153,0.15); color: #34D399; }
+    .signal-badge.uncertain-measurement { background: rgba(251,191,36,0.15); color: #FBBF24; }
+    .signal-badge.suggestion { background: rgba(56,189,248,0.15); color: #38BDF8; }
     .tag.case-tag {
       background: rgba(56, 189, 248, 0.15);
       color: var(--accent-cyan);
@@ -1680,6 +1690,7 @@
       const renderPost = (m, mutedByCluster = false) => {
         const text = String(m.text || m.content || "");
         const muted = Boolean(mutedByCluster);
+        const signalBadges = renderSignalBadges(m.signals);
 
         return `
           <article class="field-note-post ${muted ? "is-muted" : ""}" data-message-id="${escapeHtml(String(m.id || ""))}" data-thread-id="${escapeHtml(String(m.threadId || ""))}">
@@ -1688,6 +1699,7 @@
               <span class="note-author">${escapeHtml(String(m.author || m.userId || "anon"))}</span>
             </div>
             <div class="note-body">${escapeHtml(text)}</div>
+            ${signalBadges}
           </article>
         `;
       };
@@ -1744,6 +1756,31 @@
         content.includes("at this stage, the working strategy") ||
         content.includes("current status is")
       );
+    }
+
+    const SIGNAL_LABELS = {
+      observation: "observation",
+      context: "context",
+      measurement: "measurement",
+      "uncertain-measurement": "uncertain measurement",
+      suggestion: "suggestion / hypothesis",
+    };
+
+    function renderSignalBadges(signals) {
+      if (!Array.isArray(signals) || signals.length === 0) return "";
+      const typeCounts = {};
+      for (const sig of signals) {
+        const t = sig.type || "observation";
+        typeCounts[t] = (typeCounts[t] || 0) + 1;
+      }
+      const badges = Object.entries(typeCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([type]) => {
+          const label = SIGNAL_LABELS[type] || type;
+          return `<span class="signal-badge ${escapeHtml(type)}">${escapeHtml(label)}</span>`;
+        })
+        .join("");
+      return `<div class="signal-badges">${badges}</div>`;
     }
 
     function toSummaryPreview(text) {
