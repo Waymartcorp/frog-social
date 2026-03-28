@@ -282,14 +282,29 @@ export function getCasesForChatThread(chatThreadId: string): FrogCase[] {
 
 function humanTitleForSegmentLabel(topicLabel: string): string {
   const map: Record<string, string> = {
-    "feeding-observation": "Feeding observation & protocols",
-    "biofilter-ammonia-load": "Biofilter / ammonia & water quality",
-    "water-source-chemistry": "Water source & chemistry",
-    "system-setup": "System setup & hardware",
-    "health-disease": "Health & disease signals",
+    "feeding-observation": "Feeding response",
+    "feeding": "Feeding response",
+    "biofilter-ammonia-load": "Nitrogen & biofilter",
+    "biofilter": "Nitrogen & biofilter",
+    "ammonia": "Nitrogen & biofilter",
+    "nitrogen": "Nitrogen & biofilter",
+    "water-source-chemistry": "Water chemistry",
+    "water-chemistry": "Water chemistry",
+    "system-setup": "System setup",
+    "health-disease": "Health & disease",
+    "skin-findings": "Skin findings",
+    "mortality": "Mortality pattern",
+    "density": "Stocking density",
+    "flow-disturbance": "Flow disturbance",
     "general-discussion": "General discussion",
   };
-  return map[topicLabel] || topicLabel.replace(/-/g, " ").trim() || "Case topic";
+  const slug = topicLabel.toLowerCase().trim();
+  if (map[slug]) return map[slug];
+  for (const [key, val] of Object.entries(map)) {
+    if (slug.includes(key) || key.includes(slug)) return val;
+  }
+  const humanized = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return humanized || "Observation";
 }
 
 function earliestMessageDate(msgs: ForumMessage[]): Date {
@@ -372,25 +387,25 @@ function inferAdmissionStateForCase(
 
 function deriveTitleFromThread(messagesInThread: ForumMessage[]): string {
   const combined = messagesInThread.map((message) => message.content).join(" ").toLowerCase();
-  const hasShipmentContext = /\b(shipment|received|arrival|arrived|new frogs)\b/.test(combined);
-  const hasLesions = /\b(lesion|redness|ulcer|skin|abrasion|irritation)\b/.test(combined);
-  const hasFeedingDrop = /\b(reduced feeding|not eating|off food|feed response|feeding response)\b/.test(combined);
-  const hasFlowSignal = /\b(nozzle|flow|splash|vibration|pump)\b/.test(combined);
-  const hasMortality = /\b(mortality|deaths|dying)\b/.test(combined);
 
-  if (hasShipmentContext && hasLesions && hasFeedingDrop) {
-    return "Post-shipment lesions and reduced feeding in males";
-  }
-  if (hasFlowSignal && hasMortality) {
-    return "Flow/nozzle disturbance and mortality pattern review";
-  }
-  if (hasLesions && hasFeedingDrop) {
-    return "Lesions and reduced feeding under system stress";
-  }
+  const signals: string[] = [];
+  if (/\b(shipment|received|arrival|arrived|new frogs)\b/.test(combined)) signals.push("post-shipment");
+  if (/\b(lesion|redness|ulcer|skin|abrasion|irritation)\b/.test(combined)) signals.push("skin findings");
+  if (/\b(reduced feeding|not eating|off food|feed response|feeding response|appetite)\b/.test(combined)) signals.push("feeding response");
+  if (/\b(ammonia|nitrite|nitrate|biofilter|nitrogen)\b/.test(combined)) signals.push("nitrogen / biofilter");
+  if (/\b(nozzle|flow|splash|vibration|pump)\b/.test(combined)) signals.push("flow disturbance");
+  if (/\b(mortality|deaths|dying|died)\b/.test(combined)) signals.push("mortality");
+  if (/\b(density|stocking|competition)\b/.test(combined)) signals.push("stocking density");
+  if (/\b(ph|conductivity|water source|reverse osmosis)\b/.test(combined)) signals.push("water chemistry");
+  if (/\b(rack|plumbing|sump|tank setup)\b/.test(combined)) signals.push("system setup");
 
-  const firstLine = messagesInThread[0]?.content.split("\n")[0].trim() ?? "";
-  const title = firstLine || "Frog problem";
-  return title.length > 120 ? title.slice(0, 117).trimEnd() + "..." : title;
+  if (signals.length >= 2) {
+    return signals.slice(0, 3).join(" & ");
+  }
+  if (signals.length === 1) {
+    return signals[0].charAt(0).toUpperCase() + signals[0].slice(1);
+  }
+  return "Observation under review";
 }
 
 function deriveInitialTags(message: ForumMessage): string[] {

@@ -1180,7 +1180,7 @@
         el.innerHTML = `
           <p style="margin:0 0 10px 0; font-size:0.72rem; line-height:1.35; color: var(--secondary-text);">
             ${escapeHtml(threadMeta)}<br />
-            <span style="opacity:0.9;">Themes below describe angles in this same thread — not separate post counts.</span>
+            <span style="opacity:0.9;">Themes below describe developing angles in this thread.</span>
           </p>
           ${llmThreads
             .slice(0, 3)
@@ -1197,8 +1197,18 @@
 
       const messages = (currentThreadMessages || []).filter((message) => !isSystemGeneratedMessage(message));
       const clusters = buildEmergingThreadClusters(messages);
+      const hasCasesAbove = (caseMemory || []).some((c) => {
+        const tid = String(c.threadId || "").split("#")[0];
+        const src = String(c.sourceThreadId || "").split("#")[0];
+        const threadBase = String(currentThreadId || "").split("#")[0];
+        return tid === threadBase || src === threadBase;
+      });
       if (!clusters.length) {
-        el.innerHTML = `<p style="margin:0; color: var(--secondary-text);">No active thread clusters yet.</p>`;
+        if (hasCasesAbove) {
+          el.innerHTML = `<p style="margin:0; color: var(--secondary-text);">Topics from this session have matured into the cases shown above.</p>`;
+        } else {
+          el.innerHTML = `<p style="margin:0; color: var(--secondary-text);">No emerging threads yet. Threads form as discussion develops.</p>`;
+        }
         return;
       }
       el.innerHTML = clusters
@@ -1256,7 +1266,7 @@
         .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
         .slice(0, 2);
       if (!currentCases.length) {
-        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">No cases from this session yet. Cases form when emerging threads reach maturity.</p>`;
+        container.innerHTML = `<p style="margin: 0; color: var(--secondary-text);">No cases yet. Cases are created when discussion threads develop enough signal.</p>`;
         return;
       }
       container.innerHTML = currentCases.map((c) => {

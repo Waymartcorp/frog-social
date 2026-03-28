@@ -514,6 +514,21 @@ export function sanitizeGeneratedText(text: string): string {
   for (const [pattern, fix] of SPELLING_FIXES) {
     out = out.replace(pattern, fix);
   }
+
+  out = out.replace(/(Knowledge base:\s*){2,}/gi, "Knowledge base: ");
+  out = out.replace(/(Current picture:\s*){2,}/gi, "Current picture: ");
+  out = out.replace(/(Open points:\s*){2,}/gi, "Open points: ");
+  out = out.replace(/(Uncertain factors:\s*){2,}/gi, "Uncertain factors: ");
+  out = out.replace(/(Recent outcomes:\s*){2,}/gi, "Recent outcomes: ");
+
+  out = out.replace(/\bclearly indicates?\b/gi, "suggests");
+  out = out.replace(/\bdefinitely\b/gi, "likely");
+  out = out.replace(/\bconfirms? that\b/gi, "suggests that");
+  out = out.replace(/\bproves? that\b/gi, "suggests that");
+  out = out.replace(/\bwithout doubt\b/gi, "likely");
+  out = out.replace(/\bundoubtedly\b/gi, "likely");
+  out = out.replace(/\bis certain\b/gi, "appears likely");
+
   out = out
     .replace(/\s+/g, " ")
     .replace(/\s+([.,;:!?])/g, "$1")
@@ -1512,7 +1527,7 @@ function buildConversationalCaseUpdate(params: {
   if (domainsInPlay.length > 0) reportedContextParts.push(domainsInPlay.slice(0, 1).join(" + "));
   const reportedContext =
     reportedContextParts.length > 0
-      ? `Knowledge base: ${reportedContextParts.join("; ")}.`
+      ? `Context noted: ${reportedContextParts.join("; ")}.`
       : "";
   const openPoints =
     missingDetails.length > 0
