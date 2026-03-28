@@ -329,7 +329,9 @@ app.post("/api/cases/intake", async (req, res) => {
     return res.json({
       ok: true,
       caseId: frogCase.caseId || frogCase.id,
+      caseNumber: frogCase.caseNumber,
       threadId: frogCase.threadId,
+      title: frogCase.title,
       admissionState: frogCase.admissionState,
       frogCase,
     });
