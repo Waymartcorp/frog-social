@@ -851,27 +851,29 @@ function clipSentence(text: string, maxLen = 180): string {
 
 function buildSuggestedNextSteps(domains: string[], missingDetails: string[], planSnippets: string[]): string[] {
   if (domains.length === 0 && missingDetails.length === 0 && planSnippets.length === 0) return [];
-  const fromDomains = domains.flatMap((domain) => DOMAIN_TO_NEXT_STEPS[domain] ?? []);
+  const fromDomains = domains.flatMap((domain) =>
+    (DOMAIN_TO_NEXT_STEPS[domain] ?? []).map((s) => `[system] ${s}`)
+  );
   const fromMissing: string[] = [];
   const fromPlans = planSnippets
     .map((plan) => normalizePlanToStep(plan))
     .filter(Boolean)
-    .map((plan) => sentenceCase(plan));
+    .map((plan) => `[emerging] ${sentenceCase(plan)}`);
 
   if (missingDetails.some((detail) => detail.toLowerCase().includes("water source"))) {
-    fromMissing.push("Review water source and remineralization context.");
+    fromMissing.push("[system] Review water source and remineralization context.");
   }
   if (missingDetails.some((detail) => detail.toLowerCase().includes("ph"))) {
-    fromMissing.push("Measure pH with a calibrated meter.");
+    fromMissing.push("[system] Measure pH with a calibrated meter.");
   }
   if (missingDetails.some((detail) => detail.toLowerCase().includes("biofilter") || detail.toLowerCase().includes("system maturity"))) {
-    fromMissing.push("Review system maturity and biofilter status.");
+    fromMissing.push("[system] Review system maturity and biofilter status.");
   }
   if (missingDetails.some((detail) => detail.toLowerCase().includes("feeding"))) {
-    fromMissing.push("Observe feeding response directly.");
+    fromMissing.push("[system] Observe feeding response directly.");
   }
   if (missingDetails.some((detail) => detail.toLowerCase().includes("flow") || detail.toLowerCase().includes("vibration") || detail.toLowerCase().includes("pump"))) {
-    fromMissing.push("Review flow/nozzle splash and pump vibration.");
+    fromMissing.push("[system] Review flow/nozzle splash and pump vibration.");
   }
 
   return unique([...fromPlans, ...fromDomains, ...fromMissing]).slice(0, 8);
@@ -1074,21 +1076,21 @@ function buildCurrentStrategy(
 
   const prioritized = unique(
     filteredRankedKeys
-      .map((key) => baseSteps[key])
+      .map((key) => `[system] ${baseSteps[key]}`)
       .filter(Boolean)
   );
 
   const minStrategyItems = 3;
   const fallbackOrdered = hypothesisToKeys[leadingHypothesis]
     .filter((key) => (key === "feeding_density" ? explicitDensityConcern : true))
-    .map((key) => baseSteps[key]);
+    .map((key) => `[system] ${baseSteps[key]}`);
   const merged = unique([...prioritized, ...fallbackOrdered]).slice(0, 6);
   if (merged.length >= minStrategyItems) {
     return merged;
   }
   const fallbackAll = Object.entries(baseSteps)
     .filter(([key]) => (key === "feeding_density" ? explicitDensityConcern : true))
-    .map(([, value]) => value);
+    .map(([, value]) => `[system] ${value}`);
   return unique([...merged, ...fallbackAll]).slice(0, minStrategyItems);
 }
 

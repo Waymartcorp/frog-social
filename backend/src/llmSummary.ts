@@ -246,7 +246,11 @@ GLOBAL FIELDS (backward compatibility — these describe the LAST segment ONLY):
 - Top-level "openPoints" = copy topicTracks[LAST].openPoints. Do NOT include open points from other segments.
 - emergingThreads: short labels for developing themes.
   CRITICAL: With only 1 post, return at most 1 emerging thread grounded to explicit content. Do NOT infer background themes, expand from MD files, or use canned phrasing like "is still being tracked" or "remains in background" unless multiple posts support that continuity.
-- recommendations: 1-3 actionable items for the LAST segment only; may reference KB. Empty array if none.
+- recommendations: 1-3 actionable items for the LAST segment only. Each MUST be prefixed with a provenance tag:
+  [system] = directly supported by the husbandry knowledge base or MD guidance provided below
+  [case] = supported by prior stored cases or repeated case history patterns
+  [emerging] = surfaced from the current discussion or inference but not strongly grounded yet
+  Do NOT present all recommendations as equally grounded. If a recommendation comes from system guidance, say so. If it is an inference from the current thread, mark it [emerging].
 - isQuestion / questionTopic: about the last segment if applicable.
 - caseWorthiness: assess the thread as a whole for archiving signals (honest uncertainty is OK):
   - priorDiscussion: RELATED STORED CASES list only; never invent counts.
@@ -278,7 +282,7 @@ Respond with JSON only (no markdown fences):
     }
   ],
   "emergingThreads": ["theme 1", "theme 2"],
-  "recommendations": ["..."],
+  "recommendations": ["[system] Calibrate pH meter before trusting readings.", "[emerging] Monitor feeding response after temp adjustment."],
   "isQuestion": true/false,
   "questionTopic": "",
   "caseWorthiness": {
@@ -393,7 +397,11 @@ export async function generateThreadSummary(input: LLMSummaryInput): Promise<LLM
       context: sanitizeGeneratedText(String(parsed.context || "")),
       openPoints: sanitizeGeneratedText(String(parsed.openPoints || "")),
       emergingThreads: Array.isArray(parsed.emergingThreads) ? parsed.emergingThreads.map((s) => sanitizeGeneratedText(String(s))) : [],
-      recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.map((s) => sanitizeGeneratedText(String(s))) : [],
+      recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.map((s) => {
+        const cleaned = sanitizeGeneratedText(String(s));
+        if (/^\[(system|case|emerging)\]/.test(cleaned)) return cleaned;
+        return `[emerging] ${cleaned}`;
+      }) : [],
       isQuestion: Boolean(parsed.isQuestion),
       questionTopic: String(parsed.questionTopic || ""),
       caseWorthiness,

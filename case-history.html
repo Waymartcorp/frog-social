@@ -773,7 +773,29 @@
       if (!compact.length) {
         return `<div class="report-body" style="color: var(--secondary-text);">${escapeHtml(fallback)}</div>`;
       }
-      return `<ul class="report-list">${compact.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+      return `<ul class="report-list">${compact.map((item) => renderTaggedItem(item)).join("")}</ul>`;
+    }
+
+    function renderTaggedItem(raw) {
+      const tagMatch = String(raw).match(/^\[(system|case|emerging)\]\s*/i);
+      if (!tagMatch) {
+        return `<li>${escapeHtml(raw)}</li>`;
+      }
+      const basis = tagMatch[1].toLowerCase();
+      const text = raw.slice(tagMatch[0].length);
+      const badgeStyles = {
+        system: "background:rgba(56,189,248,0.15);color:#38BDF8;",
+        case: "background:rgba(52,211,153,0.15);color:#34D399;",
+        emerging: "background:rgba(251,191,36,0.15);color:#FBBF24;",
+      };
+      const badgeLabels = {
+        system: "system guidance",
+        case: "case history",
+        emerging: "emerging",
+      };
+      const style = badgeStyles[basis] || badgeStyles.emerging;
+      const label = badgeLabels[basis] || basis;
+      return `<li><span style="display:inline-block;font-size:0.6rem;font-weight:600;padding:1px 6px;border-radius:9999px;margin-right:6px;${style}">${escapeHtml(label)}</span>${escapeHtml(text)}</li>`;
     }
 
     function inferCrossCaseRecommendations(targetCase, allVisibleCases) {
@@ -800,7 +822,11 @@
       }
       return Array.from(scoreMap.values())
         .sort((a, b) => b.score - a.score)
-        .map((entry) => entry.text)
+        .map((entry) => {
+          const text = entry.text;
+          if (/^\[(system|case|emerging)\]/i.test(text)) return text;
+          return `[case] ${text}`;
+        })
         .slice(0, 4);
     }
 
