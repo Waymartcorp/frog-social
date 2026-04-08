@@ -713,7 +713,10 @@
       <a href="account.html">Profile</a>
       <a href="system-setup.html">New System Setup</a>
     </div>
-    <a href="index.html" class="nav-signout">Sign Out</a>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="nav-user-badge" id="navUserBadge" style="font-size:0.82rem; color:var(--accent-green); font-weight:500;"></span>
+      <a href="#" class="nav-signout" id="navSignOut">Sign Out</a>
+    </div>
   </nav>
 
   <div class="page-container">
@@ -742,6 +745,7 @@
         </div>
 
         <!-- Message input -->
+        <div id="postingAsLabel" style="font-size:0.75rem; color:var(--secondary-text); margin-bottom:6px; display:flex; align-items:center; gap:6px;"></div>
         <div class="message-input-area">
           <textarea id="messageInput" rows="3" placeholder="Share an observation, note, or question..." style="resize: vertical;"></textarea>
           <button class="btn-primary" id="postBtn">Post</button>
@@ -826,14 +830,21 @@
     }
     if (!requireAuth()) { throw new Error("redirect"); }
 
-    // Show logged-in user in nav
     (function initAuthNav() {
       const user = getAuthUser();
-      const signOutLink = document.querySelector(".nav-signout");
+      const badge = document.getElementById("navUserBadge");
+      if (badge && user) {
+        badge.textContent = user.username ? `@${user.username}` : user.displayName;
+      }
+      const signOutLink = document.getElementById("navSignOut");
       if (signOutLink) {
-        signOutLink.textContent = user ? `Sign Out (${user.displayName})` : "Sign Out";
-        signOutLink.href = "#";
         signOutLink.addEventListener("click", (e) => { e.preventDefault(); doLogout(); });
+      }
+      const postingAs = document.getElementById("postingAsLabel");
+      if (postingAs && user) {
+        const name = user.displayName || "User";
+        const handle = user.username ? ` @${user.username}` : "";
+        postingAs.textContent = `Posting as ${name}${handle}`;
       }
     })();
 

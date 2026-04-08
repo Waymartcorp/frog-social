@@ -554,7 +554,10 @@
       <a href="account.html">Profile</a>
       <a href="system-setup.html">New System Setup</a>
     </div>
-    <a href="index.html" class="nav-signout">Sign Out</a>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span id="navUserBadge" style="font-size:0.82rem; color:#34D399; font-weight:500;"></span>
+      <a href="#" class="nav-signout" id="navSignOut">Sign Out</a>
+    </div>
   </nav>
 
   <div class="page-container">
@@ -618,10 +621,12 @@
 
     (function initAuthNav() {
       const user = getAuthUser();
-      const signOutLink = document.querySelector(".nav-signout");
+      const badge = document.getElementById("navUserBadge");
+      if (badge && user) {
+        badge.textContent = user.username ? `@${user.username}` : user.displayName;
+      }
+      const signOutLink = document.getElementById("navSignOut");
       if (signOutLink) {
-        signOutLink.textContent = user ? `Sign Out (${user.displayName})` : "Sign Out";
-        signOutLink.href = "#";
         signOutLink.addEventListener("click", (e) => {
           e.preventDefault();
           localStorage.removeItem("frogSocialToken");
