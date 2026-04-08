@@ -1756,10 +1756,7 @@ export async function handleNewMessage(message: ForumMessage): Promise<FrogCase 
     }
 
     if (splitLabel) {
-      const slug = slugifyTopicLabel(splitLabel);
-      const newThreadId = `topic-${slug}-${Date.now().toString(36)}`;
-      console.log(`[handleNewMessage] New topic — ${splitReason}. Redirecting to thread ${newThreadId}`);
-      message.threadId = newThreadId;
+      console.log(`[handleNewMessage] Topic detected: ${splitLabel} (${splitReason}). Keeping on original thread for shared visibility.`);
     }
   }
 
