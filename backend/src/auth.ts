@@ -10,11 +10,13 @@ export type VerificationStatus = "verified" | "pending_review" | "unverified";
 
 export interface FrogUser {
   id: string;
+  username: string;
   email: string;
   displayName: string;
   passwordHash: string;
   role?: string;
   institution?: string;
+  avatarBase64?: string;
   verificationStatus: VerificationStatus;
   tosAcceptedAt?: string;
   createdAt: string;
@@ -46,8 +48,14 @@ export function classifyEmailDomain(email: string): VerificationStatus {
 
 export interface AuthTokenPayload {
   userId: string;
+  username: string;
   email: string;
   displayName: string;
+}
+
+export async function isUsernameTaken(username: string): Promise<boolean> {
+  const users = await loadUsers();
+  return users.some((u) => u.username === username.trim().toLowerCase());
 }
 
 async function loadUsers(): Promise<FrogUser[]> {
@@ -63,27 +71,41 @@ function generateId(): string {
   return `u-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export async function signUp(
-  email: string,
-  password: string,
-  displayName: string,
-  role?: string,
-  institution?: string,
-  tosAccepted?: boolean,
-): Promise<{ user: Omit<FrogUser, "passwordHash">; token: string }> {
-  const trimmedEmail = email.trim().toLowerCase();
-  if (!trimmedEmail || !password || password.length < 6) {
+const USERNAME_REGEX = /^[a-z0-9][a-z0-9._-]{1,28}[a-z0-9]$/;
+const MAX_AVATAR_BYTES = 150_000;
+
+export async function signUp(opts: {
+  email: string;
+  password: string;
+  username: string;
+  displayName: string;
+  role?: string;
+  institution?: string;
+  avatarBase64?: string;
+  tosAccepted?: boolean;
+}): Promise<{ user: Omit<FrogUser, "passwordHash">; token: string }> {
+  const trimmedEmail = opts.email.trim().toLowerCase();
+  const username = opts.username.trim().toLowerCase();
+
+  if (!trimmedEmail || !opts.password || opts.password.length < 6) {
     throw new Error("Email and password (min 6 chars) are required.");
   }
-  if (!displayName.trim()) {
+  if (!username || !USERNAME_REGEX.test(username)) {
+    throw new Error("Username must be 3–30 characters: lowercase letters, numbers, dots, hyphens, underscores.");
+  }
+  if (!opts.displayName.trim()) {
     throw new Error("Display name is required.");
   }
-  if (!tosAccepted) {
+  if (!opts.tosAccepted) {
     throw new Error("You must accept the Terms of Service to create an account.");
   }
 
+  if (opts.avatarBase64 && opts.avatarBase64.length > MAX_AVATAR_BYTES * 1.37) {
+    throw new Error("Profile photo is too large (max ~150 KB).");
+  }
+
   const verificationStatus = classifyEmailDomain(trimmedEmail);
-  if (verificationStatus === "pending_review" && !institution?.trim()) {
+  if (verificationStatus === "pending_review" && !opts.institution?.trim()) {
     throw new Error("Institution name is required for non-academic email addresses.");
   }
 
@@ -91,15 +113,20 @@ export async function signUp(
   if (users.some((u) => u.email === trimmedEmail)) {
     throw new Error("An account with this email already exists.");
   }
+  if (users.some((u) => u.username === username)) {
+    throw new Error("This username is already taken.");
+  }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await bcrypt.hash(opts.password, 10);
   const newUser: FrogUser = {
     id: generateId(),
+    username,
     email: trimmedEmail,
-    displayName: displayName.trim(),
+    displayName: opts.displayName.trim(),
     passwordHash,
-    role: role?.trim() || undefined,
-    institution: institution?.trim() || undefined,
+    role: opts.role?.trim() || undefined,
+    institution: opts.institution?.trim() || undefined,
+    avatarBase64: opts.avatarBase64 || undefined,
     verificationStatus,
     tosAcceptedAt: new Date().toISOString(),
     createdAt: new Date().toISOString(),
@@ -150,6 +177,7 @@ export async function listUsers(): Promise<Array<Omit<FrogUser, "passwordHash">>
 function signToken(user: FrogUser): string {
   const payload: AuthTokenPayload = {
     userId: user.id,
+    username: user.username,
     email: user.email,
     displayName: user.displayName,
   };
