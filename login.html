@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frog Social · Sign In</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --danger: #EF4444;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0; background: var(--app-body-bg); color: var(--primary-text);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    }
+    .auth-container {
+      width: 100%; max-width: 400px; padding: 24px;
+    }
+    .brand {
+      text-align: center; margin-bottom: 32px;
+    }
+    .brand .logo { font-size: 2.5rem; }
+    .brand h1 { font-size: 1.5rem; font-weight: 600; margin: 8px 0 4px; }
+    .brand p { color: var(--secondary-text); font-size: 0.85rem; margin: 0; }
+    .card {
+      background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;
+      padding: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+    .tabs {
+      display: flex; gap: 0; margin-bottom: 24px; border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .tab-btn {
+      flex: 1; padding: 10px; text-align: center; font-size: 0.85rem; font-weight: 600;
+      background: transparent; color: var(--secondary-text); border: none; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: rgba(52, 211, 153, 0.1); color: var(--accent-green);
+    }
+    label {
+      display: block; font-size: 0.78rem; color: var(--secondary-text);
+      font-weight: 500; margin-bottom: 5px; margin-top: 14px;
+    }
+    label:first-of-type { margin-top: 0; }
+    input {
+      width: 100%; background: #0F172A; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 11px 14px; font-size: 0.88rem;
+      color: var(--primary-text); transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input::placeholder { color: #6B7280; }
+    input:focus {
+      outline: none; border-color: var(--accent-green);
+      box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+    }
+    .btn-primary {
+      width: 100%; background: var(--accent-green); color: #0F172A; font-weight: 600;
+      padding: 12px; border-radius: 9999px; border: none; font-size: 0.9rem;
+      cursor: pointer; margin-top: 20px;
+      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3); transition: transform 0.15s, background 0.15s;
+    }
+    .btn-primary:hover { background: #6EE7B7; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .error-msg {
+      background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 10px; padding: 10px 14px; font-size: 0.82rem; color: var(--danger);
+      margin-top: 14px; display: none;
+    }
+    .error-msg.visible { display: block; }
+    .success-msg {
+      background: rgba(52, 211, 153, 0.15); border: 1px solid rgba(52, 211, 153, 0.3);
+      border-radius: 10px; padding: 10px 14px; font-size: 0.82rem; color: var(--accent-green);
+      margin-top: 14px; display: none;
+    }
+    .success-msg.visible { display: block; }
+    #signupFields { display: none; }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="brand">
+      <div class="logo">🐸</div>
+      <h1>Frog Social</h1>
+      <p>Structured intelligence for aquatic colony management</p>
+    </div>
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" id="tabLogin" type="button">Sign In</button>
+        <button class="tab-btn" id="tabSignup" type="button">Create Account</button>
+      </div>
+      <form id="authForm">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@facility.org" required autocomplete="email" />
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Password" required autocomplete="current-password" />
+        <div id="signupFields">
+          <label for="displayName">Display Name</label>
+          <input type="text" id="displayName" placeholder="e.g. Rob, Sarah, field-tech-1" />
+          <label for="role">Role (optional)</label>
+          <input type="text" id="role" placeholder="e.g. Colony manager, Vet, Postdoc" />
+          <label for="institution">Institution (optional)</label>
+          <input type="text" id="institution" placeholder="e.g. Vanderbilt Xenopus Facility" />
+        </div>
+        <button type="submit" class="btn-primary" id="submitBtn">Sign In</button>
+        <div class="error-msg" id="errorMsg"></div>
+        <div class="success-msg" id="successMsg"></div>
+      </form>
+    </div>
+  </div>
+  <script>
+    const API_BASE = "";
+    let mode = "login";
+
+    const tabLogin = document.getElementById("tabLogin");
+    const tabSignup = document.getElementById("tabSignup");
+    const signupFields = document.getElementById("signupFields");
+    const submitBtn = document.getElementById("submitBtn");
+    const errorMsg = document.getElementById("errorMsg");
+    const successMsg = document.getElementById("successMsg");
+
+    function setMode(m) {
+      mode = m;
+      errorMsg.className = "error-msg";
+      successMsg.className = "success-msg";
+      if (m === "login") {
+        tabLogin.classList.add("active");
+        tabSignup.classList.remove("active");
+        signupFields.style.display = "none";
+        submitBtn.textContent = "Sign In";
+      } else {
+        tabSignup.classList.add("active");
+        tabLogin.classList.remove("active");
+        signupFields.style.display = "block";
+        submitBtn.textContent = "Create Account";
+      }
+    }
+    tabLogin.addEventListener("click", () => setMode("login"));
+    tabSignup.addEventListener("click", () => setMode("signup"));
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.className = "error-msg visible";
+      successMsg.className = "success-msg";
+    }
+
+    document.getElementById("authForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorMsg.className = "error-msg";
+      successMsg.className = "success-msg";
+      submitBtn.disabled = true;
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        if (mode === "signup") {
+          const displayName = document.getElementById("displayName").value.trim();
+          const role = document.getElementById("role").value.trim();
+          const institution = document.getElementById("institution").value.trim();
+          if (!displayName) { showError("Display name is required."); submitBtn.disabled = false; return; }
+
+          const res = await fetch(`${API_BASE}/api/auth/signup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password, displayName, role, institution }),
+          });
+          const data = await res.json();
+          if (!data.ok) { showError(data.error || "Signup failed."); submitBtn.disabled = false; return; }
+
+          localStorage.setItem("frogSocialToken", data.token);
+          localStorage.setItem("frogSocialUser", JSON.stringify(data.user));
+          successMsg.textContent = "Account created. Redirecting...";
+          successMsg.className = "success-msg visible";
+          setTimeout(() => { window.location.href = "social.html"; }, 600);
+        } else {
+          const res = await fetch(`${API_BASE}/api/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+          const data = await res.json();
+          if (!data.ok) { showError(data.error || "Login failed."); submitBtn.disabled = false; return; }
+
+          localStorage.setItem("frogSocialToken", data.token);
+          localStorage.setItem("frogSocialUser", JSON.stringify(data.user));
+          successMsg.textContent = "Signed in. Redirecting...";
+          successMsg.className = "success-msg visible";
+          setTimeout(() => { window.location.href = "social.html"; }, 400);
+        }
+      } catch (err) {
+        showError("Network error. Please try again.");
+        submitBtn.disabled = false;
+      }
+    });
+
+    // If already logged in, go straight to social
+    const existingToken = localStorage.getItem("frogSocialToken");
+    if (existingToken) {
+      fetch(`${API_BASE}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${existingToken}` },
+      }).then((r) => r.json()).then((d) => {
+        if (d.ok) window.location.href = "social.html";
+      }).catch(() => {});
+    }
+  </script>
+</body>
+</html>

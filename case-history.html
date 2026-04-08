@@ -607,6 +607,30 @@
       if (!fromQuery) return "";
       return fromQuery.replace(/\/+$/, "");
     })();
+
+    // ─── Auth gate ──────────────────────────────────────────────
+    function getAuthToken() { return localStorage.getItem("frogSocialToken") || ""; }
+    function getAuthUser() {
+      try { return JSON.parse(localStorage.getItem("frogSocialUser") || "null"); }
+      catch { return null; }
+    }
+    if (!getAuthToken() || !getAuthUser()) { window.location.href = "login.html"; throw new Error("redirect"); }
+
+    (function initAuthNav() {
+      const user = getAuthUser();
+      const signOutLink = document.querySelector(".nav-signout");
+      if (signOutLink) {
+        signOutLink.textContent = user ? `Sign Out (${user.displayName})` : "Sign Out";
+        signOutLink.href = "#";
+        signOutLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          localStorage.removeItem("frogSocialToken");
+          localStorage.removeItem("frogSocialUser");
+          window.location.href = "login.html";
+        });
+      }
+    })();
+
     const showSeedOrTestCases = new URLSearchParams(window.location.search).get("showSeedOrTest") === "1";
     let currentFilter = "all";
     let resolvedOnly = false;

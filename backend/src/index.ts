@@ -6,6 +6,7 @@ import cors from "cors";
 import { randomUUID } from "crypto";
 import path from "node:path";
 import { isLLMConfigured, generateThreadSummary, segmentThreadByStrictTopic } from "./llmSummary";
+import { signUp, logIn, verifyToken, extractTokenFromHeader, getUserById, listUsers } from "./auth";
 import {
   ensureInitialized,
   rehydrateFromRedis,
@@ -90,7 +91,51 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// "Describe a problem" → create message + maybe new case
+// ─── Auth routes ───────────────────────────────────────────────
+app.post("/api/auth/signup", async (req, res) => {
+  try {
+    const { email, password, displayName, role, institution } = req.body;
+    const result = await signUp(email, password, displayName, role, institution);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Signup failed";
+    res.status(400).json({ ok: false, error: msg });
+  }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const result = await logIn(email, password);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Login failed";
+    res.status(401).json({ ok: false, error: msg });
+  }
+});
+
+app.get("/api/auth/me", async (req, res) => {
+  const token = extractTokenFromHeader(req.headers.authorization);
+  if (!token) {
+    return res.status(401).json({ ok: false, error: "Not authenticated" });
+  }
+  const payload = verifyToken(token);
+  if (!payload) {
+    return res.status(401).json({ ok: false, error: "Invalid or expired token" });
+  }
+  const user = await getUserById(payload.userId);
+  if (!user) {
+    return res.status(404).json({ ok: false, error: "User not found" });
+  }
+  return res.json({ ok: true, user });
+});
+
+app.get("/api/auth/users", async (_req, res) => {
+  const users = await listUsers();
+  res.json({ ok: true, users });
+});
+
+// ─── Message & case routes ─────────────────────────────────────
 app.post("/api/messages", async (req, res) => {
   try {
     const now = new Date();

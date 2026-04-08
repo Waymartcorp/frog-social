@@ -243,7 +243,7 @@
       <a href="account.html" class="active">Profile</a>
       <a href="system-setup.html">New System Setup</a>
     </div>
-    <a href="index.html" class="nav-signout">Sign Out</a>
+    <a href="#" class="nav-signout" id="navSignOut">Sign Out</a>
   </nav>
 
   <div class="page-container">
@@ -301,82 +301,49 @@
   </div>
 
   <script>
-    // LocalStorage helpers
-    function loadProfile() {
-      try {
-        const raw = localStorage.getItem("frogSocialProfile");
-        return raw ? JSON.parse(raw) : {};
-      } catch { return {}; }
+    // Auth gate
+    function getAuthToken() { return localStorage.getItem("frogSocialToken") || ""; }
+    function getAuthUser() {
+      try { return JSON.parse(localStorage.getItem("frogSocialUser") || "null"); }
+      catch { return null; }
+    }
+    if (!getAuthToken() || !getAuthUser()) { window.location.href = "login.html"; throw new Error("redirect"); }
+
+    const authUser = getAuthUser();
+    const signOutLink = document.getElementById("navSignOut");
+    if (signOutLink) {
+      signOutLink.textContent = authUser ? `Sign Out (${authUser.displayName})` : "Sign Out";
+      signOutLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        localStorage.removeItem("frogSocialToken");
+        localStorage.removeItem("frogSocialUser");
+        window.location.href = "login.html";
+      });
     }
 
-    function saveProfile(profile) {
-      localStorage.setItem("frogSocialProfile", JSON.stringify(profile));
-    }
-
-    function loadCases() {
-      try {
-        const raw = localStorage.getItem("frogSocialCases");
-        return raw ? JSON.parse(raw) : [];
-      } catch { return []; }
-    }
-
-    function loadSocial() {
-      try {
-        const raw = localStorage.getItem("frogSocialStream");
-        return raw ? JSON.parse(raw) : [];
-      } catch { return []; }
-    }
-
-    // Populate form with existing profile
     function populateForm() {
-      const p = loadProfile();
-      document.getElementById("accName").value = p.name || "";
-      document.getElementById("accInstitution").value = p.institution || "";
-      document.getElementById("accRole").value = p.role || "";
-      document.getElementById("accAuthorLabel").value = p.authorLabel || "";
-      document.getElementById("accNotes").value = p.notes || "";
+      document.getElementById("accName").value = authUser.displayName || "";
+      document.getElementById("accInstitution").value = authUser.institution || "";
+      document.getElementById("accRole").value = authUser.role || "";
+      document.getElementById("accAuthorLabel").value = "";
+      document.getElementById("accNotes").value = "";
     }
 
-    // Update activity stats
     function updateStats() {
-      const cases = loadCases();
-      const social = loadSocial();
-      const profile = loadProfile();
-      
-      // Count cases and posts by this user (simple name match)
-      const userName = profile.name || "";
-      
-      document.getElementById("statCases").textContent = cases.length;
-      document.getElementById("statResolved").textContent = cases.filter(c => c.status === "resolved").length;
-      document.getElementById("statPosts").textContent = social.length;
+      document.getElementById("statCases").textContent = "-";
+      document.getElementById("statResolved").textContent = "-";
+      document.getElementById("statPosts").textContent = "-";
     }
 
-    // Form submission
     const form = document.getElementById("profileForm");
     const successMessage = document.getElementById("successMessage");
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-
-      const profile = {
-        name: document.getElementById("accName").value.trim(),
-        institution: document.getElementById("accInstitution").value.trim(),
-        role: document.getElementById("accRole").value.trim(),
-        authorLabel: document.getElementById("accAuthorLabel").value.trim(),
-        notes: document.getElementById("accNotes").value.trim(),
-        updatedAt: new Date().toISOString()
-      };
-
-      saveProfile(profile);
-      
-      // Show success message
       successMessage.classList.add("active");
-      setTimeout(() => {
-        successMessage.classList.remove("active");
-      }, 3000);
+      setTimeout(() => { successMessage.classList.remove("active"); }, 3000);
     });
 
-    // Initialize
     populateForm();
     updateStats();
   </script>

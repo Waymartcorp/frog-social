@@ -743,11 +743,37 @@
       if (!fromQuery) return "";
       return fromQuery.replace(/\/+$/, "");
     })();
+
+    // ─── Auth gate ──────────────────────────────────────────────
+    function getAuthToken() { return localStorage.getItem("frogSocialToken") || ""; }
+    function getAuthUser() {
+      try { return JSON.parse(localStorage.getItem("frogSocialUser") || "null"); }
+      catch { return null; }
+    }
+    if (!getAuthToken() || !getAuthUser()) { window.location.href = "login.html"; throw new Error("redirect"); }
+
+    (function initAuthNav() {
+      const user = getAuthUser();
+      const signOutLink = document.querySelector(".nav-signout");
+      if (signOutLink) {
+        signOutLink.textContent = user ? `Sign Out (${user.displayName})` : "Sign Out";
+        signOutLink.href = "#";
+        signOutLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          localStorage.removeItem("frogSocialToken");
+          localStorage.removeItem("frogSocialUser");
+          window.location.href = "login.html";
+        });
+      }
+    })();
+
     const INTAKE_PARAMS = new URLSearchParams(window.location.search);
     const threadHintFromUrl = String(INTAKE_PARAMS.get("threadId") || "").trim();
     const titleHintFromUrl = String(INTAKE_PARAMS.get("title") || "").trim();
-    // LocalStorage helpers
+
     function loadProfile() {
+      const user = getAuthUser();
+      if (user) return { name: user.displayName, institution: user.institution || "" };
       try {
         const raw = localStorage.getItem("frogSocialProfile");
         return raw ? JSON.parse(raw) : {};
@@ -1248,7 +1274,7 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userId: profile.name || "demo-user",
+            userId: (getAuthUser() || {}).displayName || profile.name || "demo-user",
             title: (data.title || data.colonyName || "").trim() || undefined,
             narrative: directNarrative,
             threadId: threadHintFromUrl || (/^[A-Z0-9_-]{3,40}$/.test((data.title || "").trim()) ? (data.title || "").trim() : undefined),

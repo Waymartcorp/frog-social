@@ -795,6 +795,37 @@
     const DEFAULT_THREAD_ID = "social-feed";
     const ACTIVE_THREAD_STORAGE_KEY = "frogSocialActiveThreadId";
 
+    // ─── Auth gate ──────────────────────────────────────────────
+    function getAuthToken() { return localStorage.getItem("frogSocialToken") || ""; }
+    function getAuthUser() {
+      try { return JSON.parse(localStorage.getItem("frogSocialUser") || "null"); }
+      catch { return null; }
+    }
+    function requireAuth() {
+      if (!getAuthToken() || !getAuthUser()) {
+        window.location.href = "login.html";
+        return false;
+      }
+      return true;
+    }
+    function doLogout() {
+      localStorage.removeItem("frogSocialToken");
+      localStorage.removeItem("frogSocialUser");
+      window.location.href = "login.html";
+    }
+    if (!requireAuth()) { throw new Error("redirect"); }
+
+    // Show logged-in user in nav
+    (function initAuthNav() {
+      const user = getAuthUser();
+      const signOutLink = document.querySelector(".nav-signout");
+      if (signOutLink) {
+        signOutLink.textContent = user ? `Sign Out (${user.displayName})` : "Sign Out";
+        signOutLink.href = "#";
+        signOutLink.addEventListener("click", (e) => { e.preventDefault(); doLogout(); });
+      }
+    })();
+
     if (new URLSearchParams(window.location.search).get("reset") === "1") {
       try {
         ["frogSocialProfile", "frogSocialStream", "frogSocialCases", "frogSocialColonies", "frogSocialActiveThreadId"].forEach((k) => localStorage.removeItem(k));
@@ -829,6 +860,8 @@
     }
 
     function loadProfile() {
+      const user = getAuthUser();
+      if (user) return { name: user.displayName, authorLabel: "", institution: user.institution || "" };
       try {
         const raw = localStorage.getItem("frogSocialProfile");
         return raw ? JSON.parse(raw) : {};
@@ -1867,7 +1900,8 @@
       const linkedCase = caseMemory.find((entry) => String(entry.caseId || entry.id) === String(selectedCaseId));
       const targetThreadId = linkedCase?.threadId || currentThreadId || getDefaultThreadId();
       const fullContent = contextText ? `${text}\nContext: ${contextText}` : text;
-      const userName = profile.name ? profile.name : "demo-user";
+      const authUser = getAuthUser();
+      const userName = authUser ? authUser.displayName : (profile.name || "demo-user");
 
       let postedMessageId = "";
       let serverMovedToNewTopicThread = false;
