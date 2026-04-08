@@ -995,12 +995,18 @@
 
     function persistActiveThreadId(threadId) {
       const safe = String(threadId || "").trim();
-      if (!safe) return;
+      if (!safe || safe !== DEFAULT_THREAD_ID) return;
       sessionStorage.setItem(ACTIVE_THREAD_STORAGE_KEY, safe);
       localStorage.setItem(ACTIVE_THREAD_STORAGE_KEY, safe);
     }
 
     function getDefaultThreadId() {
+      // Handle ?reset=1 — clear stale thread and force social-feed
+      if (new URLSearchParams(window.location.search).get("reset") === "1") {
+        sessionStorage.removeItem(ACTIVE_THREAD_STORAGE_KEY);
+        localStorage.removeItem(ACTIVE_THREAD_STORAGE_KEY);
+        history.replaceState(null, "", window.location.pathname);
+      }
       const fromInput = String(document.getElementById("threadIdInput")?.value || "").trim();
       if (fromInput) return fromInput;
       const persisted = String(
@@ -1008,8 +1014,8 @@
         localStorage.getItem(ACTIVE_THREAD_STORAGE_KEY) ||
         ""
       ).trim();
-      if (persisted) return persisted;
-      // Prefer a stable default so prior persisted social posts remain visible after new login.
+      if (persisted === DEFAULT_THREAD_ID) return persisted;
+      // Always fall back to the shared feed — never restore a topic sub-thread
       persistActiveThreadId(DEFAULT_THREAD_ID);
       return DEFAULT_THREAD_ID;
     }
