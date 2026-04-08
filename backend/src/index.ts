@@ -6,7 +6,7 @@ import cors from "cors";
 import { randomUUID } from "crypto";
 import path from "node:path";
 import { isLLMConfigured, generateThreadSummary, segmentThreadByStrictTopic } from "./llmSummary";
-import { signUp, logIn, verifyToken, extractTokenFromHeader, getUserById, listUsers } from "./auth";
+import { signUp, logIn, verifyToken, extractTokenFromHeader, getUserById, listUsers, classifyEmailDomain } from "./auth";
 import {
   ensureInitialized,
   rehydrateFromRedis,
@@ -94,13 +94,22 @@ app.get("/api/health", (req, res) => {
 // ─── Auth routes ───────────────────────────────────────────────
 app.post("/api/auth/signup", async (req, res) => {
   try {
-    const { email, password, displayName, role, institution } = req.body;
-    const result = await signUp(email, password, displayName, role, institution);
+    const { email, password, displayName, role, institution, tosAccepted } = req.body;
+    const result = await signUp(email, password, displayName, role, institution, tosAccepted);
     res.json({ ok: true, ...result });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Signup failed";
     res.status(400).json({ ok: false, error: msg });
   }
+});
+
+app.post("/api/auth/check-email", (req, res) => {
+  const { email } = req.body;
+  if (!email || typeof email !== "string") {
+    return res.status(400).json({ ok: false, error: "Email is required." });
+  }
+  const status = classifyEmailDomain(email);
+  return res.json({ ok: true, verificationStatus: status });
 });
 
 app.post("/api/auth/login", async (req, res) => {

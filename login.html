@@ -7,35 +7,72 @@
   <style>
     * { box-sizing: border-box; }
     :root {
+      --app-shell-bg: #050810;
       --app-body-bg: #0B1020;
       --card-bg: #111827;
+      --card-border: #1F2937;
       --primary-text: #F9FAFB;
       --secondary-text: #9CA3AF;
       --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
+      --warning: #F97316;
       --danger: #EF4444;
     }
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0; background: var(--app-body-bg); color: var(--primary-text);
-      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      min-height: 100vh;
     }
-    .auth-container {
-      width: 100%; max-width: 400px; padding: 24px;
+
+    /* Navigation */
+    .nav-bar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
     }
-    .brand {
-      text-align: center; margin-bottom: 32px;
+    .nav-brand {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 1rem; font-weight: 600; color: var(--primary-text);
     }
-    .brand .logo { font-size: 2.5rem; }
-    .brand h1 { font-size: 1.5rem; font-weight: 600; margin: 8px 0 4px; }
-    .brand p { color: var(--secondary-text); font-size: 0.85rem; margin: 0; }
+    .nav-brand span { font-size: 1.25rem; }
+    .nav-links {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-links a {
+      font-size: 0.875rem; color: var(--secondary-text); text-decoration: none;
+      padding: 8px 14px; border-radius: 9999px; transition: all 0.15s ease;
+    }
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.05); color: var(--primary-text);
+    }
+    .nav-links a.active {
+      color: #6EE7B7; background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+
+    /* Page container */
+    .page-container {
+      max-width: 520px; margin: 0 auto; padding: 32px 24px;
+    }
+    .page-header { text-align: center; margin-bottom: 28px; }
+    .page-header h1 { font-size: 1.875rem; font-weight: 600; margin: 0 0 6px; }
+    .page-header p { color: var(--secondary-text); font-size: 0.88rem; margin: 0; }
+
+    /* Card */
     .card {
       background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(8px);
       border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;
       padding: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      margin-bottom: 20px;
     }
+
+    /* Tabs */
     .tabs {
-      display: flex; gap: 0; margin-bottom: 24px; border-radius: 12px; overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.1);
+      display: flex; gap: 0; margin-bottom: 24px; border-radius: 12px;
+      overflow: hidden; border: 1px solid rgba(255,255,255,0.1);
     }
     .tab-btn {
       flex: 1; padding: 10px; text-align: center; font-size: 0.85rem; font-weight: 600;
@@ -45,18 +82,20 @@
     .tab-btn.active {
       background: rgba(52, 211, 153, 0.1); color: var(--accent-green);
     }
+
+    /* Form */
     label {
       display: block; font-size: 0.78rem; color: var(--secondary-text);
       font-weight: 500; margin-bottom: 5px; margin-top: 14px;
     }
     label:first-of-type { margin-top: 0; }
-    input {
+    input, select {
       width: 100%; background: #0F172A; border: 1px solid rgba(255,255,255,0.1);
       border-radius: 10px; padding: 11px 14px; font-size: 0.88rem;
       color: var(--primary-text); transition: border-color 0.15s, box-shadow 0.15s;
     }
     input::placeholder { color: #6B7280; }
-    input:focus {
+    input:focus, select:focus {
       outline: none; border-color: var(--accent-green);
       box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
     }
@@ -64,10 +103,19 @@
       width: 100%; background: var(--accent-green); color: #0F172A; font-weight: 600;
       padding: 12px; border-radius: 9999px; border: none; font-size: 0.9rem;
       cursor: pointer; margin-top: 20px;
-      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3); transition: transform 0.15s, background 0.15s;
+      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
+      transition: transform 0.15s, background 0.15s;
     }
     .btn-primary:hover { background: #6EE7B7; transform: translateY(-1px); }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      width: 100%; background: transparent; color: var(--secondary-text); font-weight: 500;
+      padding: 10px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.85rem; cursor: pointer; margin-top: 10px; transition: all 0.15s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.05); color: var(--primary-text); }
+
+    /* Messages */
     .error-msg {
       background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);
       border-radius: 10px; padding: 10px 14px; font-size: 0.82rem; color: var(--danger);
@@ -80,132 +128,414 @@
       margin-top: 14px; display: none;
     }
     .success-msg.visible { display: block; }
-    #signupFields { display: none; }
+
+    /* Verification badge */
+    .email-status {
+      margin-top: 6px; font-size: 0.75rem; display: none;
+    }
+    .email-status.verified {
+      color: var(--accent-green); display: block;
+    }
+    .email-status.pending {
+      color: var(--warning); display: block;
+    }
+
+    /* Institution notice */
+    .institution-notice {
+      background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.2);
+      border-radius: 10px; padding: 10px 14px; font-size: 0.78rem; color: var(--warning);
+      margin-top: 10px; display: none; line-height: 1.5;
+    }
+    .institution-notice.visible { display: block; }
+
+    /* Step indicators */
+    .steps { display: none; }
+    .steps.visible { display: block; }
+    .step-indicator {
+      display: flex; gap: 8px; margin-bottom: 20px; justify-content: center;
+    }
+    .step-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.15); transition: background 0.2s;
+    }
+    .step-dot.active { background: var(--accent-green); }
+    .step-dot.done { background: rgba(52, 211, 153, 0.5); }
+
+    /* ToS */
+    .tos-container {
+      background: #0F172A; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 16px; max-height: 280px; overflow-y: auto;
+      font-size: 0.78rem; color: var(--secondary-text); line-height: 1.7;
+      margin-top: 10px;
+    }
+    .tos-container h3 { color: var(--primary-text); font-size: 0.88rem; margin: 12px 0 6px; }
+    .tos-container h3:first-child { margin-top: 0; }
+    .tos-container ul { padding-left: 18px; margin: 4px 0; }
+    .tos-checkbox {
+      display: flex; align-items: flex-start; gap: 10px; margin-top: 14px;
+    }
+    .tos-checkbox input[type="checkbox"] {
+      width: auto; margin-top: 2px; accent-color: var(--accent-green);
+    }
+    .tos-checkbox label {
+      font-size: 0.82rem; color: var(--primary-text); margin: 0; cursor: pointer;
+    }
+
+    /* Helper text */
+    .helper { font-size: 0.72rem; color: var(--secondary-text); margin-top: 4px; }
   </style>
 </head>
 <body>
-  <div class="auth-container">
-    <div class="brand">
-      <div class="logo">🐸</div>
-      <h1>Frog Social</h1>
+
+  <nav class="nav-bar">
+    <div class="nav-brand">
+      <span>🐸</span>
+      Frog Social
+    </div>
+    <div class="nav-links">
+      <a href="login.html" class="active">Sign In</a>
+    </div>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-header">
+      <h1>Welcome to Frog Social</h1>
       <p>Structured intelligence for aquatic colony management</p>
     </div>
+
     <div class="card">
       <div class="tabs">
         <button class="tab-btn active" id="tabLogin" type="button">Sign In</button>
         <button class="tab-btn" id="tabSignup" type="button">Create Account</button>
       </div>
-      <form id="authForm">
-        <label for="email">Email</label>
-        <input type="email" id="email" placeholder="you@facility.org" required autocomplete="email" />
-        <label for="password">Password</label>
-        <input type="password" id="password" placeholder="Password" required autocomplete="current-password" />
-        <div id="signupFields">
-          <label for="displayName">Display Name</label>
-          <input type="text" id="displayName" placeholder="e.g. Rob, Sarah, field-tech-1" />
-          <label for="role">Role (optional)</label>
-          <input type="text" id="role" placeholder="e.g. Colony manager, Vet, Postdoc" />
-          <label for="institution">Institution (optional)</label>
-          <input type="text" id="institution" placeholder="e.g. Vanderbilt Xenopus Facility" />
-        </div>
-        <button type="submit" class="btn-primary" id="submitBtn">Sign In</button>
-        <div class="error-msg" id="errorMsg"></div>
-        <div class="success-msg" id="successMsg"></div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" placeholder="you@university.edu" required autocomplete="email" />
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password" />
+        <button type="submit" class="btn-primary" id="loginBtn">Sign In</button>
+        <div class="error-msg" id="loginError"></div>
+        <div class="success-msg" id="loginSuccess"></div>
       </form>
+
+      <!-- SIGNUP FLOW -->
+      <div id="signupFlow" style="display:none;">
+        <div class="step-indicator">
+          <div class="step-dot active" id="dot1"></div>
+          <div class="step-dot" id="dot2"></div>
+          <div class="step-dot" id="dot3"></div>
+        </div>
+
+        <!-- Step 1: Account details -->
+        <div class="steps visible" id="step1">
+          <label for="signupEmail">Institutional Email</label>
+          <input type="email" id="signupEmail" placeholder="you@university.edu" required autocomplete="email" />
+          <div class="email-status" id="emailStatus"></div>
+          <div class="institution-notice" id="institutionNotice">
+            Your email domain was not recognized as an academic institution. Please provide your institution name below. Your account will be reviewed before full access is granted.
+          </div>
+
+          <label for="signupDisplayName">Display Name</label>
+          <input type="text" id="signupDisplayName" placeholder="e.g. Rob, Sarah, Dr. Chen" required />
+
+          <div id="institutionGroup" style="display:none;">
+            <label for="signupInstitution">Institution / University Name</label>
+            <input type="text" id="signupInstitution" placeholder="e.g. Stanford University, RIKEN, MRC LMB" />
+          </div>
+
+          <label for="signupRole">Role (optional)</label>
+          <input type="text" id="signupRole" placeholder="e.g. Colony manager, Postdoc, Vet, PI" />
+
+          <label for="signupPassword">Password</label>
+          <input type="password" id="signupPassword" placeholder="Min 6 characters" required autocomplete="new-password" />
+          <p class="helper">At least 6 characters</p>
+
+          <button type="button" class="btn-primary" id="step1Next">Continue</button>
+          <div class="error-msg" id="step1Error"></div>
+        </div>
+
+        <!-- Step 2: Terms of Service -->
+        <div class="steps" id="step2">
+          <label style="margin-top:0; font-size:0.9rem; color:var(--primary-text); font-weight:600;">Terms of Service</label>
+          <div class="tos-container" id="tosContent">
+            <h3>Frog Social Beta Terms of Service</h3>
+            <p>Last updated: March 2026</p>
+            <p>By creating a Frog Social account, you agree to the following terms for the beta program:</p>
+
+            <h3>1. Eligibility</h3>
+            <p>Frog Social is intended for researchers, veterinarians, colony managers, and staff affiliated with academic or research institutions who work with aquatic laboratory species. Accounts are limited to verified institutional affiliates during the beta period.</p>
+
+            <h3>2. Beta Program</h3>
+            <ul>
+              <li>Frog Social is in active development. Features, data formats, and availability may change.</li>
+              <li>The platform is provided "as is" without warranties of any kind.</li>
+              <li>We may reset application data during the beta period with advance notice when possible.</li>
+            </ul>
+
+            <h3>3. Not Medical or Veterinary Advice</h3>
+            <p>Frog Social provides structured intelligence tools to support husbandry decision-making. It does not replace professional veterinary care. All cases involving animal health should be escalated to qualified veterinary staff.</p>
+
+            <h3>4. User Content</h3>
+            <ul>
+              <li>You retain ownership of observations, notes, and data you post.</li>
+              <li>By posting, you grant Frog Social a license to store, process, and display your content within the platform.</li>
+              <li>Do not post personally identifiable information about individuals, proprietary protocols, or classified research data.</li>
+            </ul>
+
+            <h3>5. Acceptable Use</h3>
+            <ul>
+              <li>Use the platform for legitimate colony management and research support.</li>
+              <li>Do not misrepresent your institutional affiliation.</li>
+              <li>Do not attempt to access other users' accounts or data.</li>
+            </ul>
+
+            <h3>6. Privacy</h3>
+            <ul>
+              <li>We collect your email, display name, institution, and content you post.</li>
+              <li>Data is stored securely and used only to operate the platform.</li>
+              <li>We do not sell user data to third parties.</li>
+              <li>Beta data may be used in aggregate to improve the platform.</li>
+            </ul>
+
+            <h3>7. Account Termination</h3>
+            <p>We may suspend or terminate accounts that violate these terms, misrepresent affiliation, or are inactive for extended periods during the beta program.</p>
+
+            <h3>8. Changes to Terms</h3>
+            <p>We may update these terms. Continued use after changes constitutes acceptance.</p>
+          </div>
+          <div class="tos-checkbox">
+            <input type="checkbox" id="tosCheckbox" />
+            <label for="tosCheckbox">I have read and agree to the Frog Social Terms of Service</label>
+          </div>
+          <button type="button" class="btn-primary" id="step2Next" disabled>Create Account</button>
+          <button type="button" class="btn-secondary" id="step2Back">Back</button>
+          <div class="error-msg" id="step2Error"></div>
+          <div class="success-msg" id="step2Success"></div>
+        </div>
+      </div>
     </div>
   </div>
+
   <script>
     const API_BASE = "";
     let mode = "login";
+    let emailVerificationStatus = "unknown";
 
+    // Tab switching
     const tabLogin = document.getElementById("tabLogin");
     const tabSignup = document.getElementById("tabSignup");
-    const signupFields = document.getElementById("signupFields");
-    const submitBtn = document.getElementById("submitBtn");
-    const errorMsg = document.getElementById("errorMsg");
-    const successMsg = document.getElementById("successMsg");
+    const loginForm = document.getElementById("loginForm");
+    const signupFlow = document.getElementById("signupFlow");
 
     function setMode(m) {
       mode = m;
-      errorMsg.className = "error-msg";
-      successMsg.className = "success-msg";
+      clearMessages();
       if (m === "login") {
         tabLogin.classList.add("active");
         tabSignup.classList.remove("active");
-        signupFields.style.display = "none";
-        submitBtn.textContent = "Sign In";
+        loginForm.style.display = "block";
+        signupFlow.style.display = "none";
       } else {
         tabSignup.classList.add("active");
         tabLogin.classList.remove("active");
-        signupFields.style.display = "block";
-        submitBtn.textContent = "Create Account";
+        loginForm.style.display = "none";
+        signupFlow.style.display = "block";
+        showStep(1);
       }
     }
     tabLogin.addEventListener("click", () => setMode("login"));
     tabSignup.addEventListener("click", () => setMode("signup"));
 
-    function showError(msg) {
-      errorMsg.textContent = msg;
-      errorMsg.className = "error-msg visible";
-      successMsg.className = "success-msg";
+    function clearMessages() {
+      document.querySelectorAll(".error-msg, .success-msg").forEach(el => el.className = el.className.replace(" visible", ""));
     }
 
-    document.getElementById("authForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      errorMsg.className = "error-msg";
-      successMsg.className = "success-msg";
-      submitBtn.disabled = true;
+    // Step navigation
+    function showStep(n) {
+      document.getElementById("step1").classList.toggle("visible", n === 1);
+      document.getElementById("step2").classList.toggle("visible", n === 2);
+      document.getElementById("dot1").className = `step-dot ${n >= 1 ? (n > 1 ? "done" : "active") : ""}`;
+      document.getElementById("dot2").className = `step-dot ${n >= 2 ? "active" : ""}`;
+      document.getElementById("dot3").className = "step-dot";
+    }
 
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+    // Email verification check
+    let emailCheckTimer = null;
+    const signupEmail = document.getElementById("signupEmail");
+    const emailStatusEl = document.getElementById("emailStatus");
+    const institutionNotice = document.getElementById("institutionNotice");
+    const institutionGroup = document.getElementById("institutionGroup");
+
+    signupEmail.addEventListener("input", () => {
+      clearTimeout(emailCheckTimer);
+      const email = signupEmail.value.trim();
+      if (!email || !email.includes("@")) {
+        emailStatusEl.className = "email-status";
+        institutionNotice.classList.remove("visible");
+        institutionGroup.style.display = "none";
+        return;
+      }
+      emailCheckTimer = setTimeout(() => checkEmail(email), 400);
+    });
+
+    async function checkEmail(email) {
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/check-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        emailVerificationStatus = data.verificationStatus || "unknown";
+        if (emailVerificationStatus === "verified") {
+          emailStatusEl.textContent = "Recognized academic/institutional domain";
+          emailStatusEl.className = "email-status verified";
+          institutionNotice.classList.remove("visible");
+          institutionGroup.style.display = "none";
+        } else {
+          emailStatusEl.textContent = "Domain not recognized as academic — institution name required";
+          emailStatusEl.className = "email-status pending";
+          institutionNotice.classList.add("visible");
+          institutionGroup.style.display = "block";
+        }
+      } catch {
+        emailVerificationStatus = "unknown";
+        emailStatusEl.className = "email-status";
+      }
+    }
+
+    // ToS checkbox enables submit
+    const tosCheckbox = document.getElementById("tosCheckbox");
+    const step2Next = document.getElementById("step2Next");
+    tosCheckbox.addEventListener("change", () => {
+      step2Next.disabled = !tosCheckbox.checked;
+    });
+
+    // Step 1 → Step 2
+    document.getElementById("step1Next").addEventListener("click", () => {
+      clearMessages();
+      const email = signupEmail.value.trim();
+      const displayName = document.getElementById("signupDisplayName").value.trim();
+      const password = document.getElementById("signupPassword").value;
+      const institution = document.getElementById("signupInstitution").value.trim();
+      const errEl = document.getElementById("step1Error");
+
+      if (!email || !email.includes("@")) {
+        errEl.textContent = "A valid email is required.";
+        errEl.classList.add("visible"); return;
+      }
+      if (!displayName) {
+        errEl.textContent = "Display name is required.";
+        errEl.classList.add("visible"); return;
+      }
+      if (password.length < 6) {
+        errEl.textContent = "Password must be at least 6 characters.";
+        errEl.classList.add("visible"); return;
+      }
+      if (emailVerificationStatus === "pending_review" && !institution) {
+        errEl.textContent = "Institution name is required for non-academic email addresses.";
+        errEl.classList.add("visible"); return;
+      }
+      showStep(2);
+    });
+
+    // Step 2 back
+    document.getElementById("step2Back").addEventListener("click", () => {
+      clearMessages();
+      showStep(1);
+    });
+
+    // Step 2 → Submit signup
+    step2Next.addEventListener("click", async () => {
+      clearMessages();
+      step2Next.disabled = true;
+      step2Next.textContent = "Creating account...";
+      const errEl = document.getElementById("step2Error");
+
+      const email = signupEmail.value.trim();
+      const displayName = document.getElementById("signupDisplayName").value.trim();
+      const password = document.getElementById("signupPassword").value;
+      const role = document.getElementById("signupRole").value.trim();
+      const institution = document.getElementById("signupInstitution").value.trim();
 
       try {
-        if (mode === "signup") {
-          const displayName = document.getElementById("displayName").value.trim();
-          const role = document.getElementById("role").value.trim();
-          const institution = document.getElementById("institution").value.trim();
-          if (!displayName) { showError("Display name is required."); submitBtn.disabled = false; return; }
-
-          const res = await fetch(`${API_BASE}/api/auth/signup`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password, displayName, role, institution }),
-          });
-          const data = await res.json();
-          if (!data.ok) { showError(data.error || "Signup failed."); submitBtn.disabled = false; return; }
-
-          localStorage.setItem("frogSocialToken", data.token);
-          localStorage.setItem("frogSocialUser", JSON.stringify(data.user));
-          successMsg.textContent = "Account created. Redirecting...";
-          successMsg.className = "success-msg visible";
-          setTimeout(() => { window.location.href = "social.html"; }, 600);
-        } else {
-          const res = await fetch(`${API_BASE}/api/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-          });
-          const data = await res.json();
-          if (!data.ok) { showError(data.error || "Login failed."); submitBtn.disabled = false; return; }
-
-          localStorage.setItem("frogSocialToken", data.token);
-          localStorage.setItem("frogSocialUser", JSON.stringify(data.user));
-          successMsg.textContent = "Signed in. Redirecting...";
-          successMsg.className = "success-msg visible";
-          setTimeout(() => { window.location.href = "social.html"; }, 400);
+        const res = await fetch(`${API_BASE}/api/auth/signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email, password, displayName, role, institution,
+            tosAccepted: true,
+          }),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          errEl.textContent = data.error || "Signup failed.";
+          errEl.classList.add("visible");
+          step2Next.disabled = false;
+          step2Next.textContent = "Create Account";
+          return;
         }
-      } catch (err) {
-        showError("Network error. Please try again.");
-        submitBtn.disabled = false;
+        localStorage.setItem("frogSocialToken", data.token);
+        localStorage.setItem("frogSocialUser", JSON.stringify(data.user));
+        const succEl = document.getElementById("step2Success");
+        const statusNote = data.user.verificationStatus === "verified"
+          ? "Account verified. Redirecting..."
+          : "Account created (pending review). Redirecting...";
+        succEl.textContent = statusNote;
+        succEl.classList.add("visible");
+        setTimeout(() => { window.location.href = "social.html"; }, 800);
+      } catch {
+        errEl.textContent = "Network error. Please try again.";
+        errEl.classList.add("visible");
+        step2Next.disabled = false;
+        step2Next.textContent = "Create Account";
       }
     });
 
-    // If already logged in, go straight to social
+    // Login form
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearMessages();
+      const btn = document.getElementById("loginBtn");
+      btn.disabled = true;
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      const errEl = document.getElementById("loginError");
+
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          errEl.textContent = data.error || "Login failed.";
+          errEl.classList.add("visible");
+          btn.disabled = false;
+          return;
+        }
+        localStorage.setItem("frogSocialToken", data.token);
+        localStorage.setItem("frogSocialUser", JSON.stringify(data.user));
+        const succEl = document.getElementById("loginSuccess");
+        succEl.textContent = "Signed in. Redirecting...";
+        succEl.classList.add("visible");
+        setTimeout(() => { window.location.href = "social.html"; }, 400);
+      } catch {
+        errEl.textContent = "Network error. Please try again.";
+        errEl.classList.add("visible");
+        btn.disabled = false;
+      }
+    });
+
+    // If already logged in, redirect
     const existingToken = localStorage.getItem("frogSocialToken");
     if (existingToken) {
       fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${existingToken}` },
-      }).then((r) => r.json()).then((d) => {
+      }).then(r => r.json()).then(d => {
         if (d.ok) window.location.href = "social.html";
       }).catch(() => {});
     }

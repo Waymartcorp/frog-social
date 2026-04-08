@@ -6,6 +6,8 @@ const REDIS_USERS_KEY = "frog-social:users";
 const JWT_SECRET = process.env.FROG_JWT_SECRET || "frog-social-beta-secret-2026";
 const TOKEN_EXPIRY = "30d";
 
+export type VerificationStatus = "verified" | "pending_review" | "unverified";
+
 export interface FrogUser {
   id: string;
   email: string;
@@ -13,7 +15,33 @@ export interface FrogUser {
   passwordHash: string;
   role?: string;
   institution?: string;
+  verificationStatus: VerificationStatus;
+  tosAcceptedAt?: string;
   createdAt: string;
+}
+
+const ACADEMIC_TLDS: string[] = [
+  ".edu",
+  ".ac.uk", ".ac.jp", ".ac.kr", ".ac.nz", ".ac.za", ".ac.il", ".ac.in",
+  ".ac.at", ".ac.be", ".ac.th", ".ac.id", ".ac.ke", ".ac.tz", ".ac.ug",
+  ".ac.rw", ".ac.ir", ".ac.cn", ".ac.bd",
+  ".edu.au", ".edu.cn", ".edu.br", ".edu.mx", ".edu.sg", ".edu.hk",
+  ".edu.tw", ".edu.pl", ".edu.ar", ".edu.co", ".edu.pe", ".edu.ec",
+  ".edu.uy", ".edu.pk", ".edu.my", ".edu.ph", ".edu.vn", ".edu.ng",
+  ".edu.gh", ".edu.et", ".edu.eg", ".edu.za", ".edu.tr", ".edu.sa",
+  ".edu.qa", ".edu.lb", ".edu.jo",
+  ".uni-", ".univ-",
+  ".uu.se", ".lu.se", ".gu.se", ".su.se", ".liu.se", ".kth.se",
+  ".gov",
+];
+
+export function classifyEmailDomain(email: string): VerificationStatus {
+  const lower = email.trim().toLowerCase();
+  const domain = lower.split("@")[1] || "";
+  for (const tld of ACADEMIC_TLDS) {
+    if (domain.endsWith(tld) || domain.includes(tld)) return "verified";
+  }
+  return "pending_review";
 }
 
 export interface AuthTokenPayload {
@@ -41,13 +69,22 @@ export async function signUp(
   displayName: string,
   role?: string,
   institution?: string,
+  tosAccepted?: boolean,
 ): Promise<{ user: Omit<FrogUser, "passwordHash">; token: string }> {
   const trimmedEmail = email.trim().toLowerCase();
-  if (!trimmedEmail || !password || password.length < 4) {
-    throw new Error("Email and password (min 4 chars) are required.");
+  if (!trimmedEmail || !password || password.length < 6) {
+    throw new Error("Email and password (min 6 chars) are required.");
   }
   if (!displayName.trim()) {
     throw new Error("Display name is required.");
+  }
+  if (!tosAccepted) {
+    throw new Error("You must accept the Terms of Service to create an account.");
+  }
+
+  const verificationStatus = classifyEmailDomain(trimmedEmail);
+  if (verificationStatus === "pending_review" && !institution?.trim()) {
+    throw new Error("Institution name is required for non-academic email addresses.");
   }
 
   const users = await loadUsers();
@@ -63,6 +100,8 @@ export async function signUp(
     passwordHash,
     role: role?.trim() || undefined,
     institution: institution?.trim() || undefined,
+    verificationStatus,
+    tosAcceptedAt: new Date().toISOString(),
     createdAt: new Date().toISOString(),
   };
 
