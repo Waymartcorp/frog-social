@@ -2131,6 +2131,20 @@
         console.error("Frog Social init loadThread failed:", error);
         renderMessages();
       }
+
+      // Poll for new messages from other users every 15 seconds
+      setInterval(async () => {
+        if (!currentThreadId) return;
+        try {
+          const fresh = await fetchThreadMessages(currentThreadId);
+          if (Array.isArray(fresh) && fresh.length !== currentThreadMessages.length) {
+            currentThreadMessages = fresh;
+            renderMessages();
+            await fetchCasesFromApi().catch(() => {});
+            populateCaseSelector();
+          }
+        } catch {}
+      }, 15000);
     })();
   </script>
 </body>
