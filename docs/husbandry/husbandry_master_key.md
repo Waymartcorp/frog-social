@@ -89,6 +89,7 @@ The AI should try to recognize when these are violated and steer the user back t
 4. **Temperature & swings**
    - Frogs tolerate a range but **swings** and extremes are stressful.
    - Sudden changes after water changes are a classic trigger for “frogs off food” and disease.
+   - Xenopus are ectothermic: moderate warming can increase feeding drive, while overheating or rapid shifts can suppress feeding response.
 
 5. **pH & meter calibration**
    - Many labs use pH meters that are not calibrated → “false comfort”.
@@ -126,6 +127,8 @@ The AI should try to recognize when these are violated and steer the user back t
       - Start with a small amount.
       - Watch for response.
       - Incrementally feed small amounts, keeping frogs actively feeding for ~10 minutes.
+    - Do not assume surface feeding is inherently better than bottom feeding (or vice versa).
+    - The operational signal is feeding access and intake across animals, regardless of where food is consumed.
     - AI should ask:
       - “Do you watch them feed?”
       - “How long does feeding last?”

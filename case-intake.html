@@ -755,6 +755,13 @@
     }
     if (!getAuthToken() || !getAuthUser()) { window.location.href = "login.html"; throw new Error("redirect"); }
 
+    function authJsonHeaders() {
+      const token = getAuthToken();
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      return headers;
+    }
+
     (function initAuthNav() {
       const user = getAuthUser();
       const badge = document.getElementById("navUserBadge");
@@ -1277,9 +1284,8 @@
       try {
         const response = await fetch(`${API_BASE}/api/cases/intake`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authJsonHeaders(),
           body: JSON.stringify({
-            userId: (getAuthUser() || {}).displayName || profile.name || "demo-user",
             title: (data.title || data.colonyName || "").trim() || undefined,
             narrative: directNarrative,
             threadId: threadHintFromUrl || (/^[A-Z0-9_-]{3,40}$/.test((data.title || "").trim()) ? (data.title || "").trim() : undefined),
@@ -1294,6 +1300,10 @@
           throw new Error("Intake endpoint returned HTML instead of JSON. Confirm production API routing is enabled.");
         } else {
           throw new Error("Unexpected non-JSON response from intake endpoint.");
+        }
+        if (response.status === 401) {
+          window.location.href = "login.html";
+          return;
         }
         if (!response.ok) {
           throw new Error(payload?.error || `Submit failed (${response.status})`);

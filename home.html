@@ -4,6 +4,17 @@
   <meta charset="UTF-8" />
   <title>Frog Social · Home</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("frogSocialToken");
+        var u = localStorage.getItem("frogSocialUser");
+        if (!t || !u) window.location.replace("login.html");
+      } catch (e) {
+        window.location.replace("login.html");
+      }
+    })();
+  </script>
   <style>
     * { box-sizing: border-box; }
     :root {
@@ -200,7 +211,7 @@
       <a href="account.html">Profile</a>
       <a href="system-setup.html">New System Setup</a>
     </div>
-    <a href="index.html" class="nav-signout">Sign Out</a>
+    <a href="login.html" class="nav-signout" id="navSignOut">Sign out</a>
   </nav>
 
   <div class="page-container">
@@ -234,5 +245,18 @@
       </div>
     </div>
   </div>
+  <script>
+    (function () {
+      var el = document.getElementById("navSignOut");
+      if (el) {
+        el.addEventListener("click", function (e) {
+          e.preventDefault();
+          localStorage.removeItem("frogSocialToken");
+          localStorage.removeItem("frogSocialUser");
+          window.location.href = "login.html";
+        });
+      }
+    })();
+  </script>
 </body>
 </html>

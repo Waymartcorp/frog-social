@@ -6,7 +6,18 @@ import cors from "cors";
 import { randomUUID } from "crypto";
 import path from "node:path";
 import { isLLMConfigured, generateThreadSummary, segmentThreadByStrictTopic } from "./llmSummary";
-import { signUp, logIn, verifyToken, extractTokenFromHeader, getUserById, listUsers, classifyEmailDomain, isUsernameTaken } from "./auth";
+import { sanitizeGeneratedText, stripAllSectionPrefixes, deduplicateSentences } from "./caseState";
+import {
+  signUp,
+  logIn,
+  verifyToken,
+  extractTokenFromHeader,
+  getUserById,
+  listUsers,
+  classifyEmailDomain,
+  isUsernameTaken,
+  type AuthTokenPayload,
+} from "./auth";
 import {
   ensureInitialized,
   rehydrateFromRedis,
@@ -64,11 +75,17 @@ app.use(
       callback(new Error("CORS blocked"));
     },
     methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(bodyParser.json());
 app.use(express.static(path.resolve(__dirname, "..", "..")));
+
+function getActorFromRequest(req: express.Request): AuthTokenPayload | null {
+  const token = extractTokenFromHeader(req.headers.authorization);
+  if (!token) return null;
+  return verifyToken(token);
+}
 
 app.use(async (_req, _res, next) => {
   try {
@@ -156,10 +173,15 @@ app.get("/api/auth/users", async (_req, res) => {
 // ─── Message & case routes ─────────────────────────────────────
 app.post("/api/messages", async (req, res) => {
   try {
+    const actor = getActorFromRequest(req);
+    if (!actor) {
+      return res.status(401).json({ ok: false, error: "Authentication required" });
+    }
     const now = new Date();
     const message: ForumMessage = {
       id: randomUUID(),
-      userId: req.body.userId || "demo-user",
+      userId: actor.username,
+      authorDisplayName: actor.displayName,
       facilityId: req.body.facilityId,
       threadId: req.body.threadId || randomUUID(),
       content: req.body.content,
@@ -223,13 +245,38 @@ app.get("/api/threads/:threadId/similar-cases", (req, res) => {
   return res.json(payload);
 });
 
+// Recap cache: same text for all users within 5-minute window
+const recapCache = new Map<string, { data: unknown; messageCount: number; generatedAt: number }>();
+const RECAP_TTL_MS = 5 * 60 * 1000;
+
+function buildCaseUpdateBlock(summary: string, context: string, openPoints: string, fallback: string): string {
+  const cleanSummary = deduplicateSentences(sanitizeGeneratedText(stripAllSectionPrefixes(summary)));
+  const cleanContext = deduplicateSentences(sanitizeGeneratedText(stripAllSectionPrefixes(context)));
+  const cleanOpenPoints = deduplicateSentences(sanitizeGeneratedText(stripAllSectionPrefixes(openPoints)));
+
+  const contextOverlapsSummary =
+    cleanContext && cleanSummary &&
+    cleanSummary.toLowerCase().includes(cleanContext.toLowerCase().slice(0, 40));
+
+  const parts = [
+    cleanSummary ? `Current picture: ${cleanSummary}` : "",
+    (cleanContext && !contextOverlapsSummary) ? `Knowledge base: ${cleanContext}` : "",
+    cleanOpenPoints ? `Open points: ${cleanOpenPoints}` : "",
+  ].filter(Boolean);
+  return parts.join("\n") || fallback;
+}
+
 app.get("/api/threads/:threadId/recap", async (req, res) => {
   const threadId = req.params.threadId;
-  const recap = buildThreadRecap(threadId);
-  /** Skip OpenAI for instant regex/heuristic recap (client shows this first, then upgrades). */
+  const threadMessages = listMessagesByThreadId(threadId);
   const skipLlm = String(req.query.fast || "") === "1";
 
-  const threadMessages = listMessagesByThreadId(threadId);
+  const cached = recapCache.get(threadId);
+  if (cached && cached.messageCount === threadMessages.length && (Date.now() - cached.generatedAt) < RECAP_TTL_MS) {
+    return res.json(cached.data);
+  }
+
+  const recap = buildThreadRecap(threadId);
   const segments =
     threadMessages.length > 0
       ? segmentThreadByStrictTopic(
@@ -260,14 +307,11 @@ app.get("/api/threads/:threadId/recap", async (req, res) => {
       recap.topicTracks = fastCaseTracks;
       const lastTrack = fastCaseTracks[fastCaseTracks.length - 1];
       if (lastTrack) {
-        recap.caseUpdate = [
-          lastTrack.summary ? `Current picture: ${lastTrack.summary}` : "",
-          lastTrack.context ? `Knowledge base: ${lastTrack.context}` : "",
-          lastTrack.openPoints ? `Open points: ${lastTrack.openPoints}` : "",
-        ].filter(Boolean).join("\n") || recap.caseUpdate;
+        recap.caseUpdate = buildCaseUpdateBlock(lastTrack.summary, lastTrack.context || "", lastTrack.openPoints || "", recap.caseUpdate);
         recap.situationSummary = lastTrack.summary || recap.situationSummary;
       }
     }
+    recapCache.set(threadId, { data: recap, messageCount: threadMessages.length, generatedAt: Date.now() });
     return res.json(recap);
   }
 
@@ -289,13 +333,8 @@ app.get("/api/threads/:threadId/recap", async (req, res) => {
       });
 
       if (llmResult) {
-        recap.caseUpdate = [
-          llmResult.currentPicture ? `Current picture: ${llmResult.currentPicture}` : "",
-          llmResult.context ? `Knowledge base: ${llmResult.context}` : "",
-          llmResult.openPoints ? `Open points: ${llmResult.openPoints}` : "",
-        ].filter(Boolean).join("\n") || recap.caseUpdate;
-
-        recap.situationSummary = llmResult.currentPicture || recap.situationSummary;
+        recap.caseUpdate = buildCaseUpdateBlock(llmResult.currentPicture, llmResult.context, llmResult.openPoints, recap.caseUpdate);
+        recap.situationSummary = stripAllSectionPrefixes(llmResult.currentPicture || "") || recap.situationSummary;
 
         if (llmResult.emergingThreads.length > 0) {
           recap.emergingThreads = llmResult.emergingThreads;
@@ -319,30 +358,24 @@ app.get("/api/threads/:threadId/recap", async (req, res) => {
     }
   }
 
-  /** Mixed-topic threads must not show one merged slab if LLM omitted topicTracks. */
   if (multiTopicThread && !hasMultipleTopicCards()) {
     attachHeuristicSplitSummaries();
   }
 
-  /** If this thread has 2+ formal case records, override topicTracks with case-derived tracks. */
   const caseDerivedTracks = buildTopicTracksFromCases(threadId);
   if (caseDerivedTracks.length >= 2) {
     recap.topicTracks = caseDerivedTracks;
   }
 
-  /** When topicTracks exist, rewrite top-level fields from the last track to prevent cross-segment leaking. */
   if (Array.isArray(recap.topicTracks) && recap.topicTracks.length >= 2) {
     const lastTrack = recap.topicTracks[recap.topicTracks.length - 1];
     if (lastTrack) {
-      recap.caseUpdate = [
-        lastTrack.summary ? `Current picture: ${lastTrack.summary}` : "",
-        lastTrack.context ? `Knowledge base: ${lastTrack.context}` : "",
-        lastTrack.openPoints ? `Open points: ${lastTrack.openPoints}` : "",
-      ].filter(Boolean).join("\n") || recap.caseUpdate;
+      recap.caseUpdate = buildCaseUpdateBlock(lastTrack.summary, lastTrack.context || "", lastTrack.openPoints || "", recap.caseUpdate);
       recap.situationSummary = lastTrack.summary || recap.situationSummary;
     }
   }
 
+  recapCache.set(threadId, { data: recap, messageCount: threadMessages.length, generatedAt: Date.now() });
   res.json(recap);
 });
 
@@ -378,13 +411,18 @@ app.get("/api/persistence/report", (req, res) => {
 
 // Direct case intake: freeform narrative -> case memory pipeline.
 app.post("/api/cases/intake", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
   const narrative = String(req.body.narrative ?? "").trim();
   if (!narrative) {
     return res.status(400).json({ error: "narrative is required" });
   }
   try {
     const frogCase = await createCaseFromDirectIntake({
-      userId: String(req.body.userId || "demo-user"),
+      userId: actor.username,
+      authorDisplayName: actor.displayName,
       title: typeof req.body.title === "string" ? req.body.title : undefined,
       narrative,
       threadId: typeof req.body.threadId === "string" ? req.body.threadId : undefined,
@@ -407,6 +445,10 @@ app.post("/api/cases/intake", async (req, res) => {
 // Submit resolution
 app.post("/api/cases/:id/resolution", async (req, res) => {
   try {
+    const actor = getActorFromRequest(req);
+    if (!actor) {
+      return res.status(401).json({ ok: false, error: "Authentication required" });
+    }
     const rawOutcome = String(req.body.outcome ?? "").toUpperCase();
     const mappedOutcome: CaseStatus =
       rawOutcome === "RESOLVED"
@@ -417,7 +459,7 @@ app.post("/api/cases/:id/resolution", async (req, res) => {
 
     const input: ResolutionInput = {
       caseId: req.params.id,
-      userId: req.body.userId || "demo-user",
+      userId: actor.username,
       outcome: mappedOutcome,
       freeText: req.body.freeText,
     };
@@ -443,6 +485,10 @@ app.get("/api/cases/:id/follow-up-prompt", (req, res) => {
 });
 
 app.post("/api/cases/:id/follow-up", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
   const rawStatus = String(req.body.status ?? "").toUpperCase();
   const mappedStatus: CaseStatus | undefined =
     rawStatus === "RESOLVED"
@@ -455,7 +501,7 @@ app.post("/api/cases/:id/follow-up", async (req, res) => {
 
   const input: FollowUpInput = {
     caseId: req.params.id,
-    userId: req.body.userId || "demo-user",
+    userId: actor.username,
     responseText: String(req.body.responseText ?? ""),
     status: mappedStatus,
   };

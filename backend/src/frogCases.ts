@@ -3,6 +3,9 @@ import {
   buildCaseState,
   buildInterpretationAudit,
   buildKeyStrategies,
+  sanitizeGeneratedText,
+  stripAllSectionPrefixes,
+  deduplicateSentences,
   type CaseKnowledgeContext,
   type CaseState,
   type CaseStateMessage,
@@ -39,6 +42,8 @@ export interface PostSignal {
 export interface ForumMessage {
   id: string;
   userId: string;
+  /** Display name from the authenticated account (optional for legacy rows). */
+  authorDisplayName?: string;
   facilityId?: string;
   threadId: string;
   content: string;
@@ -121,6 +126,7 @@ export interface FrogCase {
   worthinessPriorDiscussion?: string;
   worthinessSharedProblem?: string;
   worthinessAnalogies?: string[];
+  relatedCaseRefs?: Array<{ caseNumber: number; title: string; date: string; outcome: string }>;
 }
 
 /** Optional signals when inferring admission (recurrence, multi-voice thread). */
@@ -154,6 +160,7 @@ export interface CaseSeedInput {
 
 export interface DirectCaseInput {
   userId: string;
+  authorDisplayName?: string;
   title?: string;
   narrative: string;
   threadId?: string;
@@ -799,22 +806,28 @@ async function syncCaseLearningFromThread(frogCase: FrogCase): Promise<FrogCase>
   }
 
   if (llmResult) {
-    frogCase.caseSummary = [
-      llmResult.currentPicture ? `Current picture: ${llmResult.currentPicture}` : "",
-      llmResult.context ? `Knowledge base: ${llmResult.context}` : "",
-      llmResult.openPoints ? `Open points: ${llmResult.openPoints}` : "",
-    ].filter(Boolean).join("\n") || recap.caseUpdate;
-    frogCase.currentSystemStatus = llmResult.currentPicture || recap.situationSummary;
+    const ctxText = stripAllSectionPrefixes(llmResult.context || "");
+    const cpText = stripAllSectionPrefixes(llmResult.currentPicture || "");
+    const opText = stripAllSectionPrefixes(llmResult.openPoints || "");
+
+    const summaryParts = [
+      cpText ? `Current picture: ${sanitizeGeneratedText(cpText)}` : "",
+      ctxText ? `Knowledge base: ${sanitizeGeneratedText(ctxText)}` : "",
+      opText ? `Open points: ${sanitizeGeneratedText(opText)}` : "",
+    ].filter(Boolean);
+    frogCase.caseSummary = deduplicateSentences(summaryParts.join("\n")) || recap.caseUpdate;
+
+    frogCase.currentSystemStatus = recap.currentStatus;
     frogCase.emergingThreads = llmResult.emergingThreads.length > 0 ? llmResult.emergingThreads : recap.emergingThreads;
-    frogCase.currentStrategy = llmResult.recommendations.length > 0 ? llmResult.recommendations : [];
-    frogCase.suggestedNextSteps = llmResult.recommendations.length > 0 ? llmResult.recommendations : [];
-    frogCase.missingDetails = llmResult.openPoints ? [llmResult.openPoints] : [];
+    frogCase.currentStrategy = llmResult.recommendations.length > 0 ? llmResult.recommendations.map(sanitizeGeneratedText) : [];
+    frogCase.suggestedNextSteps = llmResult.recommendations.length > 0 ? llmResult.recommendations.map(sanitizeGeneratedText) : [];
+    frogCase.missingDetails = opText ? [sanitizeGeneratedText(opText)] : [];
     const cw = llmResult.caseWorthiness;
     if (cw) {
-      frogCase.worthinessPriorDiscussion = String(cw.priorDiscussion || "").trim();
-      frogCase.worthinessSharedProblem = String(cw.sharedProblemScale || "").trim();
+      frogCase.worthinessPriorDiscussion = sanitizeGeneratedText(String(cw.priorDiscussion || ""));
+      frogCase.worthinessSharedProblem = sanitizeGeneratedText(String(cw.sharedProblemScale || ""));
       frogCase.worthinessAnalogies = Array.isArray(cw.analogousContexts)
-        ? cw.analogousContexts.map(String).slice(0, 3)
+        ? cw.analogousContexts.map((s) => sanitizeGeneratedText(String(s))).slice(0, 3)
         : [];
     }
   } else {
@@ -823,11 +836,11 @@ async function syncCaseLearningFromThread(frogCase: FrogCase): Promise<FrogCase>
       .map((m) => m.content.trim())
       .filter(Boolean)
       .join(" | ");
-    frogCase.caseSummary = recentPosts || recap.caseUpdate;
+    frogCase.caseSummary = deduplicateSentences(recentPosts || recap.caseUpdate);
     frogCase.currentStrategy = [];
     frogCase.suggestedNextSteps = [];
     frogCase.missingDetails = [];
-    frogCase.currentSystemStatus = recentPosts || recap.situationSummary;
+    frogCase.currentSystemStatus = recap.currentStatus;
     frogCase.emergingThreads = recap.emergingThreads;
     frogCase.worthinessPriorDiscussion = "";
     frogCase.worthinessSharedProblem = "";
@@ -836,10 +849,14 @@ async function syncCaseLearningFromThread(frogCase: FrogCase): Promise<FrogCase>
 
   frogCase.currentStatus = recap.currentStatus;
   if (llmResult) {
+    const caseSummaryLower = (frogCase.caseSummary || "").toLowerCase();
     const views: string[] = [];
-    if (llmResult.context) views.push(llmResult.context);
-    if (llmResult.recommendations.length > 0) views.push(...llmResult.recommendations);
-    frogCase.runningObservations = views.length > 0 ? views : [];
+    if (llmResult.recommendations.length > 0) {
+      views.push(...llmResult.recommendations.map(sanitizeGeneratedText));
+    }
+    frogCase.runningObservations = views
+      .filter((v) => !caseSummaryLower.includes(stripAllSectionPrefixes(v).toLowerCase().slice(0, 40)))
+      .filter(Boolean);
   } else {
     frogCase.runningObservations = (recap.initialObservations || []).filter(
       (entry) => !entry.trim().endsWith("?") && !/\b(any advice|any suggestion|any recommendation|do you have)\b/i.test(entry)
@@ -859,6 +876,18 @@ async function syncCaseLearningFromThread(frogCase: FrogCase): Promise<FrogCase>
   frogCase.admissionState = admissionState;
   frogCase.isSeedOrTest = admissionState === "hidden";
   enforceFormalCaseArchiveFields(frogCase);
+
+  const related = recallCases(
+    `${frogCase.title} ${(frogCase.caseSummary || "").slice(0, 200)}`,
+    6,
+  ).filter((r) => r.caseId !== frogCase.id && r.caseId !== frogCase.caseId && r.matchScore >= 3);
+  frogCase.relatedCaseRefs = related.slice(0, 3).map((r) => ({
+    caseNumber: r.caseNumber,
+    title: r.title,
+    date: new Date(r.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    outcome: r.status,
+  }));
+
   return frogCase;
 }
 
@@ -990,6 +1019,9 @@ function normalizeLoadedCase(loaded: FrogCase): FrogCase {
         : "",
     worthinessAnalogies: Array.isArray((loaded as FrogCase).worthinessAnalogies)
       ? (loaded as FrogCase).worthinessAnalogies!
+      : [],
+    relatedCaseRefs: Array.isArray((loaded as FrogCase).relatedCaseRefs)
+      ? (loaded as FrogCase).relatedCaseRefs
       : [],
   };
 }
@@ -1221,6 +1253,7 @@ export async function createCaseFromDirectIntake(input: DirectCaseInput): Promis
   const intakeMessage: ForumMessage = {
     id: `intake-${generateId()}`,
     userId: input.userId || "direct-intake-user",
+    authorDisplayName: input.authorDisplayName,
     threadId,
     content: narrative,
     createdAt: now,
@@ -1376,6 +1409,39 @@ function evaluateSegmentMaturity(
 }
 
 const CASE_FOLLOWUP_WINDOW_MS = 10 * 24 * 60 * 60 * 1000;
+const SESSION_WINDOW_MS = 4 * 60 * 60 * 1000;
+
+/**
+ * Merge segments that belong to the same conversational session.
+ * When all posts are within a 4-hour window, they're one discussion —
+ * even if domain keywords differ (feeding + pH + density = one investigation).
+ */
+function mergeConversationSegments(
+  segments: Array<{ segmentIndex: number; domainId: string; topicLabel: string; messages: Array<{ userId: string; content: string; createdAt: string }> }>,
+): Array<{ segmentIndex: number; domainId: string; topicLabel: string; messages: Array<{ userId: string; content: string; createdAt: string }> }> {
+  if (segments.length <= 1) return segments;
+
+  const allMessages = segments.flatMap((s) => s.messages);
+  const times = allMessages.map((m) => new Date(m.createdAt).getTime());
+  const span = Math.max(...times) - Math.min(...times);
+
+  if (span <= SESSION_WINDOW_MS) {
+    const domainCounts = new Map<string, number>();
+    for (const seg of segments) {
+      domainCounts.set(seg.domainId, (domainCounts.get(seg.domainId) || 0) + seg.messages.length);
+    }
+    const dominant = [...domainCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+    const domainId = dominant?.[0] || "general";
+    const topicLabel =
+      segments.find((s) => s.domainId === domainId)?.topicLabel || "general-discussion";
+    const sorted = [...allMessages].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    return [{ segmentIndex: 1, domainId, topicLabel, messages: sorted }];
+  }
+
+  return segments;
+}
 
 function findOpenCaseForSegment(
   chatThreadId: string,
@@ -1424,8 +1490,9 @@ export async function promoteEmergingThreadsToCases(chatThreadId: string): Promi
     content: m.content,
     createdAt: m.createdAt.toISOString(),
   }));
-  const segments = segmentThreadByStrictTopic(payload);
-  if (segments.length === 0) return getCasesForChatThread(base);
+  const rawSegments = segmentThreadByStrictTopic(payload);
+  if (rawSegments.length === 0) return getCasesForChatThread(base);
+  const segments = mergeConversationSegments(rawSegments);
 
   const now = new Date();
   let created = 0;
@@ -1573,7 +1640,7 @@ export async function ensureTopicSplitCasesForThread(chatThreadId: string): Prom
     content: m.content,
     createdAt: m.createdAt.toISOString(),
   }));
-  const segs = segmentThreadByStrictTopic(payload);
+  const segs = mergeConversationSegments(segmentThreadByStrictTopic(payload));
   if (segs.length < 2) {
     return [legacy];
   }
@@ -1767,33 +1834,24 @@ export async function handleNewMessage(message: ForumMessage): Promise<FrogCase 
   messages.set(message.id, message);
   await persistMessages();
 
-  // Check if a case within the follow-up window matches this message's topic
+  // Route to ANY open case on this base thread (same conversation = same case)
   const surfaceBase = (message.threadId || "").trim().split("#")[0];
   if (surfaceBase && !surfaceBase.startsWith("topic-") && !isExcludedThreadId(surfaceBase)) {
-    const allThreadMsgs = listThreadMessages(surfaceBase);
-    const forSeg = allThreadMsgs.map((m) => ({
-      userId: m.userId,
-      content: m.content,
-      createdAt: m.createdAt.toISOString(),
-    }));
-    const segs = segmentThreadByStrictTopic(forSeg);
-    const thisMsgSeg = segs.find((seg) =>
-      seg.messages.some((cm) =>
-        cm.userId === message.userId && cm.content === message.content,
-      ),
-    );
-    if (thisMsgSeg) {
-      const topicSlug = slugifyTopicLabel(thisMsgSeg.topicLabel);
-      const openCase = findOpenCaseForSegment(surfaceBase, topicSlug);
-      if (openCase && !openCase.messageIds.includes(message.id)) {
-        openCase.messageIds.push(message.id);
-        openCase.contributors = mergeUnique(openCase.contributors, [message.userId]);
-        openCase.updatedAt = new Date();
-        await syncCaseLearningFromThread(openCase);
-        registerCaseInIndices(openCase);
-        await persistCases();
-        return openCase;
-      }
+    const threadCases = getCasesForChatThread(surfaceBase)
+      .filter((c) => {
+        const age = Date.now() - c.createdAt.getTime();
+        return age <= CASE_FOLLOWUP_WINDOW_MS && c.status !== "RESOLVED";
+      })
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    const openCase = threadCases[0];
+    if (openCase && !openCase.messageIds.includes(message.id)) {
+      openCase.messageIds.push(message.id);
+      openCase.contributors = mergeUnique(openCase.contributors, [message.userId]);
+      openCase.updatedAt = new Date();
+      await syncCaseLearningFromThread(openCase);
+      registerCaseInIndices(openCase);
+      await persistCases();
+      return openCase;
     }
   }
 

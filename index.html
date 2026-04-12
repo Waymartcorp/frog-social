@@ -2,187 +2,277 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Frog Social · The Xenopus Care Network</title>
+  <title>Frog Social · Xenopus colony care &amp; case memory</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    * { box-sizing: border-box; }
     :root {
-      --primary: #1b4b82;
-      --accent: #0ea5e9;
-      --bg-soft: #f8fafc;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
+      --app-shell-bg: #050810;
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --card-border: #1F2937;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
     }
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      color: var(--text-main);
-      background: white;
-      line-height: 1.5;
-    }
-    
-    /* NAV */
-    nav {
-      padding: 20px 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .brand { font-weight: 800; font-size: 1.2rem; color: var(--primary); letter-spacing: -0.02em; }
-    .nav-right { font-size: 0.9rem; color: var(--text-muted); }
-
-    /* HERO GRID */
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      min-height: 85vh; /* Takes up most of the screen */
-    }
-    
-    /* LEFT SIDE: The Pitch */
-    .hero-content {
-      padding: 60px 60px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--app-body-bg);
+      color: var(--primary-text);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      background: radial-gradient(circle at top left, #f0f9ff, #ffffff);
     }
-    h1 { font-size: 3rem; line-height: 1.1; margin: 0 0 24px; color: #0f172a; letter-spacing: -0.03em; }
-    .hero-sub { font-size: 1.2rem; color: var(--text-muted); margin-bottom: 40px; max-width: 500px; }
-    
-    .features { display: grid; gap: 24px; margin-top: 20px; }
-    .feature-item { display: flex; gap: 12px; }
-    .check { color: var(--accent); font-weight: bold; }
 
-    /* RIGHT SIDE: The Gate */
-    .login-zone {
-      background: var(--primary);
+    .nav-bar {
+      background: rgba(5, 8, 16, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 32px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 40px;
-      position: relative;
-      overflow: hidden;
+      justify-content: space-between;
     }
-    
-    /* The "Card" sits on the right */
-    .login-card {
-      background: white;
-      padding: 40px;
-      border-radius: 24px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      z-index: 10;
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text);
+      text-decoration: none;
     }
-    
-    /* Form Styles */
-    label { display: block; font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: #475569; }
-    input, select {
-      width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1;
-      margin-bottom: 16px; font-size: 1rem; box-sizing: border-box;
+    .nav-brand span { font-size: 1.25rem; }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    button {
-      width: 100%; padding: 14px; border-radius: 8px; border: none;
-      background: var(--accent); color: white; font-weight: 700; font-size: 1rem;
-      cursor: pointer; transition: transform 0.1s;
+    .nav-actions a {
+      font-size: 0.875rem;
+      color: var(--secondary-text);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      transition: all 0.15s ease;
     }
-    button:hover { background: #0284c7; transform: translateY(-1px); }
+    .nav-actions a:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--primary-text);
+    }
+    .nav-actions .btn-sign-in {
+      background: #1E293B;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text);
+    }
+    .nav-actions .btn-sign-in:hover { background: #334155; }
+    .nav-actions .btn-get-started {
+      background: var(--accent-green);
+      color: #0F172A;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
+    }
+    .nav-actions .btn-get-started:hover { background: #6EE7B7; }
 
-    /* Responsive */
-    @media (max-width: 900px) {
-      .hero-grid { grid-template-columns: 1fr; }
-      .hero-content { padding: 40px; }
-      .login-zone { padding: 40px 20px; }
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px 40px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .hero-icon { font-size: 3.5rem; margin-bottom: 16px; }
+    .hero h1 {
+      font-size: clamp(1.75rem, 4vw, 2.4rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin: 0 0 16px;
+      letter-spacing: -0.03em;
+    }
+    .hero .lead {
+      font-size: 1.05rem;
+      color: var(--secondary-text);
+      line-height: 1.6;
+      margin: 0 0 32px;
+      max-width: 560px;
+    }
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 48px;
+    }
+    .btn {
+      display: inline-block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 9999px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--accent-green);
+      color: #0F172A;
+      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
+    }
+    .btn-primary:hover { background: #6EE7B7; transform: translateY(-1px); }
+    .btn-secondary {
+      background: #1E293B;
+      color: var(--primary-text);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-secondary:hover { background: #334155; }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .feature-card {
+      background: rgba(17, 24, 39, 0.7);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 20px;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .feature-card:hover {
+      border-color: rgba(52, 211, 153, 0.4);
+      transform: translateY(-1px);
+    }
+    .feature-tag {
+      display: inline-block;
+      font-size: 0.6rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--accent-green);
+      border-radius: 9999px;
+      padding: 2px 8px;
+      margin-bottom: 8px;
+    }
+    .feature-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0 0 6px;
+      color: var(--primary-text);
+    }
+    .feature-card p {
+      font-size: 0.82rem;
+      color: var(--secondary-text);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .info-note {
+      max-width: 720px;
+      margin: 40px auto 0;
+      padding: 14px 18px;
+      background: rgba(17, 24, 39, 0.6);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      font-size: 0.82rem;
+      color: var(--secondary-text);
+      line-height: 1.55;
+      text-align: center;
+    }
+
+    footer {
+      padding: 20px 32px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.75rem;
+      color: #64748b;
+      text-align: center;
+      margin-top: 48px;
+    }
+
+    @media (max-width: 600px) {
+      .nav-bar { padding: 12px 16px; }
+      .hero { padding: 40px 16px 24px; }
+      .features { padding: 0 16px; }
     }
   </style>
 </head>
 <body>
 
-  <nav>
-    <div class="brand">FROG SOCIAL</div>
-    <div class="nav-right">Xenopus Welfare and Model Sustainability</div>
+  <nav class="nav-bar">
+    <a class="nav-brand" href="index.html">
+      <span>🐸</span>
+      Frog Social
+    </a>
+    <div class="nav-actions">
+      <a href="login.html" class="btn-sign-in">Sign in</a>
+      <a href="login.html" class="btn-get-started">Create account</a>
+    </div>
   </nav>
 
-  <div class="hero-grid">
-    
-    <div class="hero-content">
-      <h1>The global resource for xenopus.</h1>
-      <p class="hero-sub">
-        A powerful unified platform supporting colony health, trouble-shooting and experimental protocols.  Archived, summarized, searchable by case or problem. 
-      </p>
-
-      <div class="features">
-        <div class="feature-item">
-          <div class="check">✓</div>
-          <div><strong>Colony resilience, protocol stability:</strong> scroll cases, communicate with peers across institutions.</div>
-        </div>
-        <div class="feature-item">
-          <div class="check">✓</div>
-          <div><strong>Protocol Intelligence:</strong> "LabWorks" xenopus protocols coming soon.</div>
-        </div>
-        <div class="feature-item">
-          <div class="check">✓</div>
-          <div><strong>Diagnostics & Trouble Shooting colony issues:</strong> curated, community enhanced feedback and solutions.</div>
-        </div>
-      </div>
-      
-      <p style="margin-top: 60px; font-size: 0.9rem; color: #94a3b8;">
-        Supported by <strong>The Xenopus Model Welfare Organization, and all frog users!</strong>.
-      </p>
+  <div class="hero">
+    <div class="hero-icon">🐸</div>
+    <h1>Husbandry-first case memory for Xenopus colonies</h1>
+    <p class="lead">
+      Describe a problem, discuss it on Social, and build a searchable archive of what happened and what worked.
+      Cases are formal records with outcomes and follow-up — not raw chat logs.
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="login.html">Get started</a>
+      <a class="btn btn-secondary" href="login.html">Sign in</a>
     </div>
-    <div class="login-zone">
-      <div style="position:absolute; inset:0; opacity:0.1; background-image: url('images/first-frog.png'); background-size: cover;"></div>
-      <div class="login-card">
-        <h2 style="margin-top:0;">Beta Access</h2>
-        <p style="font-size:0.9rem; color:#64748b; margin-bottom:24px;">
-          Frog Social is currently in private beta for Facility Managers, PI's, Veterinarians, Lab Workers and Post-Docs.
-        </p>
-        <form onsubmit="checkInvite(event)">
-          <label for="name">Name</label>
-          <input id="name" required placeholder="Dr. Jane Doe">
-
-          <label for="institution">Institution</label>
-          <input id="institution" required placeholder="University / Lab">
-
-          <label for="access-code" style="color:var(--accent);">Invite Code</label>
-          <input id="access-code" required placeholder="Enter code..." style="border-color: var(--accent);">
-
-          <button type="submit">Enter Platform</button>
-        </form>
-
-        <p id="status" style="color:red; font-size:0.85rem; margin-top:10px; display:none;">
-          Incorrect Invite Code.
-        </p>
-      </div>
-    </div>
-
   </div>
 
+  <div class="features">
+    <div class="feature-card">
+      <div class="feature-tag">Core workflow</div>
+      <h3>Describe a Problem</h3>
+      <p>Narrative intake into the case pipeline. Structured analysis with husbandry focus areas and next steps.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag">Discussion</div>
+      <h3>Social</h3>
+      <p>Threaded community discussion. Mature threads can become formal admitted cases with their own history.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag">Case archive</div>
+      <h3>Case History</h3>
+      <p>Admitted cases, outcomes, resolution notes, and follow-up. A searchable knowledge base built from real problems.</p>
+    </div>
+  </div>
+
+  <div class="info-note">
+    Frog Social is in private beta for facility managers, PIs, veterinarians, and postdocs.
+    Accounts use email and password. Institutional email is preferred; other addresses require an institution name at signup.
+  </div>
+
+  <footer>
+    Frog Social · private beta · supported by the Xenopus welfare community
+  </footer>
+
   <script>
-    function checkInvite(e) {
-      e.preventDefault();
-      const codeInput = document.getElementById('access-code').value.trim().toUpperCase();
-      
-      // THIS IS WHERE YOU SET THE PASSWORD
-      const validCodes = ['FROG2025', 'KARIN', 'BETA'];
-
-      if (validCodes.includes(codeInput)) {
-        // Save user info so the dashboard knows who they are
-        const profile = { 
-          name: document.getElementById('name').value, 
-          institution: document.getElementById('institution').value 
-        };
-        localStorage.setItem("frogSocialProfile", JSON.stringify(profile));
-        
-        // OPEN THE DOOR (Go to dashboard.html)
-        window.location.href = 'dashboard.html';
-      } else {
-        const msg = document.getElementById('status');
-        msg.style.display = 'block';
-        msg.textContent = "Invalid Code. Please contact info@xenopuswelfare.org";
+    (function () {
+      var t = localStorage.getItem("frogSocialToken");
+      var u = localStorage.getItem("frogSocialUser");
+      if (t && u) {
+        try {
+          var parsed = JSON.parse(u);
+          if (parsed && parsed.username) {
+            window.location.replace("dashboard.html");
+          }
+        } catch (e) {}
       }
-    }
+    })();
   </script>
-
 </body>
 </html>

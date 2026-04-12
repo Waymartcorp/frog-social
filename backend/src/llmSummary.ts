@@ -264,6 +264,8 @@ STYLE:
 - No spelling errors. Double-check: ammonia (not amonia), biofilter (not biofiliter), Xenopus (not Xenpous), nitrite, nitrate.
 - Knowledge base content must be clearly grounded. If you cannot trace a claim to a post, case, or framework doc, do not include it.
 - Do not inherit signals from one segment into another. Feeding and water chemistry are separate operational domains.
+- Temperature/feeding guardrail: Xenopus are ectothermic. Do not claim "higher temperature always reduces feeding." Use a non-linear framing: moderate warming can increase feeding drive, but overheating or rapid shifts can suppress feeding and increase stress.
+- Feeding-location guardrail: Do not claim that surface feeding is inherently better (or worse) than bottom feeding. In Frog Social, the key metric is observed feeding access and uptake across animals (who is eating, how consistently, and whether competition/disturbance limits access), regardless of where food is consumed.
 
 Respond with JSON only (no markdown fences):
 {

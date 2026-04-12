@@ -110,6 +110,14 @@ Low density may lead to:
 
 Moderate density often produces stronger feeding competition and more robust feeding behavior.
 
+Feeding location (surface, bottom, or mixed) is not, by itself, a reliable quality marker.
+
+What matters operationally is:
+
+- whether frogs can consistently access food
+- whether uptake is distributed across animals
+- whether competition, disturbance, or flow pattern is limiting access
+
 ### 9. Feeding protocol as an observed event
 
 Feeding should be treated as an observed behavioral event, not a fixed ration.
@@ -120,7 +128,17 @@ Healthy practice includes:
 - observing feeding response
 - providing additional small feedings while frogs remain actively feeding
 
+Do not assume that surface feeding is inherently better than bottom feeding (or vice versa). Use direct observation of access and uptake to judge feeding quality.
+
 Active feeding periods of roughly 10 minutes are commonly observed in stable colonies.
+
+### 9.1 Temperature interpretation for feeding behavior
+
+Xenopus are ectothermic. Temperature effects on feeding are non-linear.
+
+- Moderate warming can increase feeding drive in some contexts.
+- Overheating or rapid temperature shifts can suppress feeding and increase stress.
+- Interpretation should prioritize trend data (temperature stability + observed feeding response), not single-point assumptions.
 
 ### 10. Handling & injection technique
 

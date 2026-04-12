@@ -828,6 +828,12 @@
       localStorage.removeItem("frogSocialUser");
       window.location.href = "login.html";
     }
+    function authJsonHeaders() {
+      const token = getAuthToken();
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      return headers;
+    }
     if (!requireAuth()) { throw new Error("redirect"); }
 
     (function initAuthNav() {
@@ -1050,8 +1056,43 @@
       return compact.map((item) => `<li>${escapeHtml(String(item))}</li>`).join("");
     }
 
+    const SOCIAL_SECTION_LABEL_RE = /^\s*(Knowledge base|Current picture|Open points|Reported context|Context noted|GENERAL KNOWLEDGE|Recent outcomes|Uncertain factors|Observed signals|Still uncertain|Initial case description):\s*/i;
+
+    function socialStripLabels(text) {
+      return String(text || "")
+        .replace(/(Knowledge base:\s*){2,}/gi, "Knowledge base: ")
+        .replace(/(Current picture:\s*){2,}/gi, "Current picture: ")
+        .replace(/(Open points:\s*){2,}/gi, "Open points: ")
+        .replace(/(Context noted:\s*){2,}/gi, "Context noted: ")
+        .replace(/(Uncertain factors:\s*){2,}/gi, "Uncertain factors: ")
+        .replace(/(Recent outcomes:\s*){2,}/gi, "Recent outcomes: ")
+        .replace(SOCIAL_SECTION_LABEL_RE, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function socialDeduplicateSentences(text) {
+      const raw = String(text || "").trim();
+      if (!raw) return raw;
+      const sentences = raw.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);
+      if (sentences.length <= 1) return raw;
+      const seen = new Set();
+      const kept = [];
+      for (const s of sentences) {
+        const key = s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+        if (key.length < 8) { kept.push(s); continue; }
+        if (seen.has(key)) continue;
+        let dup = false;
+        for (const ex of seen) { if (ex.includes(key) || key.includes(ex)) { dup = true; break; } }
+        if (dup) continue;
+        seen.add(key);
+        kept.push(s);
+      }
+      return kept.join(" ");
+    }
+
     function renderShortLines(text, emptyText, maxLines = 2) {
-      const cleaned = String(text || "").trim();
+      const cleaned = socialStripLabels(text);
       if (!cleaned) {
         return `<p style="margin: 0; color: var(--secondary-text);">${escapeHtml(emptyText)}</p>`;
       }
@@ -1063,10 +1104,11 @@
       const lines = compactUniqueLines(
         withBreaks
         .split(/\n+/)
-        .map((line) => line.trim())
+        .map((line) => socialStripLabels(line))
         .filter(Boolean)
         .filter((line) => !/^(Recent outcomes:|Observed signals:|Still uncertain:)/i.test(line))
         .filter((line) => !fillerPattern.test(line))
+        .map((line) => socialDeduplicateSentences(line))
         .map((line) => line.length > 110 ? `${line.slice(0, 107).trimEnd()}...` : line),
         maxLines,
         110
@@ -1092,19 +1134,15 @@
       for (const raw of matches) {
         const normalized = raw.replace(/\s+/g, " ").trim();
         if (/^Current picture:/i.test(normalized)) {
-          sections.currentPicture = normalized.replace(/^Current picture:\s*/i, "").trim();
+          sections.currentPicture = socialDeduplicateSentences(socialStripLabels(normalized));
         } else if (
           /^Reported context:/i.test(normalized) ||
           /^GENERAL KNOWLEDGE:/i.test(normalized) ||
           /^Knowledge base:/i.test(normalized)
         ) {
-          sections.reportedContext = normalized
-            .replace(/^Reported context:\s*/i, "")
-            .replace(/^GENERAL KNOWLEDGE:\s*/i, "")
-            .replace(/^Knowledge base:\s*/i, "")
-            .trim();
+          sections.reportedContext = socialDeduplicateSentences(socialStripLabels(normalized));
         } else if (/^Open points:/i.test(normalized)) {
-          sections.openPoints = normalized.replace(/^Open points:\s*/i, "").trim();
+          sections.openPoints = socialDeduplicateSentences(socialStripLabels(normalized));
         }
       }
 
@@ -1343,11 +1381,15 @@
       container.innerHTML = currentCases.map((c) => {
         const resolved = String(c.status || c.currentStatus || "").toUpperCase() === "RESOLVED";
         const caseNum = Number(c.caseNumber || 0);
+        const refs = Array.isArray(c.relatedCaseRefs) && c.relatedCaseRefs.length > 0
+          ? `<div style="margin-top:6px;font-size:0.7rem;color:var(--accent-green);">${c.relatedCaseRefs.map((r) => `See also: Case #${r.caseNumber} (${escapeHtml(r.date)}) — ${escapeHtml(r.title)} [${escapeHtml(r.outcome)}]`).join("<br>")}</div>`
+          : "";
         return `
           <div class="recall-item">
             <div class="recall-item-title">${caseNum > 0 ? `Case ${caseNum}: ` : ""}${escapeHtml(c.title || "Untitled")} ${resolved ? '<span style="margin-left:6px;padding:2px 8px;border-radius:999px;background:rgba(52,211,153,0.2);color:#6EE7B7;font-size:0.64rem;">resolved</span>' : ""}</div>
             <div class="recall-item-meta">Last activity ${escapeHtml(formatDateTimeLabel(c.updatedAt))} · ${escapeHtml(c.status || c.currentStatus || "open")}</div>
             <div class="recall-item-preview">${escapeHtml(toSummaryPreview(c.caseSummary || ""))}</div>
+            ${refs}
           </div>`;
       }).join("");
     }
@@ -1753,7 +1795,7 @@
         const muted = Boolean(mutedByCluster);
         const signalBadges = renderSignalBadges(m.signals);
 
-        const authorName = escapeHtml(String(m.author || m.userId || "anon"));
+        const authorName = escapeHtml(String(m.authorDisplayName || m.author || m.userId || "anon"));
         const avatarSrc = m.avatarBase64 || "";
         const avatarHtml = avatarSrc
           ? `<span class="note-avatar"><img src="${avatarSrc}" alt="" /></span>`
@@ -1852,7 +1894,7 @@
     }
 
     function toSummaryPreview(text) {
-      const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+      const cleaned = socialDeduplicateSentences(socialStripLabels(text));
       if (!cleaned) return "No summary yet.";
       const sentences = cleaned
         .split(/(?<=[.!?])\s+/)
@@ -1943,14 +1985,17 @@
       try {
         const response = await fetch(`${API_BASE}/api/messages`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authJsonHeaders(),
           body: JSON.stringify({
-            userId: userName,
             threadId: targetThreadId,
             content: fullContent,
           }),
         });
 
+        if (response.status === 401) {
+          window.location.href = "login.html";
+          return;
+        }
         if (!response.ok) {
           throw new Error(`Post failed (${response.status})`);
         }
@@ -1974,7 +2019,8 @@
 
       const optimisticMsg = {
         id: postedMessageId || `local-${Date.now()}`,
-        userId: userName,
+        userId: authUser ? authUser.username : userName,
+        authorDisplayName: authUser ? authUser.displayName : userName,
         username: authUser ? authUser.username : undefined,
         avatarBase64: authUser ? authUser.avatarBase64 : undefined,
         threadId: currentThreadId,

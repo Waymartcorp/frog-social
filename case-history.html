@@ -184,6 +184,16 @@
     }
     .stat-item.open .stat-value { color: var(--warning); }
     .stat-item.resolved .stat-value { color: var(--accent-green); }
+    .archive-note {
+      width: 100%;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.26);
+      color: #bae6fd;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
 
     /* Case list */
     .case-list {
@@ -619,6 +629,13 @@
     }
     if (!getAuthToken() || !getAuthUser()) { window.location.href = "login.html"; throw new Error("redirect"); }
 
+    function authJsonHeaders() {
+      const token = getAuthToken();
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      return headers;
+    }
+
     (function initAuthNav() {
       const user = getAuthUser();
       const badge = document.getElementById("navUserBadge");
@@ -641,6 +658,7 @@
     let resolvedOnly = false;
     let searchQuery = "";
     let allCases = [];
+    let archiveGapNote = "";
 
     function escapeHtml(text) {
       if (!text) return "";
@@ -706,6 +724,26 @@
       }
       const payload = await response.json();
       const mapped = Array.isArray(payload) ? payload.map(normalizeCase) : [];
+      const admittedWithArchive = mapped.filter(
+        (c) => c.admissionState === "admitted" && Number(c.caseNumber || 0) > 0 && Boolean(String(c.createdAt || "").trim())
+      );
+      const hiddenWithArchive = mapped.filter(
+        (c) => c.admissionState !== "admitted" && Number(c.caseNumber || 0) > 0 && Boolean(String(c.createdAt || "").trim())
+      );
+      if (!showSeedOrTestCases && admittedWithArchive.length > 0 && hiddenWithArchive.length > 0) {
+        const visibleNumbers = new Set(admittedWithArchive.map((c) => Number(c.caseNumber || 0)));
+        const skipped = hiddenWithArchive
+          .map((c) => Number(c.caseNumber || 0))
+          .filter((n) => Number.isFinite(n) && n > 0 && !visibleNumbers.has(n))
+          .sort((a, b) => a - b);
+        if (skipped.length > 0) {
+          archiveGapNote = `Some case numbers are intentionally hidden from this view (${skipped.join(", ")}). Add ?showSeedOrTest=1 to this page URL to view hidden/test cases.`;
+        } else {
+          archiveGapNote = "";
+        }
+      } else {
+        archiveGapNote = "";
+      }
       const hasArchiveFields = (c) => Number(c.caseNumber || 0) > 0 && Boolean(String(c.createdAt || "").trim());
       const visible = showSeedOrTestCases
         ? mapped.filter(hasArchiveFields)
@@ -720,6 +758,22 @@
       document.getElementById("statTotal").textContent = String(allCases.length);
       document.getElementById("statOpen").textContent = String(openCount);
       document.getElementById("statResolved").textContent = String(resolvedCount);
+      const bar = document.getElementById("statsBar");
+      let noteEl = document.getElementById("archiveGapNote");
+      if (!bar) return;
+      if (!noteEl) {
+        noteEl = document.createElement("div");
+        noteEl.id = "archiveGapNote";
+        noteEl.className = "archive-note";
+        bar.appendChild(noteEl);
+      }
+      if (archiveGapNote) {
+        noteEl.style.display = "block";
+        noteEl.textContent = archiveGapNote;
+      } else {
+        noteEl.style.display = "none";
+        noteEl.textContent = "";
+      }
     }
 
     function getFilteredCases() {
@@ -756,21 +810,50 @@
       });
     }
 
+    const SECTION_LABEL_RE = /^\s*(Knowledge base|Current picture|Open points|Reported context|Context noted|GENERAL KNOWLEDGE|Recent outcomes|Uncertain factors|Observed signals|Still uncertain|Initial case description):\s*/i;
+
+    function stripSectionLabels(text) {
+      return String(text || "")
+        .replace(/(Knowledge base:\s*){2,}/gi, "Knowledge base: ")
+        .replace(/(Current picture:\s*){2,}/gi, "Current picture: ")
+        .replace(/(Open points:\s*){2,}/gi, "Open points: ")
+        .replace(/(Context noted:\s*){2,}/gi, "Context noted: ")
+        .replace(/(Uncertain factors:\s*){2,}/gi, "Uncertain factors: ")
+        .replace(/(Recent outcomes:\s*){2,}/gi, "Recent outcomes: ")
+        .replace(SECTION_LABEL_RE, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
     function toPreview(text, max = 180) {
-      const cleaned = String(text || "").trim();
+      const cleaned = stripSectionLabels(text);
       if (!cleaned) return "No case summary available yet.";
       if (cleaned.length <= max) return cleaned;
       return `${cleaned.slice(0, max - 3).trimEnd()}...`;
+    }
+
+    function sanitizeCaseLineText(text) {
+      return stripSectionLabels(text);
+    }
+
+    function canonicalLineKey(text) {
+      return sanitizeCaseLineText(String(text || ""))
+        .replace(/^\s*\[(system|case|emerging)\]\s*/i, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
     }
 
     function compactUnique(items, maxItems = 4, maxLen = 140) {
       const seen = new Set();
       const out = [];
       for (const raw of Array.isArray(items) ? items : []) {
-        const cleaned = String(raw || "").replace(/\s+/g, " ").trim();
+        const cleaned = sanitizeCaseLineText(raw);
         if (!cleaned) continue;
         if (!isRenderableCaseLine(cleaned)) continue;
-        const key = cleaned.toLowerCase();
+        const key = canonicalLineKey(cleaned);
+        if (!key) continue;
         if (seen.has(key)) continue;
         seen.add(key);
         out.push(cleaned.length > maxLen ? `${cleaned.slice(0, maxLen - 3).trimEnd()}...` : cleaned);
@@ -802,16 +885,18 @@
       if (!compact.length) {
         return `<div class="report-body" style="color: var(--secondary-text);">${escapeHtml(fallback)}</div>`;
       }
-      return `<ul class="report-list">${compact.map((item) => renderTaggedItem(item)).join("")}</ul>`;
+      return `<ul class="report-list">${compact.map((item) => renderTaggedItem(item)).filter(Boolean).join("")}</ul>`;
     }
 
     function renderTaggedItem(raw) {
       const tagMatch = String(raw).match(/^\[(system|case|emerging)\]\s*/i);
       if (!tagMatch) {
-        return `<li>${escapeHtml(raw)}</li>`;
+        const cleaned = sanitizeCaseLineText(raw);
+        return cleaned ? `<li>${escapeHtml(cleaned)}</li>` : "";
       }
       const basis = tagMatch[1].toLowerCase();
-      const text = raw.slice(tagMatch[0].length);
+      const text = sanitizeCaseLineText(raw.slice(tagMatch[0].length));
+      if (!text) return "";
       const badgeStyles = {
         system: "background:rgba(56,189,248,0.15);color:#38BDF8;",
         case: "background:rgba(52,211,153,0.15);color:#34D399;",
@@ -859,16 +944,33 @@
         .slice(0, 4);
     }
 
+    function dedupAgainst(items, referenceText) {
+      if (!referenceText) return items;
+      const refLower = referenceText.toLowerCase();
+      return items.filter((item) => {
+        const core = canonicalLineKey(item);
+        return core.length < 10 || !refLower.includes(core.slice(0, 40));
+      });
+    }
+
     function buildFullCaseReport(caseRow, allVisibleCases) {
+      const summaryText = String(caseRow.caseSummary || "").toLowerCase();
       const emerging = compactUnique(caseRow.emergingThreads, 4, 150);
-      const collaborative = compactUnique(caseRow.runningObservations, 5, 150);
+      const collaborative = compactUnique(dedupAgainst(caseRow.runningObservations || [], caseRow.caseSummary), 5, 150);
       const focus = compactUnique(
-        (caseRow.currentStrategy || []).length ? caseRow.currentStrategy : caseRow.suggestedNextSteps,
+        dedupAgainst(
+          (caseRow.currentStrategy || []).length ? caseRow.currentStrategy : caseRow.suggestedNextSteps,
+          caseRow.caseSummary
+        ),
         5,
         150
       );
-      const systemLearning = compactUnique(inferCrossCaseRecommendations(caseRow, allVisibleCases), 4, 150);
-      const tried = compactUnique(caseRow.actionsTried, 5, 150);
+      const systemLearning = compactUnique(
+        dedupAgainst(inferCrossCaseRecommendations(caseRow, allVisibleCases), caseRow.caseSummary),
+        4,
+        150
+      );
+      const tried = compactUnique(dedupAgainst(caseRow.actionsTried || [], caseRow.caseSummary), 5, 150);
       const activeNow = compactUnique([...focus, ...tried], 4, 150);
       const outcome = caseRow.resolutionSummary ? toPreview(caseRow.resolutionSummary, 320) : "Outcome not finalized yet.";
       const wPrior = String(caseRow.worthinessPriorDiscussion || "").trim();
@@ -899,14 +1001,14 @@
       };
 
       return `
-        ${section("Initial case description", toPreview(caseRow.caseSummary, 420), "No initial summary yet.", true)}
+        ${section("Case description", toPreview(caseRow.caseSummary, 420), "No initial summary yet.", true)}
         ${section("Case worthiness signals", worthinessParagraph, "No worthiness signals yet.", true)}
-        ${section("Emerging threads", emerging, "No emerging thread lines yet.")}
-        ${section("Collaborative / shared views", collaborative, "No collaborative social views captured yet.")}
-        ${section("Suggestions and recommendations", focus, "No recommendations captured yet.")}
-        ${section("System learning from prior cases", systemLearning, "No related prior-case learning captured yet.")}
+        ${emerging.length ? section("Emerging threads", emerging, "") : ""}
+        ${collaborative.length ? section("Social inputs", collaborative, "") : ""}
+        ${focus.length ? section("Suggestions and recommendations", focus, "") : ""}
+        ${systemLearning.length ? section("System learning from prior cases", systemLearning, "") : ""}
         ${section("Status and log", `Opened ${formatDate(caseRow.createdAt)}. Last update ${formatDate(caseRow.updatedAt)}. Current status ${caseRow.currentStatus || caseRow.statusRaw.toLowerCase()}. Contributors: ${(caseRow.contributors || []).join(", ") || "not listed"}.`, "", true)}
-        ${section("Actions being taken now", activeNow, "No active actions listed yet.")}
+        ${activeNow.length ? section("Actions being taken now", activeNow, "") : ""}
         ${section("Final result / outcome", outcome, "Outcome not finalized yet.", true)}
       `;
     }
@@ -942,10 +1044,6 @@
           <div class="case-report-layout">
             <div>
               <div class="report-block">
-                <div class="report-title">Case Description #${c.caseNumber}</div>
-                <div class="report-body">${escapeHtml(toPreview(c.caseSummary, 380))}</div>
-              </div>
-              <div class="report-block">
                 <div class="report-title">Case worthiness signals</div>
                 <div class="report-body">${
                   (() => {
@@ -965,26 +1063,27 @@
                   })()
                 }</div>
               </div>
-              <div class="report-block">
-                <div class="report-title">Emerging Threads</div>
-                ${renderListOrFallback(c.emergingThreads, "No emerging thread lines yet.")}
-              </div>
-              <div class="report-block">
-                <div class="report-title">Social Inputs and Shared Suggestions</div>
-                ${renderListOrFallback(c.runningObservations, "No shared social observations captured yet.")}
-              </div>
-              <div class="report-block">
-                <div class="report-title">Current Focus and Recommendations</div>
-                ${renderListOrFallback((c.currentStrategy || []).length ? c.currentStrategy : c.suggestedNextSteps, "No recommendation bundle available yet.")}
-              </div>
-              <div class="report-block">
-                <div class="report-title">System Learning from Other Cases</div>
-                ${renderListOrFallback(inferCrossCaseRecommendations(c, filtered), "No related case-memory recommendations identified yet.")}
-              </div>
-              <div class="report-block">
-                <div class="report-title">What Has Been Tried</div>
-                ${renderListOrFallback(c.actionsTried, "No concrete actions logged yet.")}
-              </div>
+              ${(() => {
+                const sumLower = String(c.caseSummary || "").toLowerCase();
+                function dedupVsSummary(items) {
+                  return (items || []).filter((item) => {
+                    const k = canonicalLineKey(item);
+                    return k.length < 10 || !sumLower.includes(k.slice(0, 40));
+                  });
+                }
+                const emerging = compactUnique(dedupVsSummary(c.emergingThreads), 4, 150);
+                const social = compactUnique(dedupVsSummary(c.runningObservations), 5, 150);
+                const recs = compactUnique(dedupVsSummary((c.currentStrategy || []).length ? c.currentStrategy : c.suggestedNextSteps), 5, 150);
+                const xCase = compactUnique(dedupVsSummary(inferCrossCaseRecommendations(c, filtered)), 4, 150);
+                const tried = compactUnique(dedupVsSummary(c.actionsTried), 5, 150);
+                let out = "";
+                if (emerging.length) out += `<div class="report-block"><div class="report-title">Emerging Threads</div>${renderListOrFallback(emerging, "")}</div>`;
+                if (social.length) out += `<div class="report-block"><div class="report-title">Social Inputs</div>${renderListOrFallback(social, "")}</div>`;
+                if (recs.length) out += `<div class="report-block"><div class="report-title">Recommendations</div>${renderListOrFallback(recs, "")}</div>`;
+                if (xCase.length) out += `<div class="report-block"><div class="report-title">System Learning from Other Cases</div>${renderListOrFallback(xCase, "")}</div>`;
+                if (tried.length) out += `<div class="report-block"><div class="report-title">What Has Been Tried</div>${renderListOrFallback(tried, "")}</div>`;
+                return out;
+              })()}
               <div class="report-block">
                 <div class="report-title">Case Log / Status</div>
                 <div class="report-body">
@@ -1067,9 +1166,13 @@
       try {
         const response = await fetch(`${API_BASE}/api/cases/${encodeURIComponent(caseId)}/resolution`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ outcome: status, freeText, userId: "demo-user" }),
+          headers: authJsonHeaders(),
+          body: JSON.stringify({ outcome: status, freeText }),
         });
+        if (response.status === 401) {
+          window.location.href = "login.html";
+          return;
+        }
         if (!response.ok) throw new Error(`Failed (${response.status})`);
         if (statusEl) statusEl.textContent = `Status updated to ${status}. Reloading...`;
         setTimeout(async () => {

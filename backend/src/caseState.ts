@@ -528,6 +528,18 @@ export function sanitizeGeneratedText(text: string): string {
   out = out.replace(/\bwithout doubt\b/gi, "likely");
   out = out.replace(/\bundoubtedly\b/gi, "likely");
   out = out.replace(/\bis certain\b/gi, "appears likely");
+  out = out.replace(
+    /High water temperature can negatively impact feeding behavior in frogs, potentially leading to reduced feeding responses\.?/gi,
+    "Temperature effects on feeding are non-linear in Xenopus: moderate warming can increase feeding drive, while overheating or rapid shifts can suppress feeding response."
+  );
+  out = out.replace(
+    /Frogs may take longer to find food if it floats to the surface, especially in low-density situations\.?/gi,
+    "Feeding location (surface, bottom, or mixed) is less important than observed feeding access and consistent uptake across frogs."
+  );
+  out = out.replace(
+    /Food at the surface is generally better for feeding response\.?/gi,
+    "Surface vs bottom feeding alone is not a reliable quality signal; prioritize direct observation of access, competition, and actual intake."
+  );
 
   out = out
     .replace(/\s+/g, " ")
@@ -535,7 +547,40 @@ export function sanitizeGeneratedText(text: string): string {
     .replace(/([.,;:!?])\1+/g, "$1")
     .replace(/^\s*[.,;:!?]\s*/, "")
     .trim();
+
+  out = deduplicateSentences(out);
   return out;
+}
+
+export function stripAllSectionPrefixes(text: string): string {
+  return String(text || "")
+    .replace(/^\s*(Current picture|Knowledge base|Open points|Reported context|Context noted|GENERAL KNOWLEDGE|Recent outcomes|Uncertain factors|Observed signals|Still uncertain):\s*/i, "")
+    .trim();
+}
+
+export function deduplicateSentences(text: string): string {
+  const raw = String(text || "").trim();
+  if (!raw) return raw;
+  const sentences = raw.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);
+  if (sentences.length <= 1) return raw;
+  const seen = new Set<string>();
+  const kept: string[] = [];
+  for (const sentence of sentences) {
+    const key = sentence.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+    if (key.length < 8) { kept.push(sentence); continue; }
+    if (seen.has(key)) continue;
+    let isSubstring = false;
+    for (const existing of seen) {
+      if (existing.includes(key) || key.includes(existing)) {
+        isSubstring = true;
+        break;
+      }
+    }
+    if (isSubstring) continue;
+    seen.add(key);
+    kept.push(sentence);
+  }
+  return kept.join(" ");
 }
 
 function scoreAndSelectByIntent(
