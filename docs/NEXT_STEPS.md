@@ -1,4 +1,14 @@
 # Frog Social — Next Steps (Newest at Top)
+# NEXT_STEPS.md
+
+Operational checklist and implementation backlog only.
+
+Frog Social behavior, information architecture, learning model, case rules, and knowledge hierarchy are defined in:
+
+- `docs/FROG_SOCIAL_INFORMATION_ECOSYSTEM.md`
+- `docs/HUSBANDRY_FRAMEWORK.md`
+
+If this file conflicts with those files, those files win.
 - Added canonical docs/HUSBANDRY_FRAMEWORK.md and linked it from 00_HUB.md.
 > Rule: Add a new dated section at the top when restarting. Never delete prior sections.
 
