@@ -589,19 +589,6 @@
           <button class="filter-tab" data-sort="oldest">Oldest</button>
         </div>
       </div>
-      <div class="search-row" style="margin-top:6px; font-size:0.76rem; color:var(--secondary-text);">
-        <label style="display:inline-flex; align-items:center; gap:6px;">
-          <input id="resolvedOnlyToggle" type="checkbox" style="width:auto;" />
-          What worked only
-        </label>
-        <label style="display:inline-flex; align-items:center; gap:4px; margin-left:8px;">
-          From <input id="dateFrom" type="date" style="background:#0F172A; border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:4px 6px; font-size:0.76rem; color:var(--secondary-text);" />
-        </label>
-        <label style="display:inline-flex; align-items:center; gap:4px;">
-          To <input id="dateTo" type="date" style="background:#0F172A; border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:4px 6px; font-size:0.76rem; color:var(--secondary-text);" />
-        </label>
-        <button id="clearFilters" class="btn-secondary" style="font-size:0.72rem; padding:4px 10px; margin-left:4px;">Clear</button>
-      </div>
     </div>
 
     <!-- Stats bar -->
@@ -790,6 +777,25 @@
       }
     }
 
+    function buildSearchIndex(cases) {
+      for (const c of cases) {
+        c._haystack = [
+          String(c.caseNumber || ""),
+          c.title,
+          c.caseSummary,
+          c.currentStatus,
+          c.resolutionSummary,
+          formatDate(c.createdAt),
+          formatDate(c.updatedAt),
+          ...(c.tags || []),
+          ...(c.runningObservations || []),
+          ...(c.actionsTried || []),
+          ...(c.contributors || []),
+        ].join(" ").toLowerCase();
+        c._updatedTs = new Date(c.updatedAt).getTime();
+      }
+    }
+
     function getFilteredCases() {
       let scoped = allCases;
       if (resolvedOnly) {
@@ -801,50 +807,15 @@
         scoped = scoped.filter((c) => c.statusClass === "resolved");
       }
 
-      const dateFrom = document.getElementById("dateFrom").value;
-      const dateTo = document.getElementById("dateTo").value;
-      if (dateFrom) {
-        const fromTs = new Date(dateFrom + "T00:00:00").getTime();
-        scoped = scoped.filter((c) => new Date(c.createdAt).getTime() >= fromTs);
-      }
-      if (dateTo) {
-        const toTs = new Date(dateTo + "T23:59:59").getTime();
-        scoped = scoped.filter((c) => new Date(c.createdAt).getTime() <= toTs);
-      }
-
       const q = String(searchQuery || "").trim().toLowerCase();
       if (q) {
-        scoped = scoped.filter((c) => {
-          const haystack = [
-            String(c.caseNumber || ""),
-            c.title,
-            c.caseSummary,
-            c.currentStatus,
-            c.resolutionSummary,
-            c.currentSystemStatus,
-            formatDate(c.createdAt),
-            formatDate(c.updatedAt),
-            ...(c.tags || []),
-            ...(c.runningObservations || []),
-            ...(c.actionsTried || []),
-            ...(c.suggestedNextSteps || []),
-            ...(c.currentStrategy || []),
-            c.worthinessPriorDiscussion,
-            c.worthinessSharedProblem,
-            ...(c.worthinessAnalogies || []),
-            ...(c.contributors || []),
-          ]
-            .join(" ")
-            .toLowerCase();
-          return q.split(/\s+/).every((token) => haystack.includes(token));
-        });
+        const tokens = q.split(/\s+/);
+        scoped = scoped.filter((c) => tokens.every((t) => c._haystack.includes(t)));
       }
 
-      scoped.sort((a, b) => {
-        const tA = new Date(b.updatedAt).getTime();
-        const tB = new Date(a.updatedAt).getTime();
-        return sortDirection === "newest" ? tA - tB : tB - tA;
-      });
+      scoped.sort((a, b) =>
+        sortDirection === "newest" ? b._updatedTs - a._updatedTs : a._updatedTs - b._updatedTs
+      );
 
       return scoped;
     }
@@ -951,36 +922,39 @@
       return `<li><span style="display:inline-block;font-size:0.6rem;font-weight:600;padding:1px 6px;border-radius:9999px;margin-right:6px;${style}">${escapeHtml(label)}</span>${escapeHtml(text)}</li>`;
     }
 
-    function inferCrossCaseRecommendations(targetCase, allVisibleCases) {
-      const others = allVisibleCases.filter((entry) => entry.caseId !== targetCase.caseId);
-      const targetDomainSet = new Set((targetCase.domainsInPlay || []).map((entry) => String(entry || "").toLowerCase()));
-      const scoreMap = new Map();
-      for (const entry of others) {
-        const entryDomains = (entry.domainsInPlay || []).map((d) => String(d || "").toLowerCase());
-        const sharedDomain = entryDomains.some((d) => targetDomainSet.has(d));
-        const summaryOverlap =
-          String(targetCase.caseSummary || "").toLowerCase().split(/\s+/).some((token) =>
+    const crossCaseCache = new Map();
+    function buildCrossCaseCache(cases) {
+      crossCaseCache.clear();
+      for (const target of cases) {
+        const targetDomainSet = new Set((target.domainsInPlay || []).map((d) => String(d || "").toLowerCase()));
+        const scoreMap = new Map();
+        for (const entry of cases) {
+          if (entry.caseId === target.caseId) continue;
+          const entryDomains = (entry.domainsInPlay || []).map((d) => String(d || "").toLowerCase());
+          const sharedDomain = entryDomains.some((d) => targetDomainSet.has(d));
+          const summaryOverlap = String(target.caseSummary || "").toLowerCase().split(/\s+/).some((token) =>
             token.length > 5 && String(entry.caseSummary || "").toLowerCase().includes(token)
           );
-        if (!sharedDomain && !summaryOverlap) continue;
-        const candidateSteps = compactUnique(
-          [...(entry.currentStrategy || []), ...(entry.suggestedNextSteps || []), ...(entry.actionsTried || [])],
-          6,
-          140
-        );
-        for (const step of candidateSteps) {
-          const key = step.toLowerCase();
-          scoreMap.set(key, { text: step, score: (scoreMap.get(key)?.score || 0) + 1 });
+          if (!sharedDomain && !summaryOverlap) continue;
+          const candidateSteps = compactUnique(
+            [...(entry.currentStrategy || []), ...(entry.suggestedNextSteps || []), ...(entry.actionsTried || [])],
+            6, 140
+          );
+          for (const step of candidateSteps) {
+            const key = step.toLowerCase();
+            scoreMap.set(key, { text: step, score: (scoreMap.get(key)?.score || 0) + 1 });
+          }
         }
+        crossCaseCache.set(target.caseId, Array.from(scoreMap.values())
+          .sort((a, b) => b.score - a.score)
+          .map((e) => /^\[(system|case|emerging)\]/i.test(e.text) ? e.text : `[case] ${e.text}`)
+          .slice(0, 4)
+        );
       }
-      return Array.from(scoreMap.values())
-        .sort((a, b) => b.score - a.score)
-        .map((entry) => {
-          const text = entry.text;
-          if (/^\[(system|case|emerging)\]/i.test(text)) return text;
-          return `[case] ${text}`;
-        })
-        .slice(0, 4);
+    }
+
+    function inferCrossCaseRecommendations(targetCase) {
+      return crossCaseCache.get(targetCase.caseId) || [];
     }
 
     function dedupAgainst(items, referenceText) {
@@ -1005,7 +979,7 @@
         150
       );
       const systemLearning = compactUnique(
-        dedupAgainst(inferCrossCaseRecommendations(caseRow, allVisibleCases), caseRow.caseSummary),
+        dedupAgainst(inferCrossCaseRecommendations(caseRow), caseRow.caseSummary),
         4,
         150
       );
@@ -1113,7 +1087,7 @@
                 const emerging = compactUnique(dedupVsSummary(c.emergingThreads), 4, 150);
                 const social = compactUnique(dedupVsSummary(c.runningObservations), 5, 150);
                 const recs = compactUnique(dedupVsSummary((c.currentStrategy || []).length ? c.currentStrategy : c.suggestedNextSteps), 5, 150);
-                const xCase = compactUnique(dedupVsSummary(inferCrossCaseRecommendations(c, filtered)), 4, 150);
+                const xCase = compactUnique(dedupVsSummary(inferCrossCaseRecommendations(c)), 4, 150);
                 const tried = compactUnique(dedupVsSummary(c.actionsTried), 5, 150);
                 let out = "";
                 if (emerging.length) out += `<div class="report-block"><div class="report-title">Emerging Threads</div>${renderListOrFallback(emerging, "")}</div>`;
@@ -1250,6 +1224,8 @@
         textEl.value = "";
         setTimeout(async () => {
           await loadCasesFromApi();
+          buildSearchIndex(allCases);
+          buildCrossCaseCache(allCases);
           updateStats();
           renderCases();
         }, 800);
@@ -1289,6 +1265,8 @@
         if (statusEl) statusEl.textContent = `Status updated to ${status}. Reloading...`;
         setTimeout(async () => {
           await loadCasesFromApi();
+          buildSearchIndex(allCases);
+          buildCrossCaseCache(allCases);
           updateStats();
           renderCases();
         }, 1000);
@@ -1310,19 +1288,6 @@
       searchQuery = String(event.target.value || "");
       renderCases();
     });
-    document.getElementById("resolvedOnlyToggle").addEventListener("change", (event) => {
-      resolvedOnly = Boolean(event.target.checked);
-      if (resolvedOnly) {
-        currentFilter = "resolved";
-        document.querySelectorAll(".filter-tab[data-filter]").forEach((tab) => {
-          tab.classList.toggle("active", tab.dataset.filter === "resolved");
-        });
-      }
-      renderCases();
-    });
-
-    document.getElementById("dateFrom").addEventListener("change", () => renderCases());
-    document.getElementById("dateTo").addEventListener("change", () => renderCases());
 
     document.querySelectorAll(".filter-tab[data-sort]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1333,24 +1298,12 @@
       });
     });
 
-    document.getElementById("clearFilters").addEventListener("click", () => {
-      searchQuery = "";
-      currentFilter = "all";
-      resolvedOnly = false;
-      sortDirection = "newest";
-      document.getElementById("caseSearchInput").value = "";
-      document.getElementById("resolvedOnlyToggle").checked = false;
-      document.getElementById("dateFrom").value = "";
-      document.getElementById("dateTo").value = "";
-      document.querySelectorAll(".filter-tab[data-filter]").forEach((t) => t.classList.toggle("active", t.dataset.filter === "all"));
-      document.querySelectorAll(".filter-tab[data-sort]").forEach((t) => t.classList.toggle("active", t.dataset.sort === "newest"));
-      renderCases();
-    });
-
     (async function init() {
       const container = document.getElementById("caseList");
       try {
         await loadCasesFromApi();
+        buildSearchIndex(allCases);
+        buildCrossCaseCache(allCases);
         updateStats();
         renderCases();
       } catch (error) {
