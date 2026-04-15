@@ -1720,6 +1720,14 @@
         renderMessages();
         rehydrationStatus = { label: `Thread ${requestedThreadId} · ${currentThreadMessages.length} posts`, tone: "ok" };
 
+        const fullRecapPromise = Promise.allSettled([
+          fetchThreadRecap(requestedThreadId),
+          fetchThreadEmergingThreads(requestedThreadId).catch((error) => {
+            console.warn("Emerging strategy preload failed:", error);
+            return null;
+          }),
+        ]);
+
         try {
           const fastRecap = await fetchThreadRecap(requestedThreadId, { fast: true });
           if (String(currentThreadId) === String(requestedThreadId)) {
@@ -1731,13 +1739,7 @@
           console.warn("Fast recap failed:", err);
         }
 
-        Promise.allSettled([
-          fetchThreadRecap(requestedThreadId),
-          fetchThreadEmergingThreads(requestedThreadId).catch((error) => {
-            console.warn("Emerging strategy preload failed:", error);
-            return null;
-          }),
-        ]).then((results) => {
+        fullRecapPromise.then((results) => {
           if (String(currentThreadId) !== String(requestedThreadId)) return;
           const [recapResult, emergingResult] = results;
           threadRecapRefinementPending = false;
@@ -2169,12 +2171,6 @@
     // Initialize
     (async function initSocial() {
       console.log("Frog Social init starting");
-      try {
-        await fetchCasesFromApi();
-      } catch (error) {
-        console.warn("Unable to preload case memory:", error);
-      }
-      populateCaseSelector();
       checkForLinkedCase();
       try {
         await loadThread(getDefaultThreadId());
@@ -2183,6 +2179,7 @@
         console.error("Frog Social init loadThread failed:", error);
         renderMessages();
       }
+      populateCaseSelector();
 
       // Poll for new messages from other users every 15 seconds
       setInterval(async () => {

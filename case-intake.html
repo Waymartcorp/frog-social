@@ -738,8 +738,8 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.4.21/mammoth.browser.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/mammoth@1.4.21/mammoth.browser.min.js" as="script">
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" as="script">
   <script>
     const API_BASE = (() => {
       const fromQuery = new URLSearchParams(window.location.search).get("apiBase");
@@ -804,7 +804,26 @@
     const pasteFileStatus = document.getElementById("pasteFileStatus");
     const rawCaseText = document.getElementById("rawCaseText");
 
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    let _mammothLoaded = false;
+    let _pdfjsLoaded = false;
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = src; s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    async function ensureMammoth() {
+      if (_mammothLoaded || typeof mammoth !== "undefined") { _mammothLoaded = true; return; }
+      await loadScript("https://cdn.jsdelivr.net/npm/mammoth@1.4.21/mammoth.browser.min.js");
+      _mammothLoaded = true;
+    }
+    async function ensurePdfjs() {
+      if (_pdfjsLoaded || typeof pdfjsLib !== "undefined") { _pdfjsLoaded = true; return; }
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      _pdfjsLoaded = true;
+    }
 
     function setIntakeMode(mode) {
       const isPaste = mode === "paste";
@@ -854,11 +873,13 @@
     }
 
     async function extractDocxText(arrayBuffer) {
+      await ensureMammoth();
       const result = await mammoth.extractRawText({ arrayBuffer });
       return result.value || "";
     }
 
     async function extractPdfText(arrayBuffer) {
+      await ensurePdfjs();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const pages = [];
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum += 1) {
