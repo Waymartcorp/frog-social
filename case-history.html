@@ -578,29 +578,29 @@
         <p>Track cases from intake through resolution. Resolved cases with detailed notes become learning resources for future troubleshooting.</p>
       </div>
       <div class="search-row">
-        <input id="caseSearchInput" type="text" placeholder="Search by keyword, case #, symptom, species, outcome..." />
+        <input id="caseSearchInput" type="text" placeholder="Search by keyword, case #, symptom, outcome..." />
         <div class="filter-tabs">
           <button class="filter-tab active" data-filter="all">All</button>
           <button class="filter-tab" data-filter="open">Open</button>
           <button class="filter-tab" data-filter="resolved">Resolved</button>
         </div>
-        <label style="font-size:0.78rem; color: var(--secondary-text); display:inline-flex; align-items:center; gap:6px;">
-          <input id="resolvedOnlyToggle" type="checkbox" style="width:auto;" />
-          What worked (resolved only)
-        </label>
-      </div>
-      <div class="search-row" style="margin-top:8px;">
-        <label style="font-size:0.78rem; color:var(--secondary-text); display:inline-flex; align-items:center; gap:4px;">
-          From <input id="dateFrom" type="date" style="background:#0F172A; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 8px; font-size:0.8rem; color:var(--primary-text);" />
-        </label>
-        <label style="font-size:0.78rem; color:var(--secondary-text); display:inline-flex; align-items:center; gap:4px;">
-          To <input id="dateTo" type="date" style="background:#0F172A; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 8px; font-size:0.8rem; color:var(--primary-text);" />
-        </label>
         <div class="filter-tabs">
-          <button class="filter-tab active" data-sort="newest">Newest first</button>
-          <button class="filter-tab" data-sort="oldest">Oldest first</button>
+          <button class="filter-tab active" data-sort="newest">Newest</button>
+          <button class="filter-tab" data-sort="oldest">Oldest</button>
         </div>
-        <button id="clearFilters" class="btn-secondary" style="font-size:0.78rem; padding:6px 12px;">Clear filters</button>
+      </div>
+      <div class="search-row" style="margin-top:6px; font-size:0.76rem; color:var(--secondary-text);">
+        <label style="display:inline-flex; align-items:center; gap:6px;">
+          <input id="resolvedOnlyToggle" type="checkbox" style="width:auto;" />
+          What worked only
+        </label>
+        <label style="display:inline-flex; align-items:center; gap:4px; margin-left:8px;">
+          From <input id="dateFrom" type="date" style="background:#0F172A; border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:4px 6px; font-size:0.76rem; color:var(--secondary-text);" />
+        </label>
+        <label style="display:inline-flex; align-items:center; gap:4px;">
+          To <input id="dateTo" type="date" style="background:#0F172A; border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:4px 6px; font-size:0.76rem; color:var(--secondary-text);" />
+        </label>
+        <button id="clearFilters" class="btn-secondary" style="font-size:0.72rem; padding:4px 10px; margin-left:4px;">Clear</button>
       </div>
     </div>
 
