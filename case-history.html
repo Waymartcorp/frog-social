@@ -728,23 +728,7 @@
       const admittedWithArchive = mapped.filter(
         (c) => c.admissionState === "admitted" && Number(c.caseNumber || 0) > 0 && Boolean(String(c.createdAt || "").trim())
       );
-      const hiddenWithArchive = mapped.filter(
-        (c) => c.admissionState !== "admitted" && Number(c.caseNumber || 0) > 0 && Boolean(String(c.createdAt || "").trim())
-      );
-      if (!showSeedOrTestCases && admittedWithArchive.length > 0 && hiddenWithArchive.length > 0) {
-        const visibleNumbers = new Set(admittedWithArchive.map((c) => Number(c.caseNumber || 0)));
-        const skipped = hiddenWithArchive
-          .map((c) => Number(c.caseNumber || 0))
-          .filter((n) => Number.isFinite(n) && n > 0 && !visibleNumbers.has(n))
-          .sort((a, b) => a - b);
-        if (skipped.length > 0) {
-          archiveGapNote = `Some case numbers are intentionally hidden from this view (${skipped.join(", ")}). Add ?showSeedOrTest=1 to this page URL to view hidden/test cases.`;
-        } else {
-          archiveGapNote = "";
-        }
-      } else {
-        archiveGapNote = "";
-      }
+      archiveGapNote = "";
       const hasArchiveFields = (c) => Number(c.caseNumber || 0) > 0 && Boolean(String(c.createdAt || "").trim());
       const visible = showSeedOrTestCases
         ? mapped.filter(hasArchiveFields)
