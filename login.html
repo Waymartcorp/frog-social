@@ -364,7 +364,8 @@
 
   <script>
     const API_BASE = "";
-    let mode = "login";
+    const urlMode = new URLSearchParams(window.location.search).get("mode");
+    let mode = urlMode === "signup" ? "signup" : "login";
     let emailVerificationStatus = "unknown";
 
     // Tab switching
@@ -391,6 +392,7 @@
     }
     tabLogin.addEventListener("click", () => setMode("login"));
     tabSignup.addEventListener("click", () => setMode("signup"));
+    setMode(mode);
 
     function clearMessages() {
       document.querySelectorAll(".error-msg, .success-msg").forEach(el => el.className = el.className.replace(" visible", ""));
