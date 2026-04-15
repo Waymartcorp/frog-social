@@ -261,10 +261,10 @@
         <!-- Step 1: Account details -->
         <div class="steps visible" id="step1">
           <label for="signupEmail">Institutional Email</label>
-          <input type="email" id="signupEmail" placeholder="you@university.edu" required autocomplete="email" />
+          <input type="email" id="signupEmail" placeholder="you@example.com" required autocomplete="email" />
           <div class="email-status" id="emailStatus"></div>
           <div class="institution-notice" id="institutionNotice">
-            Your email domain was not recognized as an academic institution. Please provide your institution name below. Your account will be reviewed before full access is granted.
+            Please provide your institution or organization name below so we can verify your account.
           </div>
 
           <label for="signupUsername">Username</label>
@@ -607,7 +607,7 @@
           : "Account created (pending review). Redirecting...";
         succEl.textContent = statusNote;
         succEl.classList.add("visible");
-        setTimeout(() => { window.location.href = "social.html"; }, 800);
+        setTimeout(() => { window.location.href = "dashboard.html"; }, 800);
       } catch {
         errEl.textContent = "Network error. Please try again.";
         errEl.classList.add("visible");
@@ -644,7 +644,7 @@
         const succEl = document.getElementById("loginSuccess");
         succEl.textContent = "Signed in. Redirecting...";
         succEl.classList.add("visible");
-        setTimeout(() => { window.location.href = "social.html"; }, 400);
+        setTimeout(() => { window.location.href = "dashboard.html"; }, 400);
       } catch {
         errEl.textContent = "Network error. Please try again.";
         errEl.classList.add("visible");
@@ -658,7 +658,7 @@
       fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${existingToken}` },
       }).then(r => r.json()).then(d => {
-        if (d.ok) window.location.href = "social.html";
+        if (d.ok) window.location.href = "dashboard.html";
       }).catch(() => {});
     }
   </script>

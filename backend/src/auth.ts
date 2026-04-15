@@ -37,13 +37,23 @@ const ACADEMIC_TLDS: string[] = [
   ".gov",
 ];
 
+const BETA_ALLOWLIST: string[] = (process.env.FROG_BETA_ALLOWLIST || "")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
 export function classifyEmailDomain(email: string): VerificationStatus {
   const lower = email.trim().toLowerCase();
+  if (BETA_ALLOWLIST.includes(lower)) return "verified";
   const domain = lower.split("@")[1] || "";
   for (const tld of ACADEMIC_TLDS) {
     if (domain.endsWith(tld) || domain.includes(tld)) return "verified";
   }
   return "pending_review";
+}
+
+export function isAllowlistedEmail(email: string): boolean {
+  return BETA_ALLOWLIST.includes(email.trim().toLowerCase());
 }
 
 export interface AuthTokenPayload {
@@ -105,8 +115,9 @@ export async function signUp(opts: {
   }
 
   const verificationStatus = classifyEmailDomain(trimmedEmail);
-  if (verificationStatus === "pending_review" && !opts.institution?.trim()) {
-    throw new Error("Institution name is required for non-academic email addresses.");
+  const allowlisted = isAllowlistedEmail(trimmedEmail);
+  if (verificationStatus === "pending_review" && !allowlisted && !opts.institution?.trim()) {
+    throw new Error("Institution or organization name is required for non-academic email addresses.");
   }
 
   const users = await loadUsers();

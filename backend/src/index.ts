@@ -16,6 +16,7 @@ import {
   getUserById,
   listUsers,
   classifyEmailDomain,
+  isAllowlistedEmail,
   isUsernameTaken,
   type AuthTokenPayload,
 } from "./auth";
