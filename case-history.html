@@ -578,17 +578,29 @@
         <p>Track cases from intake through resolution. Resolved cases with detailed notes become learning resources for future troubleshooting.</p>
       </div>
       <div class="search-row">
-        <input id="caseSearchInput" type="text" placeholder="Search symptoms, lab, date, case #, or remembered detail..." />
-        <label style="font-size:0.78rem; color: var(--secondary-text); display:inline-flex; align-items:center; gap:6px;">
-          <input id="resolvedOnlyToggle" type="checkbox" style="width:auto;" />
-          What worked (resolved only)
-        </label>
+        <input id="caseSearchInput" type="text" placeholder="Search by keyword, case #, symptom, species, outcome..." />
         <div class="filter-tabs">
           <button class="filter-tab active" data-filter="all">All</button>
           <button class="filter-tab" data-filter="open">Open</button>
           <button class="filter-tab" data-filter="resolved">Resolved</button>
         </div>
-        <div class="hint">Tip: search by symptom keywords and enable "What worked" to browse resolved outcomes first.</div>
+        <label style="font-size:0.78rem; color: var(--secondary-text); display:inline-flex; align-items:center; gap:6px;">
+          <input id="resolvedOnlyToggle" type="checkbox" style="width:auto;" />
+          What worked (resolved only)
+        </label>
+      </div>
+      <div class="search-row" style="margin-top:8px;">
+        <label style="font-size:0.78rem; color:var(--secondary-text); display:inline-flex; align-items:center; gap:4px;">
+          From <input id="dateFrom" type="date" style="background:#0F172A; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 8px; font-size:0.8rem; color:var(--primary-text);" />
+        </label>
+        <label style="font-size:0.78rem; color:var(--secondary-text); display:inline-flex; align-items:center; gap:4px;">
+          To <input id="dateTo" type="date" style="background:#0F172A; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 8px; font-size:0.8rem; color:var(--primary-text);" />
+        </label>
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-sort="newest">Newest first</button>
+          <button class="filter-tab" data-sort="oldest">Oldest first</button>
+        </div>
+        <button id="clearFilters" class="btn-secondary" style="font-size:0.78rem; padding:6px 12px;">Clear filters</button>
       </div>
     </div>
 
@@ -658,6 +670,7 @@
     let currentFilter = "all";
     let resolvedOnly = false;
     let searchQuery = "";
+    let sortDirection = "newest";
     let allCases = [];
     let archiveGapNote = "";
 
@@ -788,27 +801,52 @@
         scoped = scoped.filter((c) => c.statusClass === "resolved");
       }
 
-      const q = String(searchQuery || "").trim().toLowerCase();
-      if (!q) return scoped;
+      const dateFrom = document.getElementById("dateFrom").value;
+      const dateTo = document.getElementById("dateTo").value;
+      if (dateFrom) {
+        const fromTs = new Date(dateFrom + "T00:00:00").getTime();
+        scoped = scoped.filter((c) => new Date(c.createdAt).getTime() >= fromTs);
+      }
+      if (dateTo) {
+        const toTs = new Date(dateTo + "T23:59:59").getTime();
+        scoped = scoped.filter((c) => new Date(c.createdAt).getTime() <= toTs);
+      }
 
-      return scoped.filter((c) => {
-        const dateText = formatDate(c.updatedAt).toLowerCase();
-        const haystack = [
-          c.title,
-          c.threadId,
-          c.caseSummary,
-          c.currentStatus,
-          c.createdAt,
-          c.updatedAt,
-          dateText,
-          c.worthinessPriorDiscussion,
-          c.worthinessSharedProblem,
-          ...(c.worthinessAnalogies || []),
-        ]
-          .join(" ")
-          .toLowerCase();
-        return q.split(/\s+/).every((token) => haystack.includes(token));
+      const q = String(searchQuery || "").trim().toLowerCase();
+      if (q) {
+        scoped = scoped.filter((c) => {
+          const haystack = [
+            String(c.caseNumber || ""),
+            c.title,
+            c.caseSummary,
+            c.currentStatus,
+            c.resolutionSummary,
+            c.currentSystemStatus,
+            formatDate(c.createdAt),
+            formatDate(c.updatedAt),
+            ...(c.tags || []),
+            ...(c.runningObservations || []),
+            ...(c.actionsTried || []),
+            ...(c.suggestedNextSteps || []),
+            ...(c.currentStrategy || []),
+            c.worthinessPriorDiscussion,
+            c.worthinessSharedProblem,
+            ...(c.worthinessAnalogies || []),
+            ...(c.contributors || []),
+          ]
+            .join(" ")
+            .toLowerCase();
+          return q.split(/\s+/).every((token) => haystack.includes(token));
+        });
+      }
+
+      scoped.sort((a, b) => {
+        const tA = new Date(b.updatedAt).getTime();
+        const tB = new Date(a.updatedAt).getTime();
+        return sortDirection === "newest" ? tA - tB : tB - tA;
       });
+
+      return scoped;
     }
 
     const SECTION_LABEL_RE = /^\s*(Knowledge base|Current picture|Open points|Reported context|Context noted|GENERAL KNOWLEDGE|Recent outcomes|Uncertain factors|Observed signals|Still uncertain|Initial case description):\s*/i;
@@ -1105,9 +1143,24 @@
             </div>
           </div>
           <div class="case-actions">
+            <button class="btn-secondary" data-case-id="${escapeHtml(c.id)}" onclick="toggleNoteForm(this.dataset.caseId)">Add Note</button>
             <button class="btn-secondary" data-thread-id="${escapeHtml(c.threadId || "")}" onclick="viewOnSocial(this.dataset.threadId)">Open Thread</button>
             <button class="btn-secondary" data-thread-id="${escapeHtml(c.threadId || "")}" data-title="${escapeHtml(c.title || "")}" onclick="updateFromDescribe(this.dataset.threadId, this.dataset.title)">Update in Describe</button>
             <button class="btn-secondary" style="background:rgba(52,211,153,0.15);color:#6EE7B7;border-color:rgba(52,211,153,0.4);" data-case-id="${escapeHtml(c.id)}" onclick="toggleResolutionForm(this.dataset.caseId)">Update Status / Resolve</button>
+          </div>
+          <div class="case-note-form" id="note-form-${escapeHtml(c.id)}" style="display:none; margin-top:12px; padding:16px; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
+            <div style="margin-bottom:10px; font-size:0.85rem; font-weight:600; color:var(--primary-text);">Add a note to this case</div>
+            <select id="note-type-${escapeHtml(c.id)}" style="background:#0F172A; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 10px; font-size:0.82rem; color:var(--primary-text); margin-bottom:10px; width:100%;">
+              <option value="update">Update / progress note</option>
+              <option value="observation">Observation</option>
+              <option value="outcome">Outcome / resolution note</option>
+              <option value="follow-up">Follow-up</option>
+            </select>
+            <textarea id="note-text-${escapeHtml(c.id)}" rows="4" placeholder="What happened? What did you observe? What changed?" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px;font-size:0.85rem;color:var(--primary-text);font-family:inherit;resize:vertical;margin-bottom:10px;"></textarea>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn-secondary submit-note-btn" data-case-id="${escapeHtml(c.id)}" style="background:rgba(52,211,153,0.2);color:#6EE7B7;">Submit note</button>
+              <span id="note-status-${escapeHtml(c.id)}" style="font-size:0.75rem;color:var(--secondary-text);"></span>
+            </div>
           </div>
           <div class="resolution-form" id="resolution-form-${escapeHtml(c.id)}" style="display:none; margin-top:12px; padding:16px; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
             <div style="margin-bottom:10px; font-size:0.85rem; font-weight:600; color:var(--primary-text);">Update Case Status</div>
@@ -1149,6 +1202,64 @@
       }
     };
 
+    window.toggleNoteForm = function(caseId) {
+      const form = document.getElementById(`note-form-${caseId}`);
+      if (form) {
+        form.style.display = form.style.display === "none" ? "block" : "none";
+      }
+    };
+
+    document.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".submit-note-btn");
+      if (!btn) return;
+      const caseId = btn.dataset.caseId;
+      const textEl = document.getElementById(`note-text-${caseId}`);
+      const typeEl = document.getElementById(`note-type-${caseId}`);
+      const statusEl = document.getElementById(`note-status-${caseId}`);
+      const noteText = textEl ? textEl.value.trim() : "";
+      const noteType = typeEl ? typeEl.value : "update";
+
+      if (!noteText) {
+        if (statusEl) statusEl.textContent = "Please enter a note before submitting.";
+        return;
+      }
+
+      const prefixed = `[${noteType}] ${noteText}`;
+      const isResolution = noteType === "outcome";
+
+      btn.disabled = true;
+      if (statusEl) statusEl.textContent = "Submitting...";
+
+      try {
+        const endpoint = isResolution
+          ? `${API_BASE}/api/cases/${encodeURIComponent(caseId)}/resolution`
+          : `${API_BASE}/api/cases/${encodeURIComponent(caseId)}/follow-up`;
+        const body = isResolution
+          ? { outcome: "MONITORING", freeText: noteText }
+          : { responseText: prefixed };
+
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: authJsonHeaders(),
+          body: JSON.stringify(body),
+        });
+        if (response.status === 401) { window.location.href = "login.html"; return; }
+        if (!response.ok) throw new Error(`Failed (${response.status})`);
+
+        if (statusEl) statusEl.textContent = "Note added. Reloading cases...";
+        textEl.value = "";
+        setTimeout(async () => {
+          await loadCasesFromApi();
+          updateStats();
+          renderCases();
+        }, 800);
+      } catch (err) {
+        if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
     document.addEventListener("click", async (e) => {
       const btn = e.target.closest(".resolution-status-btn");
       if (!btn) return;
@@ -1186,9 +1297,9 @@
       }
     });
 
-    document.querySelectorAll(".filter-tab").forEach((tab) => {
+    document.querySelectorAll(".filter-tab[data-filter]").forEach((tab) => {
       tab.addEventListener("click", () => {
-        document.querySelectorAll(".filter-tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".filter-tab[data-filter]").forEach((t) => t.classList.remove("active"));
         tab.classList.add("active");
         currentFilter = tab.dataset.filter;
         renderCases();
@@ -1203,10 +1314,36 @@
       resolvedOnly = Boolean(event.target.checked);
       if (resolvedOnly) {
         currentFilter = "resolved";
-        document.querySelectorAll(".filter-tab").forEach((tab) => {
+        document.querySelectorAll(".filter-tab[data-filter]").forEach((tab) => {
           tab.classList.toggle("active", tab.dataset.filter === "resolved");
         });
       }
+      renderCases();
+    });
+
+    document.getElementById("dateFrom").addEventListener("change", () => renderCases());
+    document.getElementById("dateTo").addEventListener("change", () => renderCases());
+
+    document.querySelectorAll(".filter-tab[data-sort]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".filter-tab[data-sort]").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        sortDirection = btn.dataset.sort;
+        renderCases();
+      });
+    });
+
+    document.getElementById("clearFilters").addEventListener("click", () => {
+      searchQuery = "";
+      currentFilter = "all";
+      resolvedOnly = false;
+      sortDirection = "newest";
+      document.getElementById("caseSearchInput").value = "";
+      document.getElementById("resolvedOnlyToggle").checked = false;
+      document.getElementById("dateFrom").value = "";
+      document.getElementById("dateTo").value = "";
+      document.querySelectorAll(".filter-tab[data-filter]").forEach((t) => t.classList.toggle("active", t.dataset.filter === "all"));
+      document.querySelectorAll(".filter-tab[data-sort]").forEach((t) => t.classList.toggle("active", t.dataset.sort === "newest"));
       renderCases();
     });
 
