@@ -4,175 +4,315 @@
   <meta charset="UTF-8" />
   <title>Frog Social · Colony Register</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("frogSocialToken");
+        var u = localStorage.getItem("frogSocialUser");
+        if (!t || !u) window.location.replace("login.html");
+      } catch (e) {
+        window.location.replace("login.html");
+      }
+    })();
+  </script>
   <style>
-    :root { --bg:#f3f4f6; --card-bg:#ffffff; --accent:#0ea5e9; --border-soft:#e5e7eb; --text-main:#111827; --text-muted:#6b7280; }
+    * { box-sizing: border-box; }
+    :root {
+      --app-shell-bg: #050810;
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --card-border: #1F2937;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
+      --warning: #F97316;
+      --danger: #EF4444;
+    }
     body {
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      margin:0;
-      background:radial-gradient(circle at top,#e0f2fe 0,var(--bg) 60%);
-      color:var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: var(--app-body-bg);
+      color: var(--primary-text);
+      min-height: 100vh;
     }
-    .outer{min-height:100vh;display:flex;justify-content:center;align-items:flex-start;}
-    .container{max-width:900px;width:100%;padding:24px;box-sizing:border-box;}
-    .card{
-      background:var(--card-bg);
-      border-radius:16px;
-      padding:22px;
-      box-shadow:0 18px 30px rgba(15,23,42,0.08),0 0 0 1px rgba(15,23,42,0.02);
-      border:1px solid var(--border-soft);
-      margin-bottom:20px;
+
+    .nav-bar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
     }
-    .top-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
-    .top-nav-title{font-weight:600;font-size:0.95rem;color:#0f172a;}
-    .top-nav-links a{font-size:0.85rem;color:#4b5563;text-decoration:none;margin-left:10px;}
-    .top-nav-links a:hover{color:#0ea5e9;}
-    h1{margin:4px 0 12px;font-size:1.55rem;}
-    p{color:var(--text-muted);font-size:0.9rem;line-height:1.5;margin-bottom:10px;}
-    label{display:block;margin-top:9px;margin-bottom:3px;font-size:0.82rem;color:#374151;font-weight:500;}
-    input,textarea{
-      width:100%;
-      padding:7px 9px;
-      border-radius:9px;
-      border:1px solid #d1d5db;
-      background:#f9fafb;
-      color:var(--text-main);
-      box-sizing:border-box;
-      font-size:0.88rem;
+    .nav-brand {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 1rem; font-weight: 600; color: var(--primary-text);
+      text-decoration: none;
     }
-    textarea{min-height:70px;resize:vertical;}
-    button{
-      margin-top:13px;
-      padding:9px 18px;
-      border-radius:999px;
-      border:none;
-      font-size:0.9rem;
-      font-weight:550;
-      cursor:pointer;
-      background:var(--accent);
-      color:#f9fafb;
+    .nav-brand span { font-size: 1.25rem; }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-links a {
+      font-size: 0.875rem; color: var(--secondary-text); text-decoration: none;
+      padding: 8px 14px; border-radius: 9999px; transition: all 0.15s ease;
     }
-    button:hover{background:#0369a1;}
-    .colony-list-item{
-      padding:14px;
-      border-radius:14px;
-      border:1px solid var(--border-soft);
-      background:#fff;
-      margin-top:10px;
+    .nav-links a:hover { background: rgba(255,255,255,0.05); color: var(--primary-text); }
+    .nav-links a.active {
+      color: #6EE7B7; background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.4);
     }
-    .list-title{font-weight:600;font-size:1rem;margin:0 0 8px;}
-    @media(max-width:800px){.container{padding:14px;}}
+    .nav-signout {
+      background: #1E293B; border: 1px solid rgba(255,255,255,0.1);
+      color: var(--primary-text); padding: 6px 14px; border-radius: 9999px;
+      font-size: 0.875rem; cursor: pointer; text-decoration: none;
+    }
+    .nav-signout:hover { background: #334155; }
+
+    .page-container { max-width: 720px; margin: 0 auto; padding: 32px 24px; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 8px; }
+    .page-header p { color: var(--secondary-text); font-size: 0.88rem; margin: 0; line-height: 1.5; }
+
+    .card {
+      background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;
+      padding: 24px; margin-bottom: 20px;
+    }
+
+    label {
+      display: block; font-size: 0.78rem; color: var(--secondary-text);
+      font-weight: 500; margin-bottom: 5px; margin-top: 14px;
+    }
+    label:first-of-type { margin-top: 0; }
+    input, textarea {
+      width: 100%; background: #0F172A; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 10px 14px; font-size: 0.88rem;
+      color: var(--primary-text); transition: border-color 0.15s;
+    }
+    input::placeholder, textarea::placeholder { color: #6B7280; }
+    input:focus, textarea:focus {
+      outline: none; border-color: var(--accent-green);
+      box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+    }
+    textarea { min-height: 70px; resize: vertical; font-family: inherit; }
+
+    .btn-primary {
+      width: 100%; background: var(--accent-green); color: #0F172A; font-weight: 600;
+      padding: 11px; border-radius: 9999px; border: none; font-size: 0.9rem;
+      cursor: pointer; margin-top: 18px;
+      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
+      transition: transform 0.15s, background 0.15s;
+    }
+    .btn-primary:hover { background: #6EE7B7; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .colony-item {
+      padding: 16px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.06); background: rgba(15, 23, 42, 0.5);
+      margin-top: 12px; display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .colony-info { flex: 1; }
+    .colony-name { font-weight: 600; font-size: 0.95rem; margin: 0 0 6px; color: var(--primary-text); }
+    .colony-meta { font-size: 0.8rem; color: var(--secondary-text); line-height: 1.5; }
+    .colony-delete {
+      background: none; border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--danger); font-size: 0.75rem; padding: 4px 10px;
+      border-radius: 9999px; cursor: pointer; flex-shrink: 0; margin-left: 12px; margin-top: 0;
+      width: auto;
+    }
+    .colony-delete:hover { background: rgba(239, 68, 68, 0.15); }
+
+    .status-msg {
+      font-size: 0.8rem; margin-top: 10px; padding: 8px 12px; border-radius: 8px;
+    }
+    .status-msg.error { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .status-msg.ok { background: rgba(52, 211, 153, 0.15); color: var(--accent-green); }
+    .empty { color: var(--secondary-text); font-size: 0.85rem; padding: 12px 0; }
+    .loading { color: var(--secondary-text); font-size: 0.85rem; }
   </style>
 </head>
-
 <body>
-  <div class="outer">
-    <div class="container">
 
-      <!-- NAV -->
-      <div class="top-nav">
-        <div class="top-nav-title">Frog Social</div>
-        <div class="top-nav-links">
-          <a href="index.html">Home</a>
-          <a href="colony-register.html">Colonies</a>
-          <a href="case-intake.html">New Case</a>
-          <a href="case-history.html">Case History</a>
-          <a href="social.html">Social</a>
-          <a href="account.html">Account</a>
-         <a class="signout" href="index.html">Sign Out</a>
-        </div>
-      </div>
+  <nav class="nav-bar">
+    <a class="nav-brand" href="dashboard.html">
+      <span>🐸</span>
+      Frog Social
+    </a>
+    <div class="nav-links">
+      <a href="case-intake.html">Describe a Problem</a>
+      <a href="case-history.html">Case History</a>
+      <a href="social.html">Social</a>
+      <a href="colony-register.html" class="active">Colonies</a>
+    </div>
+    <a href="login.html" class="nav-signout" id="navSignOut">Sign out</a>
+  </nav>
 
-      <!-- PAGE TITLE -->
-      <div class="card">
-        <h1>Colony Register</h1>
-        <p>
-          Add each colony, room, rack, or housing system you'd like Frog Social to track.
-          This creates a quick-access reference and helps when submitting case summaries.
-        </p>
+  <div class="page-container">
+    <div class="page-header">
+      <h1>Colony Register</h1>
+      <p>Register each colony, room, rack, or housing system. This is your personal reference — only you can see your colonies.</p>
+    </div>
 
-        <!-- FORM -->
-        <form id="colonyForm">
-          <label for="colonyName">Colony / Room Name</label>
-          <input id="colonyName" placeholder="e.g., Room B217, Rack 3" required>
+    <div class="card">
+      <form id="colonyForm">
+        <label for="colonyName">Colony / Room Name</label>
+        <input id="colonyName" placeholder="e.g., Room B217, Rack 3" required />
 
-          <label for="systemType">System Type</label>
-          <input id="systemType" placeholder="e.g., Recirculating rack">
+        <label for="systemType">System Type</label>
+        <input id="systemType" placeholder="e.g., Recirculating rack, Static tanks" />
 
-          <label for="approxFrogs">Approx # of Frogs</label>
-          <input id="approxFrogs" placeholder="e.g., 120">
+        <label for="approxFrogs">Approx # of Frogs</label>
+        <input id="approxFrogs" placeholder="e.g., 120" />
 
-          <label for="notes">Notes (optional)</label>
-          <textarea id="notes" placeholder="Anything unique about this colony (density, age structure, water source, etc.)"></textarea>
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" placeholder="Density, age structure, water source, species mix, etc."></textarea>
 
-          <button type="submit">Add Colony</button>
-        </form>
-      </div>
+        <button type="submit" class="btn-primary" id="addBtn">Add Colony</button>
+      </form>
+      <div id="formStatus"></div>
+    </div>
 
-      <!-- LIST -->
-      <div class="card">
-        <h2>Registered Colonies</h2>
-        <div id="colonyList"></div>
-      </div>
-
+    <div class="card">
+      <h2 style="font-size:1.1rem; margin:0 0 4px;">Your Colonies</h2>
+      <div id="colonyList"><p class="loading">Loading...</p></div>
     </div>
   </div>
 
   <script>
-    function loadColonies() {
-      try {
-        const c = localStorage.getItem("frogSocialColonies");
-        return c ? JSON.parse(c) : [];
-      } catch { return []; }
+    const API_BASE = "";
+
+    function getAuthToken() { return localStorage.getItem("frogSocialToken") || ""; }
+    function getAuthUser() {
+      try { return JSON.parse(localStorage.getItem("frogSocialUser") || "null"); }
+      catch { return null; }
+    }
+    if (!getAuthToken() || !getAuthUser()) { window.location.href = "login.html"; }
+
+    function authHeaders() {
+      return {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + getAuthToken(),
+      };
     }
 
-    function saveColonies(list) {
-      localStorage.setItem("frogSocialColonies", JSON.stringify(list));
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.appendChild(document.createTextNode(String(str)));
+      return div.innerHTML;
     }
 
     const colonyForm = document.getElementById("colonyForm");
     const colonyListDiv = document.getElementById("colonyList");
+    const formStatus = document.getElementById("formStatus");
+    const addBtn = document.getElementById("addBtn");
+
+    let colonies = [];
 
     function renderColonies() {
-      const colonies = loadColonies();
-      colonyListDiv.innerHTML = "";
-
       if (colonies.length === 0) {
-        colonyListDiv.innerHTML = `<p class="small" style="color:#6b7280;">No colonies registered yet.</p>`;
+        colonyListDiv.innerHTML = '<p class="empty">No colonies registered yet. Add your first colony above.</p>';
         return;
       }
+      colonyListDiv.innerHTML = colonies.map((c) => `
+        <div class="colony-item">
+          <div class="colony-info">
+            <div class="colony-name">${escapeHtml(c.name)}</div>
+            <div class="colony-meta">
+              ${c.system ? "System: " + escapeHtml(c.system) : ""}
+              ${c.count ? " · ~" + escapeHtml(c.count) + " frogs" : ""}
+              ${c.notes ? "<br>" + escapeHtml(c.notes) : ""}
+            </div>
+          </div>
+          <button class="colony-delete" data-id="${escapeHtml(c.id)}">Remove</button>
+        </div>
+      `).join("");
 
-      colonies.forEach(c => {
-        const div = document.createElement("div");
-        div.className = "colony-list-item";
-        div.innerHTML = `
-          <div class="list-title">${c.name}</div>
-          <div><strong>System:</strong> ${c.system || "—"}</div>
-          <div><strong>Frogs:</strong> ${c.count || "—"}</div>
-          <div><strong>Notes:</strong> ${c.notes || "—"}</div>
-        `;
-        colonyListDiv.appendChild(div);
+      colonyListDiv.querySelectorAll(".colony-delete").forEach((btn) => {
+        btn.addEventListener("click", () => deleteColony(btn.dataset.id));
       });
     }
 
-    colonyForm.addEventListener("submit", e => {
+    async function loadColonies() {
+      try {
+        const res = await fetch(API_BASE + "/api/colonies", { headers: authHeaders() });
+        if (res.status === 401) { window.location.href = "login.html"; return; }
+        const data = await res.json();
+        colonies = Array.isArray(data.colonies) ? data.colonies : [];
+      } catch (err) {
+        colonies = [];
+        console.warn("Failed to load colonies:", err);
+      }
+      renderColonies();
+    }
+
+    colonyForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const newColony = {
-        id: Date.now(),
+      formStatus.innerHTML = "";
+      addBtn.disabled = true;
+      addBtn.textContent = "Adding...";
+
+      const body = {
         name: document.getElementById("colonyName").value.trim(),
         system: document.getElementById("systemType").value.trim(),
         count: document.getElementById("approxFrogs").value.trim(),
-        notes: document.getElementById("notes").value.trim()
+        notes: document.getElementById("notes").value.trim(),
       };
 
-      const colonies = loadColonies();
-      colonies.unshift(newColony);
-      saveColonies(colonies);
-      renderColonies();
-      colonyForm.reset();
+      try {
+        const res = await fetch(API_BASE + "/api/colonies", {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(body),
+        });
+        if (res.status === 401) { window.location.href = "login.html"; return; }
+        const data = await res.json();
+        if (!data.ok) {
+          formStatus.innerHTML = '<div class="status-msg error">' + escapeHtml(data.error || "Failed to add colony") + '</div>';
+        } else {
+          colonies.unshift(data.colony);
+          renderColonies();
+          colonyForm.reset();
+          formStatus.innerHTML = '<div class="status-msg ok">Colony added</div>';
+          setTimeout(() => { formStatus.innerHTML = ""; }, 2000);
+        }
+      } catch {
+        formStatus.innerHTML = '<div class="status-msg error">Network error. Please try again.</div>';
+      }
+      addBtn.disabled = false;
+      addBtn.textContent = "Add Colony";
     });
 
-    renderColonies();
+    async function deleteColony(id) {
+      if (!confirm("Remove this colony?")) return;
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + encodeURIComponent(id), {
+          method: "DELETE",
+          headers: authHeaders(),
+        });
+        if (res.status === 401) { window.location.href = "login.html"; return; }
+        const data = await res.json();
+        if (data.ok) {
+          colonies = colonies.filter((c) => c.id !== id);
+          renderColonies();
+        }
+      } catch (err) {
+        console.warn("Delete failed:", err);
+      }
+    }
+
+    (function () {
+      var el = document.getElementById("navSignOut");
+      if (el) {
+        el.addEventListener("click", function (e) {
+          e.preventDefault();
+          localStorage.removeItem("frogSocialToken");
+          localStorage.removeItem("frogSocialUser");
+          window.location.href = "login.html";
+        });
+      }
+    })();
+
+    loadColonies();
   </script>
 </body>
 </html>
-

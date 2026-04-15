@@ -7,6 +7,7 @@ import { randomUUID } from "crypto";
 import path from "node:path";
 import { isLLMConfigured, generateThreadSummary, segmentThreadByStrictTopic } from "./llmSummary";
 import { sanitizeGeneratedText, stripAllSectionPrefixes, deduplicateSentences } from "./caseState";
+import { redisGet, redisSet } from "./redisStorage";
 import {
   signUp,
   logIn,
@@ -535,6 +536,60 @@ app.get("/api/cases/number/:caseNumber", (req, res) => {
   const frogCase = getCaseByNumber(caseNumber);
   if (!frogCase) return res.status(404).json({ error: "Case not found" });
   return res.json(frogCase);
+});
+
+// ─── Colony registration (per-user, personal space) ────────────
+interface Colony {
+  id: string;
+  name: string;
+  system: string;
+  count: string;
+  notes: string;
+  createdAt: string;
+}
+
+function colonyRedisKey(userId: string): string {
+  return `frog-social:colonies:${userId}`;
+}
+
+app.get("/api/colonies", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const data = await redisGet<Colony[]>(colonyRedisKey(actor.userId));
+  return res.json({ ok: true, colonies: Array.isArray(data) ? data : [] });
+});
+
+app.post("/api/colonies", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const name = String(req.body.name ?? "").trim();
+  if (!name) return res.status(400).json({ ok: false, error: "Colony name is required" });
+  const colony: Colony = {
+    id: `col-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    name,
+    system: String(req.body.system ?? "").trim(),
+    count: String(req.body.count ?? "").trim(),
+    notes: String(req.body.notes ?? "").trim(),
+    createdAt: new Date().toISOString(),
+  };
+  const key = colonyRedisKey(actor.userId);
+  const existing = await redisGet<Colony[]>(key);
+  const list = Array.isArray(existing) ? existing : [];
+  list.unshift(colony);
+  await redisSet(key, list);
+  return res.json({ ok: true, colony });
+});
+
+app.delete("/api/colonies/:id", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const key = colonyRedisKey(actor.userId);
+  const existing = await redisGet<Colony[]>(key);
+  const list = Array.isArray(existing) ? existing : [];
+  const filtered = list.filter((c) => c.id !== req.params.id);
+  if (filtered.length === list.length) return res.status(404).json({ ok: false, error: "Colony not found" });
+  await redisSet(key, filtered);
+  return res.json({ ok: true });
 });
 
 app.post("/api/admin/reset", async (_req, res) => {
