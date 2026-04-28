@@ -168,7 +168,9 @@ app.get("/api/auth/me", async (req, res) => {
   return res.json({ ok: true, user });
 });
 
-app.get("/api/auth/users", async (_req, res) => {
+app.get("/api/auth/users", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const users = await listUsers();
   res.json({ ok: true, users });
 });
@@ -213,6 +215,8 @@ app.post("/api/messages", async (req, res) => {
 });
 
 app.get("/api/messages", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const rawLimit = Number(req.query.limit || 200);
   const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(1000, Math.floor(rawLimit))) : 200;
   const rows = listAllMessages(limit);
@@ -220,6 +224,8 @@ app.get("/api/messages", (req, res) => {
 });
 
 app.get("/api/feed/summary", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const recap = buildGlobalFeedRecap(120);
   res.json({
     generatedAt: new Date().toISOString(),
@@ -228,6 +234,8 @@ app.get("/api/feed/summary", (req, res) => {
 });
 
 app.get("/api/feed/similar-cases", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const rawLimit = Number(req.query.limit || 8);
   const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(20, Math.floor(rawLimit))) : 8;
   const payload = findSimilarCasesForFeed(limit);
@@ -235,11 +243,15 @@ app.get("/api/feed/similar-cases", (req, res) => {
 });
 
 app.get("/api/threads/:threadId/messages", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const messages = listMessagesByThreadId(req.params.threadId);
   res.json(messages);
 });
 
 app.get("/api/threads/:threadId/case", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const frogCase = getCaseByThreadId(req.params.threadId);
   if (!frogCase) {
     return res.json(null);
@@ -248,11 +260,15 @@ app.get("/api/threads/:threadId/case", (req, res) => {
 });
 
 app.get("/api/threads/:threadId/verify", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const report = buildThreadVerificationReport(req.params.threadId);
   return res.json(report);
 });
 
 app.get("/api/threads/:threadId/similar-cases", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const rawLimit = Number(req.query.limit || 6);
   const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(20, Math.floor(rawLimit))) : 6;
   const payload = findSimilarCasesForThread(req.params.threadId, limit);
@@ -281,6 +297,8 @@ function buildCaseUpdateBlock(summary: string, context: string, openPoints: stri
 }
 
 app.get("/api/threads/:threadId/recap", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const threadId = req.params.threadId;
   const threadMessages = listMessagesByThreadId(threadId);
   const skipLlm = String(req.query.fast || "") === "1";
@@ -394,23 +412,31 @@ app.get("/api/threads/:threadId/recap", async (req, res) => {
 });
 
 app.get("/api/threads/:threadId/emerging-strategy", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const keyStrategies = buildThreadKeyStrategies(req.params.threadId);
   res.json(keyStrategies);
 });
 
 // Backward-compatible alias while clients migrate.
 app.get("/api/threads/:threadId/key-strategies", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const keyStrategies = buildThreadKeyStrategies(req.params.threadId);
   res.json(keyStrategies);
 });
 
 // List cases
 app.get("/api/cases", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const cases = listCases();
   res.json(cases);
 });
 
 app.get("/api/cases/recall", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const q = String(req.query.q || "");
   const rawLimit = Number(req.query.limit || 12);
   const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(50, Math.floor(rawLimit))) : 12;
@@ -419,6 +445,8 @@ app.get("/api/cases/recall", (req, res) => {
 });
 
 app.get("/api/persistence/report", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const report = buildPersistenceReport();
   res.json(report);
 });
@@ -489,6 +517,8 @@ app.post("/api/cases/:id/resolution", async (req, res) => {
 });
 
 app.get("/api/cases/:id/follow-up-prompt", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const prompt = getCaseFollowUpPrompt(req.params.id);
   if (prompt === null) {
     const frogCase = getCaseById(req.params.id);
@@ -532,6 +562,8 @@ app.post("/api/cases/:id/follow-up", async (req, res) => {
 
 // Single case
 app.get("/api/cases/:id", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   if (req.params.id === "recall") {
     const q = String(req.query.q || "");
     const rawLimit = Number(req.query.limit || 12);
@@ -545,6 +577,8 @@ app.get("/api/cases/:id", (req, res) => {
 });
 
 app.get("/api/cases/number/:caseNumber", (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const caseNumber = Number(req.params.caseNumber);
   const frogCase = getCaseByNumber(caseNumber);
   if (!frogCase) return res.status(404).json({ error: "Case not found" });
@@ -605,7 +639,9 @@ app.delete("/api/colonies/:id", async (req, res) => {
   return res.json({ ok: true });
 });
 
-app.post("/api/admin/reset", async (_req, res) => {
+app.post("/api/admin/reset", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   try {
     const result = await resetAllState();
     console.log("[admin/reset] State cleared:", result.cleared);

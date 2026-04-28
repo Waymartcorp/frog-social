@@ -898,7 +898,7 @@
     }
 
     async function fetchCasesFromApi() {
-      const response = await fetch(`${API_BASE}/api/cases`);
+      const response = await fetch(`${API_BASE}/api/cases`, { headers: authJsonHeaders() });
       if (!response.ok) throw new Error(`Cases load failed (${response.status})`);
       const rows = await response.json();
       const filtered = Array.isArray(rows)
@@ -1421,7 +1421,7 @@
 
     async function fetchCaseRecall(query) {
       const url = `${API_BASE}/api/cases/recall?q=${encodeURIComponent(String(query || "").trim())}&limit=10`;
-      const response = await fetch(url);
+      const response = await fetch(url, { headers: authJsonHeaders() });
       if (!response.ok) throw new Error(`Case recall failed (${response.status})`);
       return response.json();
     }
@@ -1509,7 +1509,7 @@
     }
 
     async function fetchThreadMessages(threadId) {
-      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/messages`);
+      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/messages`, { headers: authJsonHeaders() });
       if (!response.ok) throw new Error(`Thread messages failed (${response.status})`);
       return response.json();
     }
@@ -1517,13 +1517,13 @@
     async function fetchThreadRecap(threadId, opts = {}) {
       const fast = Boolean(opts.fast);
       const q = fast ? "?fast=1" : "";
-      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/recap${q}`);
+      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/recap${q}`, { headers: authJsonHeaders() });
       if (!response.ok) throw new Error(`Thread recap failed (${response.status})`);
       return response.json();
     }
 
     async function fetchThreadCase(threadId) {
-      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/case`);
+      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/case`, { headers: authJsonHeaders() });
       if (response.status === 404) {
         return null;
       }
@@ -1534,7 +1534,7 @@
     }
 
     async function fetchThreadEmergingThreads(threadId) {
-      const primary = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/emerging-strategy`);
+      const primary = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/emerging-strategy`, { headers: authJsonHeaders() });
       if (primary.ok) {
         return primary.json();
       }
@@ -1542,7 +1542,7 @@
         throw new Error(`Emerging strategy failed (${primary.status})`);
       }
       // Backward-compatible fallback for older backend servers.
-      const fallback = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/key-strategies`);
+      const fallback = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/key-strategies`, { headers: authJsonHeaders() });
       if (!fallback.ok) {
         throw new Error(`Emerging strategy failed (${fallback.status})`);
       }
@@ -1550,7 +1550,7 @@
     }
 
     async function fetchThreadSimilarCases(threadId) {
-      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/similar-cases?limit=8`);
+      const response = await fetch(`${API_BASE}/api/threads/${encodeURIComponent(threadId)}/similar-cases?limit=8`, { headers: authJsonHeaders() });
       if (!response.ok) {
         throw new Error(`Similar case search failed (${response.status})`);
       }

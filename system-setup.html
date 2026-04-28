@@ -257,7 +257,7 @@
       <a href="social.html">Social</a>
       <a href="colony-register.html">Colonies</a>
     </div>
-    <a href="index.html" class="nav-signout">Sign Out</a>
+    <a href="#" class="nav-signout" id="sign-out-link">Sign Out</a>
   </nav>
 
   <div class="page-container">
@@ -374,12 +374,20 @@
   </div>
 
   <script>
-    // Interactive checklist (optional enhancement)
     document.querySelectorAll('.checklist-box').forEach(box => {
       box.addEventListener('click', () => {
         box.classList.toggle('checked');
       });
     });
+    var signOutLink = document.getElementById("sign-out-link");
+    if (signOutLink) {
+      signOutLink.addEventListener("click", function (e) {
+        e.preventDefault();
+        localStorage.removeItem("frogSocialToken");
+        localStorage.removeItem("frogSocialUser");
+        window.location.href = "login.html";
+      });
+    }
   </script>
 </body>
 </html>

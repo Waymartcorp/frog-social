@@ -710,6 +710,7 @@
         worthinessSharedProblem: String(rawCase.worthinessSharedProblem || "").trim(),
         worthinessAnalogies: Array.isArray(rawCase.worthinessAnalogies) ? rawCase.worthinessAnalogies : [],
         resolutionSummary: rawCase.resolutionSummary || "",
+        caseUpdates: Array.isArray(rawCase.caseUpdates) ? rawCase.caseUpdates : [],
         currentStatus: rawCase.currentStatus || normalizedStatus,
         createdAt: rawCase.createdAt || "",
         updatedAt: rawCase.updatedAt || rawCase.createdAt || "",
@@ -719,7 +720,7 @@
     }
 
     async function loadCasesFromApi() {
-      const response = await fetch(`${API_BASE}/api/cases`);
+      const response = await fetch(`${API_BASE}/api/cases`, { headers: authJsonHeaders() });
       if (!response.ok) {
         throw new Error(`Failed to load cases (${response.status})`);
       }
@@ -775,6 +776,7 @@
           ...(c.runningObservations || []),
           ...(c.actionsTried || []),
           ...(c.contributors || []),
+          ...(c.caseUpdates || []).map((u) => u.text),
         ].join(" ").toLowerCase();
         c._updatedTs = new Date(c.updatedAt).getTime();
       }
@@ -1007,6 +1009,7 @@
         ${section("Status and log", `Opened ${formatDate(caseRow.createdAt)}. Last update ${formatDate(caseRow.updatedAt)}. Current status ${caseRow.currentStatus || caseRow.statusRaw.toLowerCase()}. Contributors: ${(caseRow.contributors || []).join(", ") || "not listed"}.`, "", true)}
         ${activeNow.length ? section("Actions being taken now", activeNow, "") : ""}
         ${section("Final result / outcome", outcome, "Outcome not finalized yet.", true)}
+        ${(caseRow.caseUpdates && caseRow.caseUpdates.length) ? section("Update log", caseRow.caseUpdates.map((u) => `[${u.type}] ${u.createdAt ? formatDate(u.createdAt) : ""} — ${toPreview(u.text, 200)}`), "") : ""}
       `;
     }
 
@@ -1099,6 +1102,17 @@
               <div class="report-title">Full Case Status</div>
               <div class="report-body">${buildFullCaseReport(c, filtered)}</div>
             </div>
+            ${(c.caseUpdates && c.caseUpdates.length) ? `
+            <div class="report-block" style="grid-column: 1 / -1;">
+              <div class="report-title">Case Updates (${c.caseUpdates.length})</div>
+              <div class="report-body">
+                ${c.caseUpdates.map((u) => `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <span style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:${u.type === 'resolution' ? 'var(--accent-green)' : 'var(--accent-cyan)'};">${escapeHtml(u.type)}</span>
+                  <span style="font-size:0.7rem;color:var(--secondary-text);margin-left:8px;">${escapeHtml(u.userId || "")} · ${u.createdAt ? escapeHtml(formatDate(u.createdAt)) : ""}</span>
+                  <div style="font-size:0.82rem;color:var(--primary-text);margin-top:4px;line-height:1.5;">${escapeHtml(toPreview(u.text, 400))}</div>
+                </div>`).join("")}
+              </div>
+            </div>` : ""}
           </div>
           <div class="case-actions">
             <button class="btn-secondary" data-case-id="${escapeHtml(c.id)}" onclick="toggleNoteForm(this.dataset.caseId)">Add Note</button>

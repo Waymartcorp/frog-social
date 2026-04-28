@@ -35,7 +35,7 @@ function loadKnowledgeBase(): string {
   const projectRoot = path.resolve(__dirname, "..", "..");
   const files = [
     path.join(projectRoot, "docs", "husbandry", "husbandry_master_key.md"),
-    path.join(projectRoot, "docs", "docs", "HUSBANDRY_FRAMEWORK.md"),
+    path.join(projectRoot, "docs", "HUSBANDRY_FRAMEWORK.md"),
   ];
   const chunks: string[] = [];
   for (const file of files) {

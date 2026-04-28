@@ -91,6 +91,14 @@ export function classifyPostSignals(text: string): PostSignal[] {
   return signals;
 }
 
+export interface CaseUpdate {
+  id: string;
+  userId: string;
+  type: "follow-up" | "resolution" | "observation" | "update" | "outcome";
+  text: string;
+  createdAt: string;
+}
+
 export interface FrogCase {
   id: string;
   caseId: string;
@@ -126,6 +134,7 @@ export interface FrogCase {
   worthinessPriorDiscussion?: string;
   worthinessSharedProblem?: string;
   worthinessAnalogies?: string[];
+  caseUpdates: CaseUpdate[];
   relatedCaseRefs?: Array<{ caseNumber: number; title: string; date: string; outcome: string }>;
 }
 
@@ -1020,6 +1029,9 @@ function normalizeLoadedCase(loaded: FrogCase): FrogCase {
     worthinessAnalogies: Array.isArray((loaded as FrogCase).worthinessAnalogies)
       ? (loaded as FrogCase).worthinessAnalogies!
       : [],
+    caseUpdates: Array.isArray((loaded as FrogCase).caseUpdates)
+      ? (loaded as FrogCase).caseUpdates
+      : [],
     relatedCaseRefs: Array.isArray((loaded as FrogCase).relatedCaseRefs)
       ? (loaded as FrogCase).relatedCaseRefs
       : [],
@@ -1209,6 +1221,7 @@ export async function createCaseFromSeed(input: CaseSeedInput): Promise<FrogCase
     admissionState: "candidate",
     emergingThreads: [],
     entryMode: "seed",
+    caseUpdates: [],
   };
   enforceCaseTitleFromThread(frogCase);
   frogCase.admissionState = inferAdmissionStateForCase(frogCase, listThreadMessages(sourceThreadId, true));
@@ -1322,6 +1335,7 @@ export async function createCaseFromDirectIntake(input: DirectCaseInput): Promis
     admissionState: "candidate",
     emergingThreads: recap.emergingThreads,
     entryMode: "direct",
+    caseUpdates: [],
   };
 
   enforceCaseTitleFromThread(frogCase);
@@ -1584,6 +1598,7 @@ export async function promoteEmergingThreadsToCases(chatThreadId: string): Promi
       admissionState: "candidate",
       emergingThreads: recap.emergingThreads,
       entryMode: "social",
+      caseUpdates: [],
     };
     enforceCaseTitleFromThread(newCase);
     const threadMessages = forumMessages;
@@ -1746,6 +1761,7 @@ export async function ensureTopicSplitCasesForThread(chatThreadId: string): Prom
       admissionState: "candidate",
       emergingThreads: recap.emergingThreads,
       entryMode: "social",
+      caseUpdates: [],
     };
     enforceCaseTitleFromThread(sibling);
     cases.set(caseId, sibling);
@@ -1968,6 +1984,7 @@ export async function handleNewMessage(message: ForumMessage): Promise<FrogCase 
     admissionState: "candidate",
     emergingThreads: recap.emergingThreads,
     entryMode: "social",
+    caseUpdates: [],
   };
   enforceCaseTitleFromThread(frogCase);
   frogCase.admissionState = inferAdmissionStateForCase(frogCase, threadMessages);
@@ -2226,7 +2243,14 @@ export async function submitCaseResolution(input: ResolutionInput): Promise<Frog
   const freeText = (input.freeText ?? "").trim();
   if (freeText) {
     frogCase.resolutionSummary = freeText;
-    frogCase.caseSummary = freeText;
+    if (!Array.isArray(frogCase.caseUpdates)) frogCase.caseUpdates = [];
+    frogCase.caseUpdates.push({
+      id: `upd-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      userId: input.userId,
+      type: "resolution",
+      text: freeText,
+      createdAt: new Date().toISOString(),
+    });
     frogCase.currentStrategy = frogCase.currentStrategy.length > 0 ? frogCase.currentStrategy : frogCase.suggestedNextSteps.slice(0, 4);
     frogCase.currentStatus = input.outcome === "RESOLVED" ? "improved" : input.outcome.toLowerCase();
     frogCase.actionsTried = mergeUnique(frogCase.actionsTried, extractActionPhrases(freeText));
@@ -2262,7 +2286,14 @@ export async function submitCaseFollowUp(input: FollowUpInput): Promise<FrogCase
   frogCase.currentStrategy = frogCase.currentStrategy.length > 0 ? frogCase.currentStrategy : frogCase.suggestedNextSteps.slice(0, 4);
   frogCase.actionsTried = mergeUnique(frogCase.actionsTried, extractActionPhrases(responseText));
   frogCase.currentSystemStatus = responseText;
-  frogCase.caseSummary = responseText;
+  if (!Array.isArray(frogCase.caseUpdates)) frogCase.caseUpdates = [];
+  frogCase.caseUpdates.push({
+    id: `upd-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    userId: input.userId,
+    type: "follow-up",
+    text: responseText,
+    createdAt: new Date().toISOString(),
+  });
   if (inferredStatus === "RESOLVED" || /improv|resolved|stable|recover/i.test(responseText)) {
     frogCase.resolutionSummary = responseText;
   }
