@@ -11,6 +11,7 @@ import { redisGet, redisSet } from "./redisStorage";
 import {
   signUp,
   logIn,
+  resetPassword,
   verifyToken,
   extractTokenFromHeader,
   getUserById,
@@ -170,6 +171,17 @@ app.get("/api/auth/me", async (req, res) => {
 app.get("/api/auth/users", async (_req, res) => {
   const users = await listUsers();
   res.json({ ok: true, users });
+});
+
+app.post("/api/auth/reset-password", async (req, res) => {
+  try {
+    const { email, newPassword, adminSecret } = req.body;
+    await resetPassword(email, newPassword, adminSecret);
+    res.json({ ok: true, message: "Password reset." });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Reset failed";
+    res.status(400).json({ ok: false, error: msg });
+  }
 });
 
 // ─── Message & case routes ─────────────────────────────────────

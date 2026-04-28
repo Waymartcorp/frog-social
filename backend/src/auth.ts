@@ -185,6 +185,29 @@ export async function listUsers(): Promise<Array<Omit<FrogUser, "passwordHash">>
   return users.map(({ passwordHash: _, ...rest }) => rest);
 }
 
+export async function resetPassword(
+  email: string,
+  newPassword: string,
+  adminSecret: string,
+): Promise<{ ok: boolean }> {
+  const expected = process.env.FROG_ADMIN_SECRET || "frog-social-beta-secret-2026";
+  if (adminSecret !== expected) {
+    throw new Error("Unauthorized.");
+  }
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error("Password must be at least 6 characters.");
+  }
+  const trimmedEmail = email.trim().toLowerCase();
+  const users = await loadUsers();
+  const idx = users.findIndex((u) => u.email === trimmedEmail);
+  if (idx === -1) {
+    throw new Error("No account with that email.");
+  }
+  users[idx].passwordHash = await bcrypt.hash(newPassword, 10);
+  await saveUsers(users);
+  return { ok: true };
+}
+
 function signToken(user: FrogUser): string {
   const payload: AuthTokenPayload = {
     userId: user.id,
