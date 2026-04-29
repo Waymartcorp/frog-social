@@ -1,6 +1,6 @@
 # Describe-a-Problem / New Case Intake Page
 
-This page is the **main structured intake** into Frog Social.  
+This page is the **main structured intake** into Frog Social.
 It creates or updates a **Case**, captures a colony snapshot, and produces an AI-guided framing for next steps.
 
 The layout is:
@@ -10,34 +10,95 @@ The layout is:
 
 ---
 
+## 0. Design Principle: Progressive Disclosure (Minimum First)
+
+Describe a Problem uses a **progressive disclosure** model:
+
+1. **Step 1** asks for the absolute minimum to create a useful case.
+2. **Step 2+** nudges users to add more context over time.
+3. Users are **never overwhelmed on first entry**.
+
+### Step 1 — Minimum Entry (required to submit)
+
+Only three things are required:
+
+- **What's happening?** (free-text, 1–3 sentences)
+- **Which colony/system?** (select from Colony Register if available, or type a name)
+- **Post anonymously?** (checkbox, default off)
+
+That's it. This creates a valid case with status "intake" and a timestamp.
+
+### After submission — Gentle nudges
+
+After the minimum case is created, the system shows:
+
+- A confirmation: "Case created. You can add more details anytime."
+- A short prompt card: "Adding a few more details helps the community help you faster."
+- Optional expansion sections (collapsed by default) for:
+  - Water snapshot
+  - Husbandry snapshot
+  - Recent changes
+  - Feeding behavior video
+
+Users can return to any case and add information incrementally. The AI summary updates as more fields are filled.
+
+### Why this matters
+
+Researcher feedback: users abandon complex intake forms. A single free-text entry with optional enrichment produces more cases, more participation, and better long-term data quality than a form that blocks submission until all fields are filled.
+
+---
+
 ## 1. Route & naming
 
 - Route should be something like: `/cases/new` or `/intake`.
-- Global nav label: **“Describe a Problem”** or **“New Case”**.
-- Dashboard tile: “Describe a problem” should link to this same route.
+- Global nav label: **"Describe a Problem"** or **"New Case"**.
+- Dashboard tile: "Describe a problem" should link to this same route.
 
 ---
 
 ## 2. Left column – form sections & fields
 
-We **keep** the current structure (colony/system, water, recent changes) and extend it.
+### 2.0 Minimum entry (Step 1 — always visible)
 
-### 2.1 Colony & system (keep)
+- **What's happening?**
+  - Large textarea (2–4 lines visible)
+  - Placeholder: "Frogs stopped eating after water change" or "Redness on legs, started 3 days ago"
+  - Required.
+
+- **Which colony/system?**
+  - Dropdown populated from user's Colony Register (if entries exist)
+  - Or free-text field: "Colony / room / system name"
+  - Required.
+
+- **Post anonymously?**
+  - Checkbox (default: off)
+  - When checked, the case appears without the poster's identity in all views.
+
+- **Submit button**: "Create Case"
+
+This is the only content needed to submit. Everything below is optional enrichment.
+
+---
+
+### 2.1 Colony & system (optional enrichment — collapsed)
+
+Section header: "Add colony details (optional)"
 
 Fields (text or select, as appropriate):
 
-- Colony / room name
 - Institution / lab
 - System type:
   - Recirculating rack / static tanks / flow-through / other
 - Approximate number of frogs:
   - Numeric input or free text
 
-These values are attached to the Case and also help the AI phrase advice.
+If the user selected a colony from their Colony Register, these fields auto-populate from stored baseline.
 
 ---
 
-### 2.2 Water snapshot (keep but align with husbandry key)
+### 2.2 Water snapshot (optional enrichment — collapsed)
+
+Section header: "Add water info (optional)"
 
 Capture the basics:
 
@@ -56,17 +117,17 @@ Capture the basics:
 
 Include a small helper/link text:
 
-> “Need help with RO + buffering? See the ROBUFFER guide.”
-
-This can be a link to the ROBUFFER spec or a static info drawer.
+> "Need help with RO + buffering? See the ROBUFFER guide."
 
 ---
 
-### 2.3 Recent changes (keep)
+### 2.3 Recent changes (optional enrichment — collapsed)
+
+Section header: "Any recent changes? (optional)"
 
 Free-text textarea:
 
-- “Recent changes (last 2–4 weeks)”
+- "Recent changes (last 2–4 weeks)"
 
 Used to capture:
 
@@ -81,11 +142,11 @@ AI should pay special attention to changes overlapping with onset of problems.
 
 ---
 
-### 2.4 Husbandry snapshot (NEW)
+### 2.4 Husbandry snapshot (optional enrichment — collapsed)
 
-Section title: **“Husbandry snapshot (how things look right now)”**.
+Section header: **"How things look right now (optional)"**
 
-Add structured fields that map to the **13 Master Key** points:
+Structured fields that map to the **13 Master Key** points:
 
 - **Density in the tank**
   - `Low`, `Medium`, `High`, `Not sure`
@@ -128,9 +189,9 @@ All of these fields should be part of the intake payload, typically grouped as a
 
 ---
 
-### 2.5 Feeding behavior video (NEW)
+### 2.5 Feeding behavior video (optional enrichment — collapsed)
 
-Section title: **“Feeding behavior video (optional)”**.
+Section header: **"Feeding behavior video (optional)"**
 
 #### 2.5.1 Upload field
 
@@ -138,7 +199,7 @@ Section title: **“Feeding behavior video (optional)”**.
   - Label: `Upload short feeding clip (30–60 seconds)`
   - Accept: `video/mp4, video/quicktime, video/webm`
 - Helper text:
-  > “This helps compare your feeding response to internal reference videos. Start recording, add food, and keep filming until frogs either lose interest or food is gone.”
+  > "This helps compare your feeding response to internal reference videos. Start recording, add food, and keep filming until frogs either lose interest or food is gone."
 
 Implementation note:
 - For now, the frontend can just:
@@ -173,15 +234,7 @@ These values are saved in the case intake under something like `feedingVideoMeta
 
 ### 2.6 Free text problem description
 
-Keep a large textarea (if not already present):
-
-- Label: “Describe the problem in your own words”
-- This is where the user writes:
-  - “Frogs stopped eating after water change”
-  - “Redness on legs after moving to new rack”
-  - etc.
-
-The AI will use this plus the structured fields to generate the summary.
+Already captured in Step 1 (minimum entry). The user's initial description lives here. They may edit or expand it at any time.
 
 ---
 
@@ -199,9 +252,10 @@ Panels:
 Each panel:
 
 - Uses the card styling from the UI style guide.
-- Has a small header label (e.g., “Situation Summary”) and then bullet/paragraph content.
+- Has a small header label (e.g., "Situation Summary") and then bullet/paragraph content.
+- Updates progressively as the user adds more information (not just on first submit).
 
-### 3.1 “Analyze with AI” button
+### 3.1 "Analyze with AI" button
 
 For now, there should be a button:
 
@@ -209,6 +263,7 @@ For now, there should be a button:
 - Behavior:
   - For MVP/stub: could be a no-op or call a dummy endpoint.
   - Long term: will send intake payload to backend AI endpoint and fill these panels with real output.
+  - Re-runs automatically when new fields are added to an existing case.
 
 The UI should be ready for asynchronous updates (loading state, then results).
 
@@ -219,6 +274,30 @@ The UI should be ready for asynchronous updates (loading state, then results).
 The frontend should package the intake form into a payload along these lines:
 
 ```ts
+interface IntakeFormPayload {
+  // Step 1 — minimum (required)
+  problemDescription: string;
+  colonyId?: string;        // from Colony Register
+  colonyName?: string;      // free-text fallback
+  anonymous: boolean;
+
+  // Optional enrichment (added later)
+  institution?: string;
+  systemType?: string;
+  approxFrogCount?: string;
+
+  waterTempC?: string;
+  ph?: string;
+  conductivity?: string;
+  ammoniaStatus?: "unknown" | "ok" | "elevated";
+  waterSource?: "ro" | "city" | "well" | "mixed" | "unknown";
+
+  recentChanges?: string;
+
+  husbandrySnapshot?: HusbandrySnapshot;
+  feedingVideoMeta?: FeedingVideoMeta;
+}
+
 interface HusbandrySnapshot {
   densityBand?: "low" | "medium" | "high" | "unknown";
   feedingVigor?: "low" | "medium" | "high" | "unknown";
@@ -235,22 +314,16 @@ interface FeedingVideoMeta {
   timeSinceLastFeeding?: "12_24h" | "24_48h" | "gt_48h" | "unknown";
   cameraPosition?: "top" | "side" | "angled" | "unknown";
 }
+```
 
-interface IntakeFormPayload {
-  facilityName?: string;
-  institution?: string;
-  systemType?: string;
-  approxFrogCount?: string;
+---
 
-  waterTempC?: string;
-  ph?: string;
-  conductivity?: string;
-  ammoniaStatus?: "unknown" | "ok" | "elevated";
-  waterSource?: "ro" | "city" | "well" | "mixed" | "unknown";
+## 5. Progressive Disclosure UX Rules
 
-  recentChanges?: string;
-  problemDescription?: string;
-
-  husbandrySnapshot?: HusbandrySnapshot;
-  feedingVideoMeta?: FeedingVideoMeta;
-}
+1. Step 1 must be completable in under 30 seconds.
+2. Optional sections are collapsed by default — never auto-expanded.
+3. Each optional section shows a brief "why this helps" hint when expanded.
+4. Users can save and return — partial cases are valid.
+5. The AI summary card updates each time new information is added.
+6. No field is blocking except the Step 1 minimum.
+7. Nudge frequency: one prompt after submission, then at most once per 24h per case.

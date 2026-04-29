@@ -6,9 +6,11 @@
 
 ## Supporting specs
 - `docs/social/DESCRIBE_A_PROBLEM_SPEC.md`
+- `docs/social/COLONY_REGISTER_SPEC.md`
 - `docs/social/FROG_SOCIAL_AI_INTAKE_TEMPLATE.md`
 - `docs/social/SOCIAL_SURFACES_REFERENCE.md`
 - `docs/ui/frog_social_style_guide.md`
+- `docs/TERMS_AND_PRIVACY.md`
 
 ## Operational file
 - `docs/NEXT_STEPS.md`
@@ -34,6 +36,13 @@ If older Frog Social notes conflict with:
 those files win.
 
 ## Log (newest at top)
+
+### 2026-04-29
+- Integrated researcher feedback: ToS/content-use protection, anonymity/privacy controls, progressive disclosure for Describe a Problem, Colony Register + Management
+- Added `docs/TERMS_AND_PRIVACY.md` (content protection + privacy policy)
+- Added `docs/social/COLONY_REGISTER_SPEC.md` (colony register + management spec)
+- Rewrote `docs/social/DESCRIBE_A_PROBLEM_SPEC.md` with progressive disclosure model
+- Updated `docs/FROG_SOCIAL_INFORMATION_ECOSYSTEM.md` sections 23–27 with new non-negotiables and build priorities
 
 ### 2026-02-23
 - Backend thread endpoints confirmed working: `/api/threads/:threadId/messages` and `/api/threads/:threadId/recap`

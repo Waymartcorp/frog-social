@@ -14,6 +14,51 @@ If this file conflicts with those files, those files win.
 
 ---
 
+## Next Steps (as of 2026-04-29)
+
+### Researcher Feedback Integration — Implementation Checklist
+
+#### A) ToS / Content Protection
+- [ ] Implement ToS acceptance on account creation (reference `docs/TERMS_AND_PRIVACY.md`)
+- [ ] Add content-use protection notice visible in UI footer or settings
+- [ ] Enforce login-gating on all contribution endpoints
+- [ ] Block public search engine indexing (robots.txt / meta tags)
+
+#### B) Anonymity / Privacy Controls
+- [ ] Add "Post anonymously" toggle to Social post composer
+- [ ] Add "Post anonymously" checkbox to Describe a Problem (Step 1)
+- [ ] Implement coded identity option in account creation/settings
+- [ ] Colony Register: default all records to private
+- [ ] Backend: store real identity but respect anonymous display rules
+
+#### C) Describe a Problem — Progressive Disclosure
+- [ ] Rebuild intake UI as Step 1 (minimum) + collapsed optional sections
+- [ ] Step 1 fields: problem description + colony selector + anonymous toggle
+- [ ] After-submit nudge card: "Add more details"
+- [ ] Collapse all enrichment sections by default
+- [ ] Allow save-and-return (partial cases are valid)
+- [ ] AI summary updates on each field addition
+
+#### D) Colony Register + Management
+- [ ] Colony list view (private to user)
+- [ ] Colony create form (minimum: name only)
+- [ ] Colony detail view with tabs: Baseline / Event Log / Status / Linked Cases / Export
+- [ ] Quick-add event inline form
+- [ ] Status/recovery indicator with history
+- [ ] Colony selector in Describe a Problem (auto-populates baseline)
+- [ ] CSV export of colony record
+- [ ] Authorized group sharing (optional, later)
+
+#### E) Priority Order for Implementation
+1. Login + coded identity + ToS acceptance
+2. Anonymous posting (social + cases)
+3. Describe a Problem progressive disclosure rebuild
+4. Colony Register + Management (private, lightweight)
+5. CSV export
+6. Colony → Case linkage and context auto-population
+
+---
+
 ## Next Steps (as of 2026-02-23)
 
 ### 0) Start-of-session workflow (do this first)

@@ -77,7 +77,7 @@ app.use(
 
       callback(new Error("CORS blocked"));
     },
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -193,11 +193,12 @@ app.post("/api/messages", async (req, res) => {
     if (!actor) {
       return res.status(401).json({ ok: false, error: "Authentication required" });
     }
+    const anonymous = Boolean(req.body.anonymous);
     const now = new Date();
     const message: ForumMessage = {
       id: randomUUID(),
       userId: actor.username,
-      authorDisplayName: actor.displayName,
+      authorDisplayName: anonymous ? "Anonymous" : actor.displayName,
       facilityId: req.body.facilityId,
       threadId: req.body.threadId || randomUUID(),
       content: req.body.content,
@@ -205,6 +206,8 @@ app.post("/api/messages", async (req, res) => {
       role: req.body.role,
       correctionSignal: Boolean(req.body.correctionSignal),
     };
+    (message as any).anonymous = anonymous;
+    (message as any).realUserId = actor.username;
     const frogCase = await handleNewMessage(message);
     res.json({ ok: true, threadId: message.threadId, messageId: message.id, signals: message.signals, frogCase });
   } catch (err) {
@@ -461,14 +464,50 @@ app.post("/api/cases/intake", async (req, res) => {
   if (!narrative) {
     return res.status(400).json({ error: "narrative is required" });
   }
+  const anonymous = Boolean(req.body.anonymous);
+  let colonyId = typeof req.body.colonyId === "string" ? req.body.colonyId.trim() : "";
+  const colonyCode = typeof req.body.colonyCode === "string" ? req.body.colonyCode.trim().toUpperCase() : "";
+  if (!colonyId && colonyCode) {
+    const allColonies = await loadAllColonies();
+    const found = allColonies.find(c => c.colonyCode === colonyCode);
+    if (found) colonyId = found.id;
+  }
   try {
     const frogCase = await createCaseFromDirectIntake({
-      userId: actor.username,
-      authorDisplayName: actor.displayName,
+      userId: anonymous ? "anonymous" : actor.username,
+      authorDisplayName: anonymous ? "Anonymous" : actor.displayName,
       title: typeof req.body.title === "string" ? req.body.title : undefined,
       narrative,
       threadId: typeof req.body.threadId === "string" ? req.body.threadId : undefined,
     });
+    (frogCase as any).anonymous = anonymous;
+    (frogCase as any).realUserId = actor.username;
+    (frogCase as any).colonyId = colonyId || undefined;
+
+    // Auto-add event to colony when a case is filed about it
+    if (colonyId) {
+      try {
+        const all = await loadAllColonies();
+        const colIdx = all.findIndex(c => c.id === colonyId);
+        if (colIdx !== -1 && userCanAccessColony(all[colIdx], actor.userId)) {
+          const caseEvent: ColonyEvent = {
+            id: randomUUID(),
+            date: new Date().toISOString().split("T")[0],
+            type: "case_opened",
+            description: `Case #${frogCase.caseNumber} opened: ${(narrative || "").slice(0, 100)}`,
+            addedBy: actor.username,
+            linkedCaseId: frogCase.caseId || frogCase.id,
+          };
+          if (!all[colIdx].events) all[colIdx].events = [];
+          all[colIdx].events.unshift(caseEvent);
+          all[colIdx].updatedAt = new Date().toISOString();
+          await saveAllColonies(all);
+        }
+      } catch (e) {
+        console.warn("[case-intake] Failed to auto-add colony event:", e);
+      }
+    }
+
     return res.json({
       ok: true,
       caseId: frogCase.caseId || frogCase.id,
@@ -476,6 +515,7 @@ app.post("/api/cases/intake", async (req, res) => {
       threadId: frogCase.threadId,
       title: frogCase.title,
       admissionState: frogCase.admissionState,
+      colonyId: colonyId || undefined,
       frogCase,
     });
   } catch (error) {
@@ -585,58 +625,378 @@ app.get("/api/cases/number/:caseNumber", (req, res) => {
   return res.json(frogCase);
 });
 
-// ─── Colony registration (per-user, personal space) ────────────
+// ─── Colony Register + Management (shared access, gated invitation) ─────────
+type ColonyEventType = "import" | "export" | "water_change" | "equipment" | "feeding" | "treatment" | "observation" | "incident" | "procedure" | "system_change" | "case_opened" | "note";
+type ColonyStatus = "stable" | "recovering" | "concern" | "active_problem" | "new_setup";
+
+interface ColonyEvent {
+  id: string;
+  date: string;
+  type: ColonyEventType;
+  description: string;
+  addedBy?: string;
+  linkedCaseId?: string;
+}
+
+interface ColonyStatusEntry {
+  id: string;
+  date: string;
+  status: ColonyStatus;
+  note?: string;
+  changedBy?: string;
+  linkedCaseId?: string;
+}
+
 interface Colony {
   id: string;
+  colonyCode: string;
+  ownerId: string;
+  authorizedUsers: string[];
+  pendingInvites: string[];
   name: string;
+  systemId?: string;
+  species?: string;
   system: string;
+  institution?: string;
+  waterSource?: string;
+  bufferingApproach?: string;
+  typicalDensity?: string;
+  typicalTemp?: string;
+  facilityLocation?: string;
   count: string;
   notes: string;
+  currentStatus: ColonyStatus;
+  events: ColonyEvent[];
+  statusHistory: ColonyStatusEntry[];
   createdAt: string;
+  updatedAt: string;
 }
 
-function colonyRedisKey(userId: string): string {
-  return `frog-social:colonies:${userId}`;
+function generateColonyCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const p1 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const p2 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  return `${p1}-${p2}`;
 }
 
+const COLONIES_REDIS_KEY = "frog-social:colonies-all";
+
+async function loadAllColonies(): Promise<Colony[]> {
+  const data = await redisGet<Colony[]>(COLONIES_REDIS_KEY);
+  return Array.isArray(data) ? data : [];
+}
+
+async function saveAllColonies(colonies: Colony[]): Promise<void> {
+  await redisSet(COLONIES_REDIS_KEY, colonies);
+}
+
+function userCanAccessColony(colony: Colony, userId: string): boolean {
+  return colony.ownerId === userId || colony.authorizedUsers.includes(userId);
+}
+
+function userIsOwner(colony: Colony, userId: string): boolean {
+  return colony.ownerId === userId;
+}
+
+function getAccessibleColonies(all: Colony[], userId: string): Colony[] {
+  return all.filter(c => userCanAccessColony(c, userId));
+}
+
+function getPendingInvitesForUser(all: Colony[], userId: string): Colony[] {
+  return all.filter(c => c.pendingInvites.includes(userId));
+}
+
+// List colonies the user owns or is authorized on + pending invitations
 app.get("/api/colonies", async (req, res) => {
   const actor = getActorFromRequest(req);
   if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
-  const data = await redisGet<Colony[]>(colonyRedisKey(actor.userId));
-  return res.json({ ok: true, colonies: Array.isArray(data) ? data : [] });
+  const all = await loadAllColonies();
+  const accessible = getAccessibleColonies(all, actor.userId);
+  const pending = getPendingInvitesForUser(all, actor.userId);
+  return res.json({ ok: true, colonies: accessible, pendingInvites: pending.map(c => ({ id: c.id, name: c.name, ownerId: c.ownerId })) });
 });
 
+// Create colony (caller becomes owner)
 app.post("/api/colonies", async (req, res) => {
   const actor = getActorFromRequest(req);
   if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
   const name = String(req.body.name ?? "").trim();
   if (!name) return res.status(400).json({ ok: false, error: "Colony name is required" });
+  const all = await loadAllColonies();
+  let code = generateColonyCode();
+  while (all.some(c => c.colonyCode === code)) { code = generateColonyCode(); }
+  const now = new Date().toISOString();
   const colony: Colony = {
     id: `col-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    colonyCode: code,
+    ownerId: actor.userId,
+    authorizedUsers: [],
+    pendingInvites: [],
     name,
+    systemId: String(req.body.systemId ?? "").trim() || undefined,
+    species: String(req.body.species ?? "").trim() || undefined,
     system: String(req.body.system ?? "").trim(),
+    institution: String(req.body.institution ?? "").trim() || undefined,
+    waterSource: String(req.body.waterSource ?? "").trim() || undefined,
+    bufferingApproach: String(req.body.bufferingApproach ?? "").trim() || undefined,
+    typicalDensity: String(req.body.typicalDensity ?? "").trim() || undefined,
+    typicalTemp: String(req.body.typicalTemp ?? "").trim() || undefined,
+    facilityLocation: String(req.body.facilityLocation ?? "").trim() || undefined,
     count: String(req.body.count ?? "").trim(),
     notes: String(req.body.notes ?? "").trim(),
-    createdAt: new Date().toISOString(),
+    currentStatus: "stable",
+    events: [],
+    statusHistory: [{ id: randomUUID(), date: now, status: "stable", note: "Colony registered", changedBy: actor.userId }],
+    createdAt: now,
+    updatedAt: now,
   };
-  const key = colonyRedisKey(actor.userId);
-  const existing = await redisGet<Colony[]>(key);
-  const list = Array.isArray(existing) ? existing : [];
-  list.unshift(colony);
-  await redisSet(key, list);
+  all.unshift(colony);
+  await saveAllColonies(all);
   return res.json({ ok: true, colony });
 });
 
+// Join a colony by code (self-serve, no owner approval needed)
+app.post("/api/colonies/join", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const code = String(req.body.code ?? "").trim().toUpperCase();
+  if (!code) return res.status(400).json({ ok: false, error: "Colony code is required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.colonyCode === code);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found. Check the code and try again." });
+  if (userCanAccessColony(all[idx], actor.userId)) return res.status(400).json({ ok: false, error: "You already have access to this colony" });
+  all[idx].authorizedUsers.push(actor.userId);
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true, colony: all[idx], message: `Joined colony: ${all[idx].name}` });
+});
+
+// Regenerate colony code (owner only)
+app.post("/api/colonies/:id/regenerate-code", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userIsOwner(all[idx], actor.userId)) return res.status(403).json({ ok: false, error: "Only the owner can regenerate the colony code" });
+  let code = generateColonyCode();
+  while (all.some(c => c.colonyCode === code)) { code = generateColonyCode(); }
+  all[idx].colonyCode = code;
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true, colonyCode: code });
+});
+
+// Lookup colony by code (for case-intake linking)
+app.get("/api/colonies/lookup/:code", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const code = req.params.code.trim().toUpperCase();
+  const all = await loadAllColonies();
+  const colony = all.find(c => c.colonyCode === code);
+  if (!colony) return res.status(404).json({ ok: false, error: "Colony not found" });
+  return res.json({ ok: true, colonyId: colony.id, colonyName: colony.name, hasAccess: userCanAccessColony(colony, actor.userId) });
+});
+
+// Update colony baseline (owner or authorized)
+app.put("/api/colonies/:id", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex((c) => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(all[idx], actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  const fields = ["name", "systemId", "species", "system", "institution", "waterSource", "bufferingApproach", "typicalDensity", "typicalTemp", "facilityLocation", "count", "notes"];
+  for (const f of fields) {
+    if (req.body[f] !== undefined) {
+      (all[idx] as any)[f] = String(req.body[f]).trim();
+    }
+  }
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true, colony: all[idx] });
+});
+
+// Delete colony (owner only)
 app.delete("/api/colonies/:id", async (req, res) => {
   const actor = getActorFromRequest(req);
   if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
-  const key = colonyRedisKey(actor.userId);
-  const existing = await redisGet<Colony[]>(key);
-  const list = Array.isArray(existing) ? existing : [];
-  const filtered = list.filter((c) => c.id !== req.params.id);
-  if (filtered.length === list.length) return res.status(404).json({ ok: false, error: "Colony not found" });
-  await redisSet(key, filtered);
+  const all = await loadAllColonies();
+  const colony = all.find(c => c.id === req.params.id);
+  if (!colony) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userIsOwner(colony, actor.userId)) return res.status(403).json({ ok: false, error: "Only the owner can delete a colony" });
+  const filtered = all.filter(c => c.id !== req.params.id);
+  await saveAllColonies(filtered);
   return res.json({ ok: true });
+});
+
+// Invite a user to a colony (owner only)
+app.post("/api/colonies/:id/invite", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const username = String(req.body.username ?? "").trim().toLowerCase();
+  if (!username) return res.status(400).json({ ok: false, error: "Username is required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userIsOwner(all[idx], actor.userId)) return res.status(403).json({ ok: false, error: "Only the owner can invite users" });
+  if (all[idx].authorizedUsers.includes(username)) return res.status(400).json({ ok: false, error: "User already has access" });
+  if (all[idx].pendingInvites.includes(username)) return res.status(400).json({ ok: false, error: "Invitation already pending" });
+  all[idx].pendingInvites.push(username);
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true, message: `Invitation sent to ${username}` });
+});
+
+// Accept invitation
+app.post("/api/colonies/:id/accept-invite", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  const pendingIdx = all[idx].pendingInvites.indexOf(actor.userId);
+  if (pendingIdx === -1) return res.status(400).json({ ok: false, error: "No pending invitation" });
+  all[idx].pendingInvites.splice(pendingIdx, 1);
+  all[idx].authorizedUsers.push(actor.userId);
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true, colony: all[idx] });
+});
+
+// Remove user access (owner only)
+app.post("/api/colonies/:id/remove-user", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const username = String(req.body.username ?? "").trim().toLowerCase();
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userIsOwner(all[idx], actor.userId)) return res.status(403).json({ ok: false, error: "Only the owner can remove users" });
+  all[idx].authorizedUsers = all[idx].authorizedUsers.filter(u => u !== username);
+  all[idx].pendingInvites = all[idx].pendingInvites.filter(u => u !== username);
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true });
+});
+
+// Colony events (owner or authorized)
+app.post("/api/colonies/:id/events", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(all[idx], actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  const event: ColonyEvent = {
+    id: randomUUID(),
+    date: String(req.body.date ?? new Date().toISOString().split("T")[0]),
+    type: req.body.type || "note",
+    description: String(req.body.description ?? "").trim(),
+    addedBy: actor.userId,
+    linkedCaseId: req.body.linkedCaseId || undefined,
+  };
+  if (!event.description) return res.status(400).json({ ok: false, error: "Description is required" });
+  if (!all[idx].events) all[idx].events = [];
+  all[idx].events.unshift(event);
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true, event });
+});
+
+app.get("/api/colonies/:id/events", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const colony = all.find(c => c.id === req.params.id);
+  if (!colony) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(colony, actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  return res.json({ ok: true, events: colony.events || [] });
+});
+
+// Colony status (owner or authorized)
+app.post("/api/colonies/:id/status", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(all[idx], actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  const validStatuses: ColonyStatus[] = ["stable", "recovering", "concern", "active_problem", "new_setup"];
+  const status = req.body.status as ColonyStatus;
+  if (!validStatuses.includes(status)) return res.status(400).json({ ok: false, error: "Invalid status" });
+  const entry: ColonyStatusEntry = {
+    id: randomUUID(),
+    date: new Date().toISOString(),
+    status,
+    note: String(req.body.note ?? "").trim() || undefined,
+    changedBy: actor.userId,
+    linkedCaseId: req.body.linkedCaseId || undefined,
+  };
+  all[idx].currentStatus = status;
+  if (!all[idx].statusHistory) all[idx].statusHistory = [];
+  all[idx].statusHistory.unshift(entry);
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true, status: entry, colony: all[idx] });
+});
+
+// Cases linked to a colony (accessible by owner or authorized)
+app.get("/api/colonies/:id/cases", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const colony = all.find(c => c.id === req.params.id);
+  if (!colony) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(colony, actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  const allCases = listCases();
+  const linked = allCases.filter((c: any) => c.colonyId === req.params.id);
+  return res.json({ ok: true, cases: linked });
+});
+
+// Colony CSV export (owner or authorized; supports token via query param)
+app.get("/api/colonies/:id/export", async (req, res) => {
+  let actor = getActorFromRequest(req);
+  if (!actor && typeof req.query.token === "string") {
+    const payload = verifyToken(req.query.token);
+    if (payload) actor = payload;
+  }
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const colony = all.find(c => c.id === req.params.id);
+  if (!colony) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(colony, actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+
+  const lines: string[] = [];
+  lines.push("Section,Field,Value");
+  lines.push(`Baseline,Name,"${colony.name}"`);
+  lines.push(`Baseline,System ID,"${colony.systemId || ""}"`);
+  lines.push(`Baseline,Species,"${colony.species || ""}"`);
+  lines.push(`Baseline,System Type,"${colony.system || ""}"`);
+  lines.push(`Baseline,Water Source,"${colony.waterSource || ""}"`);
+  lines.push(`Baseline,Buffering,"${colony.bufferingApproach || ""}"`);
+  lines.push(`Baseline,Typical Density,"${colony.typicalDensity || ""}"`);
+  lines.push(`Baseline,Typical Temp,"${colony.typicalTemp || ""}"`);
+  lines.push(`Baseline,Location,"${colony.facilityLocation || ""}"`);
+  lines.push(`Baseline,Approx Count,"${colony.count || ""}"`);
+  lines.push(`Baseline,Current Status,"${colony.currentStatus || ""}"`);
+  lines.push(`Baseline,Notes,"${(colony.notes || "").replace(/"/g, '""')}"`);
+  lines.push(`Baseline,Owner,"${colony.ownerId}"`);
+  lines.push(`Baseline,Authorized Users,"${colony.authorizedUsers.join(", ")}"`);
+  lines.push("");
+  lines.push("Date,Event Type,Description,Added By,Linked Case");
+  for (const ev of (colony.events || [])) {
+    lines.push(`${ev.date},"${ev.type}","${(ev.description || "").replace(/"/g, '""')}","${ev.addedBy || ""}","${ev.linkedCaseId || ""}"`);
+  }
+  lines.push("");
+  lines.push("Date,Status,Note,Changed By,Linked Case");
+  for (const st of (colony.statusHistory || [])) {
+    lines.push(`${st.date},"${st.status}","${(st.note || "").replace(/"/g, '""')}","${st.changedBy || ""}","${st.linkedCaseId || ""}"`);
+  }
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", `attachment; filename="${colony.name.replace(/[^a-zA-Z0-9]/g, "_")}_export.csv"`);
+  return res.send(lines.join("\n"));
 });
 
 app.post("/api/admin/reset", async (req, res) => {

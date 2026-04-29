@@ -10,9 +10,14 @@ For husbandry doctrine, environmental weighting, and husbandry-first guidance, u
 
 - `docs/HUSBANDRY_FRAMEWORK.md`
 
+For terms, privacy, and content-use protection, use:
+
+- `docs/TERMS_AND_PRIVACY.md`
+
 For supporting implementation specs, use:
 
 - `docs/social/DESCRIBE_A_PROBLEM_SPEC.md`
+- `docs/social/COLONY_REGISTER_SPEC.md`
 - `docs/social/FROG_SOCIAL_AI_INTAKE_TEMPLATE.md`
 - `docs/social/SOCIAL_SURFACES_REFERENCE.md`
 - `docs/ui/frog_social_style_guide.md`

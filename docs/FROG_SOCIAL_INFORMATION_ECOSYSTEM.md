@@ -702,27 +702,97 @@ This is the larger significance of the system.
 11. The system must distinguish observation, suggestion, and uncertain measurement.
 12. Production behavior is the truth environment.
 13. People + AI + Husbandry Guide + Past Cases is the core intelligence pattern.
+14. User content may not be redistributed outside Frog Social without explicit poster permission.
+15. Anonymous posting and anonymous case submission are supported.
+16. Colony records are private by default.
+17. Describe a Problem uses progressive disclosure — minimum entry first, enrichment later.
+18. Colony Management does not expand into generic vivarium/LIMS territory.
 
 
 ---
 
-## 24. Current Build Priority
+## 24. Privacy, Anonymity, and Content Protection
+
+Frog Social is a privacy-conscious, login-gated platform.
+
+### Content Protection
+- User content may not be reposted, redistributed, or publicly attributed outside Frog Social without explicit permission from the poster.
+- Platform use of content for internal AI/case logic is permitted; external redistribution is not.
+
+### Anonymity Controls
+- Users may post anonymously to the Social feed.
+- Users may submit cases anonymously via Describe a Problem.
+- Colony registrations default to private (visible only to owner/authorized group).
+- Users may register with coded identities rather than real names.
+
+### Login-Gating
+- All contributions (posts, cases, colony records) require authentication.
+- No content is indexed by public search engines.
+
+Full terms and privacy rules are defined in: `docs/TERMS_AND_PRIVACY.md`
+
+---
+
+## 25. Colony Register + Management
+
+Colony Management is a **strictly private**, lightweight system for users to maintain continuity records.
+
+**Privacy boundary**: Each colony record belongs to one user (or their authorized lab group). No other Frog Social user can see, search, or access another user's colony data. This is enforced at the data layer — per-user storage with no cross-user queries.
+
+It provides:
+- colony/system registration with coded or real identifiers
+- baseline system context (water source, system type, density, temp)
+- running event log (imports, changes, treatments, observations)
+- status/recovery tracking
+- case linkage (colony history connected to Frog Social cases)
+- exportable local record (CSV)
+
+Colony Management is tightly connected to:
+- **continuity** — running record of changes
+- **troubleshooting** — immediate context when problems arise
+- **case memory** — correlation between events and cases
+- **system context** — AI uses baseline for better recommendations
+
+Colony Management is NOT generic vivarium software. It exists to serve troubleshooting and case memory.
+
+Full spec: `docs/social/COLONY_REGISTER_SPEC.md`
+
+---
+
+## 26. Describe a Problem — Progressive Disclosure
+
+Describe a Problem uses a minimum-information-first model:
+
+- Step 1 requires only: what's happening + which colony + anonymous choice
+- All other fields are optional enrichment (collapsed by default)
+- Users can return and add more detail over time
+- The AI summary updates as more information is added
+- No user is overwhelmed on first entry
+
+Full spec: `docs/social/DESCRIBE_A_PROBLEM_SPEC.md`
+
+---
+
+## 27. Current Build Priority
 
 Immediate priority order:
 
 1. persistent posts
-2. login / account creation
-3. multi-user testing
-4. emerging thread detection from recent posts
-5. case creation from mature emerging threads
-6. Describe a Problem direct case intake
-7. durable Case History archive
-8. recommendation shaping from:
-   - current case
-   - prior cases
-   - MD guidance
-9. support distinction:
-   - system-supported
-   - case-supported
-   - emerging suggestion
-10. later refinement of similar-case recall and richer memory surfacing
+2. login / account creation (with anonymity + coded identity support)
+3. Terms of Service / content-use protection enforcement
+4. multi-user testing
+5. Colony Register + Management (private, lightweight)
+6. Describe a Problem with progressive disclosure
+7. emerging thread detection from recent posts
+8. case creation from mature emerging threads
+9. durable Case History archive
+10. recommendation shaping from:
+    - current case
+    - prior cases
+    - MD guidance
+    - colony context
+11. support distinction:
+    - system-supported
+    - case-supported
+    - emerging suggestion
+12. later refinement of similar-case recall and richer memory surfacing

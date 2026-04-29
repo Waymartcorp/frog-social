@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Frog Social · Colony Register</title>
+  <title>Frog Social · Colony Register + Management</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
   <script>
     (function () {
       try {
@@ -18,10 +19,8 @@
   <style>
     * { box-sizing: border-box; }
     :root {
-      --app-shell-bg: #050810;
       --app-body-bg: #0B1020;
       --card-bg: #111827;
-      --card-border: #1F2937;
       --primary-text: #F9FAFB;
       --secondary-text: #9CA3AF;
       --accent-green: #34D399;
@@ -29,115 +28,84 @@
       --warning: #F97316;
       --danger: #EF4444;
     }
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 0;
-      background: var(--app-body-bg);
-      color: var(--primary-text);
-      min-height: 100vh;
-    }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: var(--app-body-bg); color: var(--primary-text); min-height: 100vh; }
 
-    .nav-bar {
-      background: rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      padding: 12px 32px;
-      display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 100;
-    }
-    .nav-brand {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 1rem; font-weight: 600; color: var(--primary-text);
-      text-decoration: none;
-    }
+    .nav-bar { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .nav-brand { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 600; color: var(--primary-text); text-decoration: none; }
     .nav-brand span { font-size: 1.25rem; }
     .nav-links { display: flex; align-items: center; gap: 6px; }
-    .nav-links a {
-      font-size: 0.875rem; color: var(--secondary-text); text-decoration: none;
-      padding: 8px 14px; border-radius: 9999px; transition: all 0.15s ease;
-    }
+    .nav-links a { font-size: 0.875rem; color: var(--secondary-text); text-decoration: none; padding: 8px 14px; border-radius: 9999px; transition: all 0.15s ease; }
     .nav-links a:hover { background: rgba(255,255,255,0.05); color: var(--primary-text); }
-    .nav-links a.active {
-      color: #6EE7B7; background: rgba(52, 211, 153, 0.1);
-      border: 1px solid rgba(52, 211, 153, 0.4);
-    }
-    .nav-signout {
-      background: #1E293B; border: 1px solid rgba(255,255,255,0.1);
-      color: var(--primary-text); padding: 6px 14px; border-radius: 9999px;
-      font-size: 0.875rem; cursor: pointer; text-decoration: none;
-    }
+    .nav-links a.active { color: #6EE7B7; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.4); }
+    .nav-signout { background: #1E293B; border: 1px solid rgba(255,255,255,0.1); color: var(--primary-text); padding: 6px 14px; border-radius: 9999px; font-size: 0.875rem; cursor: pointer; text-decoration: none; }
     .nav-signout:hover { background: #334155; }
 
-    .page-container { max-width: 720px; margin: 0 auto; padding: 32px 24px; }
+    .page-container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
     .page-header { margin-bottom: 24px; }
     .page-header h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 8px; }
-    .page-header p { color: var(--secondary-text); font-size: 0.88rem; margin: 0; line-height: 1.5; }
+    .page-header p { color: var(--secondary-text); font-size: 0.85rem; margin: 0; line-height: 1.5; }
 
-    .card {
-      background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;
-      padding: 24px; margin-bottom: 20px;
-    }
+    .card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+    .card h2 { font-size: 1.1rem; margin: 0 0 12px; }
 
-    label {
-      display: block; font-size: 0.78rem; color: var(--secondary-text);
-      font-weight: 500; margin-bottom: 5px; margin-top: 14px;
-    }
+    label { display: block; font-size: 0.78rem; color: var(--secondary-text); font-weight: 500; margin-bottom: 5px; margin-top: 12px; }
     label:first-of-type { margin-top: 0; }
-    input, textarea {
-      width: 100%; background: #0F172A; border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px; padding: 10px 14px; font-size: 0.88rem;
-      color: var(--primary-text); transition: border-color 0.15s;
-    }
+    input, textarea, select { width: 100%; background: #0F172A; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 14px; font-size: 0.88rem; color: var(--primary-text); transition: border-color 0.15s; }
     input::placeholder, textarea::placeholder { color: #6B7280; }
-    input:focus, textarea:focus {
-      outline: none; border-color: var(--accent-green);
-      box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
-    }
-    textarea { min-height: 70px; resize: vertical; font-family: inherit; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15); }
+    textarea { min-height: 60px; resize: vertical; font-family: inherit; }
+    select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239CA3AF' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
 
-    .btn-primary {
-      width: 100%; background: var(--accent-green); color: #0F172A; font-weight: 600;
-      padding: 11px; border-radius: 9999px; border: none; font-size: 0.9rem;
-      cursor: pointer; margin-top: 18px;
-      box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
-      transition: transform 0.15s, background 0.15s;
-    }
+    .btn-primary { background: var(--accent-green); color: #0F172A; font-weight: 600; padding: 10px 20px; border-radius: 9999px; border: none; font-size: 0.85rem; cursor: pointer; box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3); transition: transform 0.15s, background 0.15s; }
     .btn-primary:hover { background: #6EE7B7; transform: translateY(-1px); }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-secondary { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--secondary-text); padding: 8px 16px; border-radius: 9999px; font-size: 0.82rem; cursor: pointer; transition: all 0.15s; }
+    .btn-secondary:hover { background: rgba(255,255,255,0.05); color: var(--primary-text); }
+    .btn-danger { background: none; border: 1px solid rgba(239, 68, 68, 0.3); color: var(--danger); font-size: 0.75rem; padding: 4px 10px; border-radius: 9999px; cursor: pointer; }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.15); }
 
-    .colony-item {
-      padding: 16px; border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.06); background: rgba(15, 23, 42, 0.5);
-      margin-top: 12px; display: flex; justify-content: space-between; align-items: flex-start;
-    }
-    .colony-info { flex: 1; }
-    .colony-name { font-weight: 600; font-size: 0.95rem; margin: 0 0 6px; color: var(--primary-text); }
-    .colony-meta { font-size: 0.8rem; color: var(--secondary-text); line-height: 1.5; }
-    .colony-delete {
-      background: none; border: 1px solid rgba(239, 68, 68, 0.3);
-      color: var(--danger); font-size: 0.75rem; padding: 4px 10px;
-      border-radius: 9999px; cursor: pointer; flex-shrink: 0; margin-left: 12px; margin-top: 0;
-      width: auto;
-    }
-    .colony-delete:hover { background: rgba(239, 68, 68, 0.15); }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 600px) { .field-grid { grid-template-columns: 1fr; } }
 
-    .status-msg {
-      font-size: 0.8rem; margin-top: 10px; padding: 8px 12px; border-radius: 8px;
-    }
+    .colony-item { padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); background: rgba(15, 23, 42, 0.5); margin-top: 10px; cursor: pointer; transition: border-color 0.15s; }
+    .colony-item:hover { border-color: rgba(52, 211, 153, 0.3); }
+    .colony-item-header { display: flex; justify-content: space-between; align-items: center; }
+    .colony-name { font-weight: 600; font-size: 0.92rem; }
+    .colony-meta { font-size: 0.78rem; color: var(--secondary-text); margin-top: 4px; }
+    .status-badge { font-size: 0.7rem; padding: 3px 10px; border-radius: 9999px; font-weight: 500; }
+    .status-stable { background: rgba(52, 211, 153, 0.15); color: var(--accent-green); }
+    .status-recovering { background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); }
+    .status-concern { background: rgba(249, 115, 22, 0.15); color: var(--warning); }
+    .status-active_problem { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .status-new_setup { background: rgba(139, 92, 246, 0.15); color: #A78BFA; }
+
+    .detail-view { display: none; }
+    .detail-view.active { display: block; }
+    .list-view { display: block; }
+    .list-view.hidden { display: none; }
+
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tab-btn { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--secondary-text); padding: 7px 14px; border-radius: 9999px; font-size: 0.78rem; cursor: pointer; transition: all 0.15s; }
+    .tab-btn.active { background: rgba(52, 211, 153, 0.1); color: var(--accent-green); border-color: rgba(52, 211, 153, 0.4); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .event-item { padding: 10px 14px; border-left: 3px solid rgba(52, 211, 153, 0.4); margin-bottom: 8px; background: rgba(15, 23, 42, 0.4); border-radius: 0 8px 8px 0; }
+    .event-date { font-size: 0.72rem; color: var(--secondary-text); }
+    .event-type { font-size: 0.7rem; background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 9999px; display: inline-block; margin-left: 8px; }
+    .event-desc { font-size: 0.84rem; margin-top: 4px; color: var(--primary-text); }
+
+    .status-msg { font-size: 0.8rem; margin-top: 10px; padding: 8px 12px; border-radius: 8px; }
     .status-msg.error { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
     .status-msg.ok { background: rgba(52, 211, 153, 0.15); color: var(--accent-green); }
     .empty { color: var(--secondary-text); font-size: 0.85rem; padding: 12px 0; }
-    .loading { color: var(--secondary-text); font-size: 0.85rem; }
   </style>
 </head>
 <body>
 
   <nav class="nav-bar">
-    <a class="nav-brand" href="dashboard.html">
-      <span>🐸</span>
-      Frog Social
-    </a>
+    <a class="nav-brand" href="dashboard.html"><span>🐸</span> Frog Social</a>
     <div class="nav-links">
       <a href="dashboard.html">Home</a>
       <a href="case-intake.html">Describe a Problem</a>
@@ -149,87 +117,237 @@
   </nav>
 
   <div class="page-container">
-    <div class="page-header">
-      <h1>Colony Register</h1>
-      <p>Register each colony, room, rack, or housing system. This is your personal reference — only you can see your colonies.</p>
+    <!-- LIST VIEW -->
+    <div class="list-view" id="listView">
+      <div class="page-header">
+        <h1>Colony Register + Management</h1>
+        <p>Your private colony records. <strong>Only you can see this information</strong> — no other Frog Social users have access to your colony data. This is your personal lab record for continuity, troubleshooting, and case context.</p>
+      </div>
+
+      <div class="card">
+        <h2>Register a Colony</h2>
+        <form id="colonyForm">
+          <label for="colonyName">Colony / Room Name (required)</label>
+          <input id="colonyName" placeholder="e.g., Room B217, Rack 3" required />
+          <div class="field-grid" style="margin-top:10px;">
+            <div><label for="systemType">System Type</label><input id="systemType" placeholder="e.g., Recirculating rack" /></div>
+            <div><label for="species">Species</label><input id="species" placeholder="e.g., X. laevis" /></div>
+            <div><label for="waterSource">Water Source</label><input id="waterSource" placeholder="e.g., RO + buffer" /></div>
+            <div><label for="approxFrogs">Approx # Frogs</label><input id="approxFrogs" placeholder="e.g., 120" /></div>
+          </div>
+          <label for="notes">Notes</label>
+          <textarea id="notes" placeholder="Density, age structure, anything notable..."></textarea>
+          <button type="submit" class="btn-primary" style="margin-top:14px; width:100%;" id="addBtn">Add Colony</button>
+        </form>
+        <div id="formStatus"></div>
+      </div>
+
+      <div class="card">
+        <h2>Join a Colony</h2>
+        <p style="font-size:0.82rem; color:var(--secondary-text); margin:0 0 10px;">Have a colony code? Enter it here to join an existing colony team.</p>
+        <div style="display:flex; gap:8px;">
+          <input id="joinCodeInput" placeholder="e.g., BRK-7X2M" style="flex:1; text-transform:uppercase; font-family:monospace; letter-spacing:0.1em;" />
+          <button class="btn-primary" style="width:auto; margin:0; padding:10px 20px;" id="joinBtn">Join</button>
+        </div>
+        <div id="joinStatus"></div>
+      </div>
+
+      <div class="card">
+        <h2>Your Colonies</h2>
+        <div id="pendingInvites"></div>
+        <div id="colonyList"><p class="empty">Loading...</p></div>
+      </div>
     </div>
 
-    <div class="card">
-      <form id="colonyForm">
-        <label for="colonyName">Colony / Room Name</label>
-        <input id="colonyName" placeholder="e.g., Room B217, Rack 3" required />
+    <!-- DETAIL VIEW -->
+    <div class="detail-view" id="detailView">
+      <div style="margin-bottom:16px;">
+        <button class="btn-secondary" id="backBtn">← Back to list</button>
+      </div>
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <p style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--secondary-text); margin:0 0 4px;">Colony / System Profile</p>
+            <h2 id="detailName" style="margin:0;">Colony</h2>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span class="status-badge" id="detailStatusBadge">stable</span>
+            <button class="btn-secondary" id="exportBtn">Export CSV</button>
+            <button class="btn-danger" id="deleteBtn">Delete</button>
+          </div>
+        </div>
+        <div class="colony-meta" id="detailMeta" style="margin-top:8px;"></div>
+        <div style="margin-top:10px; padding:10px 14px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.2); border-radius:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <span style="font-size:0.75rem; color:var(--secondary-text);">Colony Code:</span>
+          <span id="colonyCodeDisplay" style="font-size:1.1rem; font-weight:700; font-family:monospace; color:var(--accent-green); letter-spacing:0.12em;"></span>
+          <button class="btn-secondary" style="padding:4px 10px; font-size:0.7rem;" id="copyCodeBtn">Copy</button>
+          <button class="btn-danger" style="font-size:0.68rem;" id="regenCodeBtn">Regenerate</button>
+          <span style="font-size:0.68rem; color:var(--secondary-text); flex-basis:100%;">Share this code with your team — they can join and link cases to this colony.</span>
+        </div>
+      </div>
 
-        <label for="systemType">System Type</label>
-        <input id="systemType" placeholder="e.g., Recirculating rack, Static tanks" />
+      <div class="tabs" id="detailTabs">
+        <button class="tab-btn active" data-tab="baseline">Baseline</button>
+        <button class="tab-btn" data-tab="events">Event Log</button>
+        <button class="tab-btn" data-tab="status">Status</button>
+        <button class="tab-btn" data-tab="cases">Cases</button>
+        <button class="tab-btn" data-tab="team">Team</button>
+        <button class="tab-btn" data-tab="export">Export</button>
+      </div>
 
-        <label for="approxFrogs">Approx # of Frogs</label>
-        <input id="approxFrogs" placeholder="e.g., 120" />
+      <!-- Baseline tab -->
+      <div class="tab-content active" id="tab-baseline">
+        <div class="card">
+          <div class="field-grid">
+            <div><label>System Type</label><input id="editSystem" /></div>
+            <div><label>Species</label><input id="editSpecies" /></div>
+            <div><label>Water Source</label><input id="editWaterSource" /></div>
+            <div><label>Buffering</label><input id="editBuffering" /></div>
+            <div><label>Typical Density</label><input id="editDensity" /></div>
+            <div><label>Typical Temp</label><input id="editTemp" /></div>
+            <div><label>Location</label><input id="editLocation" /></div>
+            <div><label>Approx Count</label><input id="editCount" /></div>
+          </div>
+          <label>Notes</label>
+          <textarea id="editNotes"></textarea>
+          <button class="btn-primary" style="margin-top:14px; width:100%;" id="saveBaselineBtn">Save Baseline</button>
+          <div id="baselineStatus"></div>
+        </div>
+      </div>
 
-        <label for="notes">Notes (optional)</label>
-        <textarea id="notes" placeholder="Density, age structure, water source, species mix, etc."></textarea>
+      <!-- Events tab -->
+      <div class="tab-content" id="tab-events">
+        <div class="card">
+          <h2 style="font-size:1rem;">Add Event</h2>
+          <div class="field-grid">
+            <div><label for="eventDate">Date</label><input type="date" id="eventDate" /></div>
+            <div>
+              <label for="eventType">Type</label>
+              <select id="eventType">
+                <option value="note">Note</option>
+                <option value="import">Import (new animals)</option>
+                <option value="export">Export (animals removed)</option>
+                <option value="water_change">Water change</option>
+                <option value="equipment">Equipment</option>
+                <option value="feeding">Feeding change</option>
+                <option value="treatment">Treatment</option>
+                <option value="observation">Observation</option>
+                <option value="incident">Incident</option>
+                <option value="procedure">Procedure</option>
+                <option value="system_change">System change</option>
+              </select>
+            </div>
+          </div>
+          <label for="eventDesc">Description</label>
+          <input id="eventDesc" placeholder="Brief description of what happened" />
+          <button class="btn-primary" style="margin-top:12px; width:100%;" id="addEventBtn">Add Event</button>
+          <div id="eventStatus"></div>
+        </div>
+        <div class="card">
+          <h2 style="font-size:1rem;">Event Timeline</h2>
+          <div id="eventList"><p class="empty">No events yet.</p></div>
+        </div>
+      </div>
 
-        <button type="submit" class="btn-primary" id="addBtn">Add Colony</button>
-      </form>
-      <div id="formStatus"></div>
-    </div>
+      <!-- Cases tab -->
+      <div class="tab-content" id="tab-cases">
+        <div class="card">
+          <h2 style="font-size:1rem;">Cases Filed About This Colony</h2>
+          <p style="font-size:0.78rem; color:var(--secondary-text); margin:0 0 12px;">All cases that any team member has filed referencing this colony. This is the colony's troubleshooting history.</p>
+          <div id="colonyCasesList"><p class="empty">No cases linked to this colony yet.</p></div>
+        </div>
+      </div>
 
-    <div class="card">
-      <h2 style="font-size:1.1rem; margin:0 0 4px;">Your Colonies</h2>
-      <div id="colonyList"><p class="loading">Loading...</p></div>
+      <!-- Team tab -->
+      <div class="tab-content" id="tab-team">
+        <div class="card">
+          <h2 style="font-size:1rem;">Colony Team</h2>
+          <p style="font-size:0.78rem; color:var(--secondary-text); margin:0 0 12px;">People who can view and manage this colony. Invite by username — they'll see the invitation when they log in.</p>
+          <div id="teamList"></div>
+          <div id="inviteSection" style="margin-top:16px; display:none;">
+            <label for="inviteUsername">Invite by username</label>
+            <div style="display:flex; gap:8px;">
+              <input id="inviteUsername" placeholder="e.g., sarah.chen" style="flex:1;" />
+              <button class="btn-primary" style="width:auto; margin-top:0; padding:10px 20px;" id="inviteBtn">Invite</button>
+            </div>
+            <div id="inviteStatus"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Export tab -->
+      <div class="tab-content" id="tab-export">
+        <div class="card">
+          <h2 style="font-size:1rem;">Export Colony Record</h2>
+          <p style="font-size:0.84rem; color:var(--secondary-text); line-height:1.5; margin:0 0 14px;">Download your full colony record as a CSV file. Includes baseline info, all events, and status history. This is your private local backup.</p>
+          <button class="btn-primary" style="width:100%;" id="exportTabBtn">Download CSV</button>
+        </div>
+      </div>
+
+      <!-- Status tab -->
+      <div class="tab-content" id="tab-status">
+        <div class="card">
+          <h2 style="font-size:1rem;">Update Status</h2>
+          <div class="field-grid">
+            <div>
+              <label for="newStatus">Status</label>
+              <select id="newStatus">
+                <option value="stable">Stable</option>
+                <option value="recovering">Recovering</option>
+                <option value="concern">Concern</option>
+                <option value="active_problem">Active Problem</option>
+                <option value="new_setup">New Setup</option>
+              </select>
+            </div>
+            <div><label for="statusNote">Note (optional)</label><input id="statusNote" placeholder="Brief reason" /></div>
+          </div>
+          <button class="btn-primary" style="margin-top:12px; width:100%;" id="updateStatusBtn">Update Status</button>
+          <div id="statusUpdateMsg"></div>
+        </div>
+        <div class="card">
+          <h2 style="font-size:1rem;">Status History</h2>
+          <div id="statusList"><p class="empty">No status changes yet.</p></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     const API_BASE = "";
+    let colonies = [];
+    let pendingInvites = [];
+    let activeColony = null;
+    let colonyCases = [];
 
     function getAuthToken() { return localStorage.getItem("frogSocialToken") || ""; }
-    function getAuthUser() {
-      try { return JSON.parse(localStorage.getItem("frogSocialUser") || "null"); }
-      catch { return null; }
-    }
+    function getAuthUser() { try { return JSON.parse(localStorage.getItem("frogSocialUser") || "null"); } catch { return null; } }
     if (!getAuthToken() || !getAuthUser()) { window.location.href = "login.html"; }
+    const currentUser = getAuthUser();
+    function authHeaders() { return { "Content-Type": "application/json", "Authorization": "Bearer " + getAuthToken() }; }
+    function escapeHtml(str) { const d = document.createElement("div"); d.appendChild(document.createTextNode(String(str || ""))); return d.innerHTML; }
+    function isOwner(colony) { return colony.ownerId === currentUser?.userId; }
 
-    function authHeaders() {
-      return {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + getAuthToken(),
-      };
-    }
-
-    function escapeHtml(str) {
-      const div = document.createElement("div");
-      div.appendChild(document.createTextNode(String(str)));
-      return div.innerHTML;
-    }
-
-    const colonyForm = document.getElementById("colonyForm");
-    const colonyListDiv = document.getElementById("colonyList");
-    const formStatus = document.getElementById("formStatus");
-    const addBtn = document.getElementById("addBtn");
-
-    let colonies = [];
+    function statusClass(s) { return "status-" + (s || "stable"); }
 
     function renderColonies() {
-      if (colonies.length === 0) {
-        colonyListDiv.innerHTML = '<p class="empty">No colonies registered yet. Add your first colony above.</p>';
-        return;
-      }
-      colonyListDiv.innerHTML = colonies.map((c) => `
-        <div class="colony-item">
-          <div class="colony-info">
-            <div class="colony-name">${escapeHtml(c.name)}</div>
-            <div class="colony-meta">
-              ${c.system ? "System: " + escapeHtml(c.system) : ""}
-              ${c.count ? " · ~" + escapeHtml(c.count) + " frogs" : ""}
-              ${c.notes ? "<br>" + escapeHtml(c.notes) : ""}
+      const el = document.getElementById("colonyList");
+      if (colonies.length === 0) { el.innerHTML = '<p class="empty">No colonies registered yet.</p>'; return; }
+      el.innerHTML = colonies.map(c => {
+        const role = isOwner(c) ? "owner" : "member";
+        return `
+        <div class="colony-item" data-id="${c.id}">
+          <div class="colony-item-header">
+            <span class="colony-name">${escapeHtml(c.name)}</span>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <span style="font-size:0.68rem; color:var(--secondary-text);">${role}</span>
+              <span class="status-badge ${statusClass(c.currentStatus)}">${escapeHtml(c.currentStatus || "stable")}</span>
             </div>
           </div>
-          <button class="colony-delete" data-id="${escapeHtml(c.id)}">Remove</button>
-        </div>
-      `).join("");
-
-      colonyListDiv.querySelectorAll(".colony-delete").forEach((btn) => {
-        btn.addEventListener("click", () => deleteColony(btn.dataset.id));
+          <div class="colony-meta">${[c.system, c.species, c.count ? "~" + c.count + " frogs" : ""].filter(Boolean).join(" · ")}</div>
+        </div>`;
+      }).join("");
+      el.querySelectorAll(".colony-item").forEach(item => {
+        item.addEventListener("click", () => openDetail(item.dataset.id));
       });
     }
 
@@ -239,79 +357,371 @@
         if (res.status === 401) { window.location.href = "login.html"; return; }
         const data = await res.json();
         colonies = Array.isArray(data.colonies) ? data.colonies : [];
-      } catch (err) {
-        colonies = [];
-        console.warn("Failed to load colonies:", err);
-      }
+        pendingInvites = Array.isArray(data.pendingInvites) ? data.pendingInvites : [];
+      } catch { colonies = []; pendingInvites = []; }
+      renderPendingInvites();
       renderColonies();
     }
 
-    colonyForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      formStatus.innerHTML = "";
-      addBtn.disabled = true;
-      addBtn.textContent = "Adding...";
+    function renderPendingInvites() {
+      const el = document.getElementById("pendingInvites");
+      if (pendingInvites.length === 0) { el.innerHTML = ""; return; }
+      el.innerHTML = '<p style="font-size:0.82rem; color:var(--accent-cyan); margin:0 0 10px;">You have colony invitations:</p>' +
+        pendingInvites.map(inv => `
+          <div class="colony-item" style="border-color:rgba(56,189,248,0.3);">
+            <div class="colony-item-header">
+              <span class="colony-name">${escapeHtml(inv.name)}</span>
+              <button class="btn-primary" style="width:auto; margin:0; padding:6px 16px; font-size:0.78rem;" data-accept="${inv.id}">Accept</button>
+            </div>
+            <div class="colony-meta">Invited by: ${escapeHtml(inv.ownerId)}</div>
+          </div>
+        `).join("");
+      el.querySelectorAll("[data-accept]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          try {
+            const r = await fetch(API_BASE + "/api/colonies/" + btn.dataset.accept + "/accept-invite", { method: "POST", headers: authHeaders() });
+            if (r.ok) loadColonies();
+          } catch {}
+        });
+      });
+    }
 
+    // Add colony
+    document.getElementById("colonyForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("addBtn");
+      const status = document.getElementById("formStatus");
+      btn.disabled = true; status.innerHTML = "";
       const body = {
         name: document.getElementById("colonyName").value.trim(),
         system: document.getElementById("systemType").value.trim(),
+        species: document.getElementById("species").value.trim(),
+        waterSource: document.getElementById("waterSource").value.trim(),
         count: document.getElementById("approxFrogs").value.trim(),
         notes: document.getElementById("notes").value.trim(),
       };
-
       try {
-        const res = await fetch(API_BASE + "/api/colonies", {
-          method: "POST",
-          headers: authHeaders(),
-          body: JSON.stringify(body),
-        });
-        if (res.status === 401) { window.location.href = "login.html"; return; }
-        const data = await res.json();
-        if (!data.ok) {
-          formStatus.innerHTML = '<div class="status-msg error">' + escapeHtml(data.error || "Failed to add colony") + '</div>';
-        } else {
-          colonies.unshift(data.colony);
-          renderColonies();
-          colonyForm.reset();
-          formStatus.innerHTML = '<div class="status-msg ok">Colony added</div>';
-          setTimeout(() => { formStatus.innerHTML = ""; }, 2000);
-        }
-      } catch {
-        formStatus.innerHTML = '<div class="status-msg error">Network error. Please try again.</div>';
-      }
-      addBtn.disabled = false;
-      addBtn.textContent = "Add Colony";
-    });
-
-    async function deleteColony(id) {
-      if (!confirm("Remove this colony?")) return;
-      try {
-        const res = await fetch(API_BASE + "/api/colonies/" + encodeURIComponent(id), {
-          method: "DELETE",
-          headers: authHeaders(),
-        });
-        if (res.status === 401) { window.location.href = "login.html"; return; }
+        const res = await fetch(API_BASE + "/api/colonies", { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
         const data = await res.json();
         if (data.ok) {
-          colonies = colonies.filter((c) => c.id !== id);
+          colonies.unshift(data.colony);
           renderColonies();
+          document.getElementById("colonyForm").reset();
+          status.innerHTML = '<div class="status-msg ok">Colony added</div>';
+          setTimeout(() => { status.innerHTML = ""; }, 2000);
+        } else {
+          status.innerHTML = '<div class="status-msg error">' + escapeHtml(data.error) + '</div>';
         }
-      } catch (err) {
-        console.warn("Delete failed:", err);
-      }
+      } catch { status.innerHTML = '<div class="status-msg error">Network error</div>'; }
+      btn.disabled = false;
+    });
+
+    // Detail view
+    function openDetail(id) {
+      activeColony = colonies.find(c => c.id === id);
+      if (!activeColony) return;
+      document.getElementById("listView").classList.add("hidden");
+      document.getElementById("detailView").classList.add("active");
+      populateDetail();
     }
 
-    (function () {
-      var el = document.getElementById("navSignOut");
-      if (el) {
-        el.addEventListener("click", function (e) {
-          e.preventDefault();
-          localStorage.removeItem("frogSocialToken");
-          localStorage.removeItem("frogSocialUser");
-          window.location.href = "login.html";
-        });
+    function closeDetail() {
+      document.getElementById("listView").classList.remove("hidden");
+      document.getElementById("detailView").classList.remove("active");
+      activeColony = null;
+    }
+
+    document.getElementById("backBtn").addEventListener("click", closeDetail);
+
+    function populateDetail() {
+      const c = activeColony;
+      document.getElementById("detailName").textContent = c.name;
+      document.getElementById("detailStatusBadge").textContent = c.currentStatus || "stable";
+      document.getElementById("detailStatusBadge").className = "status-badge " + statusClass(c.currentStatus);
+      document.getElementById("detailMeta").textContent = [c.system, c.species, c.institution, c.facilityLocation].filter(Boolean).join(" · ");
+      document.getElementById("colonyCodeDisplay").textContent = c.colonyCode || "—";
+
+      document.getElementById("editSystem").value = c.system || "";
+      document.getElementById("editSpecies").value = c.species || "";
+      document.getElementById("editWaterSource").value = c.waterSource || "";
+      document.getElementById("editBuffering").value = c.bufferingApproach || "";
+      document.getElementById("editDensity").value = c.typicalDensity || "";
+      document.getElementById("editTemp").value = c.typicalTemp || "";
+      document.getElementById("editLocation").value = c.facilityLocation || "";
+      document.getElementById("editCount").value = c.count || "";
+      document.getElementById("editNotes").value = c.notes || "";
+
+      // Only owner can delete, invite, or regenerate code
+      document.getElementById("deleteBtn").style.display = isOwner(c) ? "" : "none";
+      document.getElementById("regenCodeBtn").style.display = isOwner(c) ? "" : "none";
+      document.getElementById("inviteSection").style.display = isOwner(c) ? "block" : "none";
+
+      renderEvents();
+      renderStatusHistory();
+      renderTeam();
+      loadColonyCases();
+      setTab("baseline");
+    }
+
+    function renderTeam() {
+      const c = activeColony;
+      const el = document.getElementById("teamList");
+      const members = [
+        { id: c.ownerId, role: "Owner" },
+        ...(c.authorizedUsers || []).map(u => ({ id: u, role: "Member" }))
+      ];
+      const pending = c.pendingInvites || [];
+      let html = members.map(m => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+          <span style="font-size:0.85rem;">${escapeHtml(m.id)} <span style="font-size:0.7rem; color:var(--secondary-text);">(${m.role})</span></span>
+          ${isOwner(c) && m.role === "Member" ? '<button class="btn-danger" data-remove="' + escapeHtml(m.id) + '">Remove</button>' : ""}
+        </div>
+      `).join("");
+      if (pending.length > 0) {
+        html += '<p style="font-size:0.78rem; color:var(--warning); margin:10px 0 4px;">Pending invitations:</p>';
+        html += pending.map(u => `<div style="font-size:0.82rem; padding:4px 0; color:var(--secondary-text);">${escapeHtml(u)}</div>`).join("");
       }
-    })();
+      el.innerHTML = html;
+      el.querySelectorAll("[data-remove]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          try {
+            await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/remove-user", {
+              method: "POST", headers: authHeaders(), body: JSON.stringify({ username: btn.dataset.remove })
+            });
+            activeColony.authorizedUsers = (activeColony.authorizedUsers || []).filter(u => u !== btn.dataset.remove);
+            renderTeam();
+          } catch {}
+        });
+      });
+    }
+
+    async function loadColonyCases() {
+      const el = document.getElementById("colonyCasesList");
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/cases", { headers: authHeaders() });
+        const data = await res.json();
+        colonyCases = Array.isArray(data.cases) ? data.cases : [];
+        if (colonyCases.length === 0) {
+          el.innerHTML = '<p class="empty">No cases linked to this colony yet. Cases appear here when filed via Describe a Problem with this colony selected.</p>';
+          return;
+        }
+        el.innerHTML = colonyCases.map(c => `
+          <div class="event-item">
+            <span class="event-date">${c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ""}</span>
+            <span class="event-type">Case #${c.caseNumber || ""}</span>
+            <div class="event-desc">${escapeHtml(c.title || c.caseSummary || "Untitled case")}</div>
+            <div style="font-size:0.72rem; color:var(--secondary-text); margin-top:2px;">Status: ${escapeHtml(c.status || c.admissionState || "open")}</div>
+          </div>
+        `).join("");
+      } catch { el.innerHTML = '<p class="empty">Could not load cases.</p>'; }
+    }
+
+    function renderEvents() {
+      const el = document.getElementById("eventList");
+      const events = activeColony.events || [];
+      if (events.length === 0) { el.innerHTML = '<p class="empty">No events yet. Add one above.</p>'; return; }
+      el.innerHTML = events.map(ev => `
+        <div class="event-item">
+          <span class="event-date">${escapeHtml(ev.date)}</span>
+          <span class="event-type">${escapeHtml(ev.type)}</span>
+          <div class="event-desc">${escapeHtml(ev.description)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderStatusHistory() {
+      const el = document.getElementById("statusList");
+      const history = activeColony.statusHistory || [];
+      if (history.length === 0) { el.innerHTML = '<p class="empty">No status history.</p>'; return; }
+      el.innerHTML = history.map(s => `
+        <div class="event-item">
+          <span class="event-date">${escapeHtml(s.date ? s.date.split("T")[0] : "")}</span>
+          <span class="status-badge ${statusClass(s.status)}">${escapeHtml(s.status)}</span>
+          ${s.note ? '<div class="event-desc">' + escapeHtml(s.note) + '</div>' : ""}
+        </div>
+      `).join("");
+    }
+
+    // Tabs
+    function setTab(name) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+      document.querySelectorAll(".tab-content").forEach(t => t.classList.toggle("active", t.id === "tab-" + name));
+    }
+    document.getElementById("detailTabs").addEventListener("click", (e) => {
+      if (e.target.classList.contains("tab-btn")) setTab(e.target.dataset.tab);
+    });
+
+    // Save baseline
+    document.getElementById("saveBaselineBtn").addEventListener("click", async () => {
+      const body = {
+        system: document.getElementById("editSystem").value.trim(),
+        species: document.getElementById("editSpecies").value.trim(),
+        waterSource: document.getElementById("editWaterSource").value.trim(),
+        bufferingApproach: document.getElementById("editBuffering").value.trim(),
+        typicalDensity: document.getElementById("editDensity").value.trim(),
+        typicalTemp: document.getElementById("editTemp").value.trim(),
+        facilityLocation: document.getElementById("editLocation").value.trim(),
+        count: document.getElementById("editCount").value.trim(),
+        notes: document.getElementById("editNotes").value.trim(),
+      };
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + activeColony.id, { method: "PUT", headers: authHeaders(), body: JSON.stringify(body) });
+        const data = await res.json();
+        if (data.ok) {
+          Object.assign(activeColony, data.colony);
+          const idx = colonies.findIndex(c => c.id === activeColony.id);
+          if (idx >= 0) colonies[idx] = activeColony;
+          document.getElementById("baselineStatus").innerHTML = '<div class="status-msg ok">Saved</div>';
+          setTimeout(() => { document.getElementById("baselineStatus").innerHTML = ""; }, 2000);
+        }
+      } catch { document.getElementById("baselineStatus").innerHTML = '<div class="status-msg error">Save failed</div>'; }
+    });
+
+    // Add event
+    document.getElementById("eventDate").value = new Date().toISOString().split("T")[0];
+    document.getElementById("addEventBtn").addEventListener("click", async () => {
+      const body = {
+        date: document.getElementById("eventDate").value,
+        type: document.getElementById("eventType").value,
+        description: document.getElementById("eventDesc").value.trim(),
+      };
+      if (!body.description) { document.getElementById("eventStatus").innerHTML = '<div class="status-msg error">Description required</div>'; return; }
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/events", { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+        const data = await res.json();
+        if (data.ok) {
+          if (!activeColony.events) activeColony.events = [];
+          activeColony.events.unshift(data.event);
+          renderEvents();
+          document.getElementById("eventDesc").value = "";
+          document.getElementById("eventStatus").innerHTML = '<div class="status-msg ok">Event added</div>';
+          setTimeout(() => { document.getElementById("eventStatus").innerHTML = ""; }, 2000);
+        }
+      } catch { document.getElementById("eventStatus").innerHTML = '<div class="status-msg error">Failed</div>'; }
+    });
+
+    // Update status
+    document.getElementById("updateStatusBtn").addEventListener("click", async () => {
+      const body = {
+        status: document.getElementById("newStatus").value,
+        note: document.getElementById("statusNote").value.trim(),
+      };
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/status", { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+        const data = await res.json();
+        if (data.ok) {
+          activeColony.currentStatus = data.status.status;
+          if (!activeColony.statusHistory) activeColony.statusHistory = [];
+          activeColony.statusHistory.unshift(data.status);
+          document.getElementById("detailStatusBadge").textContent = activeColony.currentStatus;
+          document.getElementById("detailStatusBadge").className = "status-badge " + statusClass(activeColony.currentStatus);
+          renderStatusHistory();
+          document.getElementById("statusNote").value = "";
+          document.getElementById("statusUpdateMsg").innerHTML = '<div class="status-msg ok">Status updated</div>';
+          setTimeout(() => { document.getElementById("statusUpdateMsg").innerHTML = ""; }, 2000);
+        }
+      } catch { document.getElementById("statusUpdateMsg").innerHTML = '<div class="status-msg error">Failed</div>'; }
+    });
+
+    // Copy colony code
+    document.getElementById("copyCodeBtn").addEventListener("click", () => {
+      const code = document.getElementById("colonyCodeDisplay").textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = document.getElementById("copyCodeBtn");
+        btn.textContent = "Copied!";
+        setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+      }).catch(() => {});
+    });
+
+    // Regenerate colony code (owner only)
+    document.getElementById("regenCodeBtn").addEventListener("click", async () => {
+      if (!confirm("Regenerate the colony code? The old code will stop working for new joins.")) return;
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/regenerate-code", {
+          method: "POST", headers: authHeaders()
+        });
+        const data = await res.json();
+        if (data.ok) {
+          activeColony.colonyCode = data.colonyCode;
+          document.getElementById("colonyCodeDisplay").textContent = data.colonyCode;
+        }
+      } catch {}
+    });
+
+    // Join by code
+    document.getElementById("joinBtn").addEventListener("click", async () => {
+      const code = document.getElementById("joinCodeInput").value.trim().toUpperCase();
+      const statusEl = document.getElementById("joinStatus");
+      if (!code) { statusEl.innerHTML = '<div class="status-msg error">Enter a colony code</div>'; return; }
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/join", {
+          method: "POST", headers: authHeaders(), body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          statusEl.innerHTML = '<div class="status-msg ok">' + escapeHtml(data.message) + '</div>';
+          document.getElementById("joinCodeInput").value = "";
+          loadColonies();
+          setTimeout(() => { statusEl.innerHTML = ""; }, 3000);
+        } else {
+          statusEl.innerHTML = '<div class="status-msg error">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch { statusEl.innerHTML = '<div class="status-msg error">Network error</div>'; }
+    });
+
+    // Invite user
+    document.getElementById("inviteBtn").addEventListener("click", async () => {
+      const input = document.getElementById("inviteUsername");
+      const username = input.value.trim().toLowerCase();
+      const statusEl = document.getElementById("inviteStatus");
+      if (!username) { statusEl.innerHTML = '<div class="status-msg error">Enter a username</div>'; return; }
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/invite", {
+          method: "POST", headers: authHeaders(), body: JSON.stringify({ username })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          statusEl.innerHTML = '<div class="status-msg ok">Invitation sent to ' + escapeHtml(username) + '</div>';
+          if (!activeColony.pendingInvites) activeColony.pendingInvites = [];
+          activeColony.pendingInvites.push(username);
+          renderTeam();
+          input.value = "";
+          setTimeout(() => { statusEl.innerHTML = ""; }, 3000);
+        } else {
+          statusEl.innerHTML = '<div class="status-msg error">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch { statusEl.innerHTML = '<div class="status-msg error">Failed to send invite</div>'; }
+    });
+
+    // Export CSV
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      window.open(API_BASE + "/api/colonies/" + activeColony.id + "/export?token=" + getAuthToken(), "_blank");
+    });
+    document.getElementById("exportTabBtn").addEventListener("click", () => {
+      window.open(API_BASE + "/api/colonies/" + activeColony.id + "/export?token=" + getAuthToken(), "_blank");
+    });
+
+    // Delete colony
+    document.getElementById("deleteBtn").addEventListener("click", async () => {
+      if (!confirm("Delete this colony and all its records? This cannot be undone.")) return;
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + activeColony.id, { method: "DELETE", headers: authHeaders() });
+        const data = await res.json();
+        if (data.ok) {
+          colonies = colonies.filter(c => c.id !== activeColony.id);
+          renderColonies();
+          closeDetail();
+        }
+      } catch {}
+    });
+
+    // Sign out
+    document.getElementById("navSignOut").addEventListener("click", function(e) {
+      e.preventDefault();
+      localStorage.removeItem("frogSocialToken");
+      localStorage.removeItem("frogSocialUser");
+      window.location.href = "login.html";
+    });
 
     loadColonies();
   </script>
