@@ -275,6 +275,28 @@
             <button class="btn-primary" id="saveChangesBtn" style="margin-top:14px;">Save Changes</button>
           </div>
         </div>
+
+        <div class="collapsible" id="sec-media">
+          <div class="collapsible-header" onclick="toggleSection('sec-media')">
+            <div>
+              <div class="collapsible-title">Photos & Video</div>
+              <div class="collapsible-hint">Upload feeding video, lesion photos, tank shots</div>
+            </div>
+            <span class="collapsible-arrow">▼</span>
+          </div>
+          <div class="collapsible-body">
+            <label for="photoUpload">Photos</label>
+            <input type="file" id="photoUpload" accept="image/*" multiple style="padding:8px;" />
+            <p style="font-size:0.72rem; color:var(--secondary-text); margin:4px 0 0;">Lesion close-ups, tank overview, skin condition. Multiple files OK.</p>
+
+            <label for="videoUpload" style="margin-top:14px;">Feeding / Behavior Video</label>
+            <input type="file" id="videoUpload" accept="video/*" style="padding:8px;" />
+            <p style="font-size:0.72rem; color:var(--secondary-text); margin:4px 0 0;">Short clip of feeding response, swimming behavior, or concerning activity.</p>
+
+            <div id="mediaPreview" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;"></div>
+            <button class="btn-primary" id="saveMediaBtn" style="margin-top:14px;">Upload Media</button>
+          </div>
+        </div>
       </div>
 
       <!-- RIGHT: AI Output -->
@@ -488,6 +510,30 @@
     document.getElementById("saveChangesBtn").addEventListener("click", async () => {
       const text = document.getElementById("recentChanges").value.trim();
       if (text) await appendToCase("[Recent changes] " + text);
+    });
+
+    // Photo preview
+    document.getElementById("photoUpload").addEventListener("change", function() {
+      const preview = document.getElementById("mediaPreview");
+      preview.innerHTML = "";
+      for (const file of this.files) {
+        if (!file.type.startsWith("image/")) continue;
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        img.style.cssText = "width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--card-border);";
+        preview.appendChild(img);
+      }
+    });
+
+    document.getElementById("saveMediaBtn").addEventListener("click", async () => {
+      const photos = document.getElementById("photoUpload").files;
+      const video = document.getElementById("videoUpload").files[0];
+      if (!photos.length && !video) return;
+      const parts = [];
+      if (photos.length) parts.push(photos.length + " photo(s) attached");
+      if (video) parts.push("Video: " + video.name);
+      await appendToCase("[Media] " + parts.join("; "));
+      alert("Media reference saved to case. File storage coming soon.");
     });
 
     // Sign out
