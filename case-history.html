@@ -79,7 +79,7 @@
       transition: all 0.15s ease;
     }
     .nav-links a:hover {
-      background: rgba(255,255,255,0.05);
+      background: var(--card-bg);
       color: var(--primary-text);
     }
     .nav-links a.active {
@@ -88,8 +88,8 @@
       border: 1px solid rgba(52, 211, 153, 0.4);
     }
     .nav-signout {
-      background: #1E293B;
-      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       color: var(--primary-text);
       padding: 6px 14px;
       border-radius: 9999px;
@@ -98,7 +98,7 @@
       transition: background 0.15s;
       text-decoration: none;
     }
-    .nav-signout:hover { background: #334155; }
+    .nav-signout:hover { background: var(--app-body-bg); }
 
     /* Page container */
     .page-container {
@@ -130,7 +130,7 @@
     .filter-tabs {
       display: flex;
       gap: 8px;
-      background: rgba(15, 23, 42, 0.6);
+      background: var(--card-bg);
       padding: 4px;
       border-radius: 12px;
     }
@@ -142,8 +142,8 @@
     }
     .search-row input {
       min-width: 320px;
-      background: #0F172A;
-      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--app-body-bg);
+      border: 1px solid var(--card-border);
       border-radius: 10px;
       padding: 9px 12px;
       font-size: 0.82rem;
@@ -181,8 +181,8 @@
       flex-wrap: wrap;
     }
     .stat-item {
-      background: rgba(17, 24, 39, 0.7);
-      border: 1px solid rgba(255,255,255,0.05);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       border-radius: 12px;
       padding: 16px 24px;
       min-width: 140px;
@@ -295,8 +295,8 @@
       margin-bottom: 16px;
     }
     .report-block {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       border-radius: 12px;
       padding: 12px 14px;
       margin-bottom: 10px;
@@ -399,8 +399,8 @@
       flex-wrap: wrap;
     }
     .btn-secondary {
-      background: #1E293B;
-      border: 1px solid rgba(255,255,255,0.1);
+      background: transparent;
+      border: 1px solid var(--card-border);
       color: var(--primary-text);
       padding: 8px 16px;
       border-radius: 9999px;
@@ -409,7 +409,8 @@
       transition: background 0.15s;
     }
     .btn-secondary:hover {
-      background: #334155;
+      background: var(--card-bg);
+      color: var(--primary-text);
     }
     .btn-resolve {
       background: var(--accent-green);
@@ -427,7 +428,7 @@
 
     /* Resolution form (modal-like inline) */
     .resolution-form {
-      background: rgba(15, 23, 42, 0.95);
+      background: var(--card-bg);
       border: 1px solid rgba(52, 211, 153, 0.3);
       border-radius: 12px;
       padding: 16px 20px;
@@ -450,8 +451,8 @@
     .resolution-form textarea,
     .resolution-form input {
       width: 100%;
-      background: #0F172A;
-      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--app-body-bg);
+      border: 1px solid var(--card-border);
       border-radius: 10px;
       padding: 10px 14px;
       font-size: 0.85rem;
@@ -506,8 +507,8 @@
     }
 
     .case-detail {
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       border-radius: 12px;
       padding: 14px 18px;
       margin-top: 14px;
@@ -1123,7 +1124,7 @@
             <div class="report-block" style="grid-column: 1 / -1;">
               <div class="report-title">Case Updates (${c.caseUpdates.length})</div>
               <div class="report-body">
-                ${c.caseUpdates.map((u) => `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                ${c.caseUpdates.map((u) => `<div style="padding:8px 0;border-bottom:1px solid var(--card-border);">
                   <span style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:${u.type === 'resolution' ? 'var(--accent-green)' : 'var(--accent-cyan)'};">${escapeHtml(u.type)}</span>
                   <span style="font-size:0.7rem;color:var(--secondary-text);margin-left:8px;">${escapeHtml(u.userId || "")} · ${u.createdAt ? escapeHtml(formatDate(u.createdAt)) : ""}</span>
                   <div style="font-size:0.82rem;color:var(--primary-text);margin-top:4px;line-height:1.5;">${escapeHtml(toPreview(u.text, 400))}</div>
@@ -1137,28 +1138,28 @@
             <button class="btn-secondary" data-thread-id="${escapeHtml(c.threadId || "")}" data-title="${escapeHtml(c.title || "")}" onclick="updateFromDescribe(this.dataset.threadId, this.dataset.title)">Update in Describe</button>
             <button class="btn-secondary" style="background:rgba(52,211,153,0.15);color:#6EE7B7;border-color:rgba(52,211,153,0.4);" data-case-id="${escapeHtml(c.id)}" onclick="toggleResolutionForm(this.dataset.caseId)">Update Status / Resolve</button>
           </div>
-          <div class="case-note-form" id="note-form-${escapeHtml(c.id)}" style="display:none; margin-top:12px; padding:16px; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
+          <div class="case-note-form" id="note-form-${escapeHtml(c.id)}" style="display:none; margin-top:12px; padding:16px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px;">
             <div style="margin-bottom:10px; font-size:0.85rem; font-weight:600; color:var(--primary-text);">Add a note to this case</div>
-            <select id="note-type-${escapeHtml(c.id)}" style="background:#0F172A; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 10px; font-size:0.82rem; color:var(--primary-text); margin-bottom:10px; width:100%;">
+            <select id="note-type-${escapeHtml(c.id)}" style="background:var(--app-body-bg); border:1px solid var(--card-border); border-radius:8px; padding:8px 10px; font-size:0.82rem; color:var(--primary-text); margin-bottom:10px; width:100%;">
               <option value="update">Update / progress note</option>
               <option value="observation">Observation</option>
               <option value="outcome">Outcome / resolution note</option>
               <option value="follow-up">Follow-up</option>
             </select>
-            <textarea id="note-text-${escapeHtml(c.id)}" rows="4" placeholder="What happened? What did you observe? What changed?" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px;font-size:0.85rem;color:var(--primary-text);font-family:inherit;resize:vertical;margin-bottom:10px;"></textarea>
+            <textarea id="note-text-${escapeHtml(c.id)}" rows="4" placeholder="What happened? What did you observe? What changed?" style="width:100%;background:var(--app-body-bg);border:1px solid var(--card-border);border-radius:8px;padding:10px;font-size:0.85rem;color:var(--primary-text);font-family:inherit;resize:vertical;margin-bottom:10px;"></textarea>
             <div style="display:flex; gap:8px; align-items:center;">
               <button class="btn-secondary submit-note-btn" data-case-id="${escapeHtml(c.id)}" style="background:rgba(52,211,153,0.2);color:#6EE7B7;">Submit note</button>
               <span id="note-status-${escapeHtml(c.id)}" style="font-size:0.75rem;color:var(--secondary-text);"></span>
             </div>
           </div>
-          <div class="resolution-form" id="resolution-form-${escapeHtml(c.id)}" style="display:none; margin-top:12px; padding:16px; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
+          <div class="resolution-form" id="resolution-form-${escapeHtml(c.id)}" style="display:none; margin-top:12px; padding:16px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px;">
             <div style="margin-bottom:10px; font-size:0.85rem; font-weight:600; color:var(--primary-text);">Update Case Status</div>
             <div style="display:flex; gap:8px; margin-bottom:10px;">
               <button class="btn-secondary resolution-status-btn" data-status="RESOLVED" data-case-id="${escapeHtml(c.id)}" style="background:rgba(52,211,153,0.2);color:#6EE7B7;">Resolved</button>
               <button class="btn-secondary resolution-status-btn" data-status="MONITORING" data-case-id="${escapeHtml(c.id)}" style="background:rgba(56,189,248,0.2);color:#38BDF8;">Monitoring</button>
               <button class="btn-secondary resolution-status-btn" data-status="OPEN" data-case-id="${escapeHtml(c.id)}" style="background:rgba(251,146,60,0.2);color:#FB923C;">Still Open</button>
             </div>
-            <textarea id="resolution-text-${escapeHtml(c.id)}" rows="3" placeholder="What was tried? What worked? What is the current state?" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px;font-size:0.85rem;color:var(--primary-text);font-family:inherit;resize:vertical;margin-bottom:10px;"></textarea>
+            <textarea id="resolution-text-${escapeHtml(c.id)}" rows="3" placeholder="What was tried? What worked? What is the current state?" style="width:100%;background:var(--app-body-bg);border:1px solid var(--card-border);border-radius:8px;padding:10px;font-size:0.85rem;color:var(--primary-text);font-family:inherit;resize:vertical;margin-bottom:10px;"></textarea>
             <div id="resolution-status-${escapeHtml(c.id)}" style="font-size:0.75rem;color:var(--secondary-text);"></div>
           </div>
         </div>

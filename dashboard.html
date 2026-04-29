@@ -90,7 +90,7 @@
       transition: all 0.15s ease;
     }
     .nav-links a:hover {
-      background: rgba(255,255,255,0.05);
+      background: var(--card-bg);
       color: var(--primary-text);
     }
     .nav-links a.active {
@@ -99,8 +99,8 @@
       border: 1px solid rgba(52, 211, 153, 0.4);
     }
     .nav-signout {
-      background: #1E293B;
-      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       color: var(--primary-text);
       padding: 6px 14px;
       border-radius: 9999px;
@@ -109,7 +109,7 @@
       transition: background 0.15s;
       text-decoration: none;
     }
-    .nav-signout:hover { background: #334155; }
+    .nav-signout:hover { background: var(--app-body-bg); }
 
     /* Page container */
     .page-container {
@@ -211,8 +211,8 @@
     .footer-note {
       margin-top: 32px;
       padding: 16px 20px;
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid rgba(255,255,255,0.05);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       border-radius: 12px;
       font-size: 0.8rem;
       color: var(--secondary-text);

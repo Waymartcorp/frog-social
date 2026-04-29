@@ -59,10 +59,10 @@
     .nav-brand span { font-size: 1.25rem; }
     .nav-links { display: flex; align-items: center; gap: 6px; }
     .nav-links a { font-size: 0.875rem; color: var(--secondary-text); text-decoration: none; padding: 8px 14px; border-radius: 9999px; transition: all 0.15s ease; }
-    .nav-links a:hover { background: rgba(255,255,255,0.05); color: var(--primary-text); }
-    .nav-links a.active { color: #6EE7B7; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.4); }
-    .nav-signout { background: #1E293B; border: 1px solid rgba(255,255,255,0.1); color: var(--primary-text); padding: 6px 14px; border-radius: 9999px; font-size: 0.875rem; cursor: pointer; text-decoration: none; }
-    .nav-signout:hover { background: #334155; }
+    .nav-links a:hover { background: var(--card-bg); color: var(--primary-text); }
+    .nav-links a.active { color: var(--accent-green); background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.4); }
+    .nav-signout { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--primary-text); padding: 6px 14px; border-radius: 9999px; font-size: 0.875rem; cursor: pointer; text-decoration: none; }
+    .nav-signout:hover { background: var(--app-body-bg); }
 
     .page-container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
     .page-header { margin-bottom: 24px; }
@@ -74,7 +74,7 @@
     label { display: block; font-size: 0.8rem; color: var(--secondary-text); font-weight: 500; margin-bottom: 6px; margin-top: 14px; }
     label:first-of-type { margin-top: 0; }
     input, select, textarea {
-      width: 100%; background: #0F172A; border: 1px solid rgba(255,255,255,0.1);
+      width: 100%; background: var(--app-body-bg); border: 1px solid var(--card-border);
       border-radius: 10px; padding: 10px 14px; font-size: 0.88rem;
       color: var(--primary-text); transition: border-color 0.15s;
     }
@@ -100,13 +100,13 @@
     .status-msg.error { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
     .status-msg.ok { background: rgba(52, 211, 153, 0.15); color: var(--accent-green); }
 
-    .collapsible { margin-top: 16px; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; overflow: hidden; }
+    .collapsible { margin-top: 16px; border: 1px solid var(--card-border); border-radius: 14px; overflow: hidden; }
     .collapsible-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 18px; cursor: pointer; background: rgba(15, 23, 42, 0.5);
+      padding: 14px 18px; cursor: pointer; background: var(--card-bg);
       transition: background 0.15s;
     }
-    .collapsible-header:hover { background: rgba(15, 23, 42, 0.8); }
+    .collapsible-header:hover { background: var(--app-body-bg); }
     .collapsible-title { font-size: 0.88rem; font-weight: 500; color: var(--primary-text); }
     .collapsible-hint { font-size: 0.72rem; color: var(--secondary-text); }
     .collapsible-arrow { color: var(--secondary-text); transition: transform 0.2s; font-size: 0.75rem; }
@@ -124,7 +124,7 @@
     .nudge-card.visible { display: block; }
     .nudge-card p { font-size: 0.82rem; color: var(--accent-cyan); margin: 0; line-height: 1.5; }
 
-    .ai-panel { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px 20px; margin-bottom: 14px; }
+    .ai-panel { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 16px 20px; margin-bottom: 14px; }
     .ai-panel-header { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-text); margin-bottom: 8px; }
     .ai-panel-content { font-size: 0.84rem; color: var(--primary-text); line-height: 1.6; }
     .ai-panel-content.empty { color: var(--secondary-text); font-style: italic; }

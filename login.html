@@ -62,7 +62,7 @@
       padding: 8px 14px; border-radius: 9999px; transition: all 0.15s ease;
     }
     .nav-links a:hover {
-      background: rgba(255,255,255,0.05); color: var(--primary-text);
+      background: var(--card-bg); color: var(--primary-text);
     }
     .nav-links a.active {
       color: #6EE7B7; background: rgba(52, 211, 153, 0.1);
@@ -88,7 +88,7 @@
     /* Tabs */
     .tabs {
       display: flex; gap: 0; margin-bottom: 24px; border-radius: 12px;
-      overflow: hidden; border: 1px solid rgba(255,255,255,0.1);
+      overflow: hidden; border: 1px solid var(--card-border);
     }
     .tab-btn {
       flex: 1; padding: 10px; text-align: center; font-size: 0.85rem; font-weight: 600;
@@ -106,7 +106,7 @@
     }
     label:first-of-type { margin-top: 0; }
     input, select {
-      width: 100%; background: #0F172A; border: 1px solid rgba(255,255,255,0.1);
+      width: 100%; background: var(--app-body-bg); border: 1px solid var(--card-border);
       border-radius: 10px; padding: 11px 14px; font-size: 0.88rem;
       color: var(--primary-text); transition: border-color 0.15s, box-shadow 0.15s;
     }
@@ -126,10 +126,10 @@
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     .btn-secondary {
       width: 100%; background: transparent; color: var(--secondary-text); font-weight: 500;
-      padding: 10px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.1);
+      padding: 10px; border-radius: 9999px; border: 1px solid var(--card-border);
       font-size: 0.85rem; cursor: pointer; margin-top: 10px; transition: all 0.15s;
     }
-    .btn-secondary:hover { background: rgba(255,255,255,0.05); color: var(--primary-text); }
+    .btn-secondary:hover { background: var(--card-bg); color: var(--primary-text); }
 
     /* Messages */
     .error-msg {
@@ -170,7 +170,7 @@
     }
     .avatar-preview {
       width: 64px; height: 64px; border-radius: 50%; overflow: hidden;
-      background: #1E293B; border: 2px solid rgba(255,255,255,0.1);
+      background: var(--card-bg); border: 2px solid var(--card-border);
       display: flex; align-items: center; justify-content: center;
       font-size: 1.5rem; color: var(--secondary-text); flex-shrink: 0;
     }
@@ -201,14 +201,14 @@
     }
     .step-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: rgba(255,255,255,0.15); transition: background 0.2s;
+      background: var(--card-border); transition: background 0.2s;
     }
     .step-dot.active { background: var(--accent-green); }
     .step-dot.done { background: rgba(52, 211, 153, 0.5); }
 
     /* ToS */
     .tos-container {
-      background: #0F172A; border: 1px solid rgba(255,255,255,0.1);
+      background: var(--app-body-bg); border: 1px solid var(--card-border);
       border-radius: 10px; padding: 16px; max-height: 280px; overflow-y: auto;
       font-size: 0.78rem; color: var(--secondary-text); line-height: 1.7;
       margin-top: 10px;

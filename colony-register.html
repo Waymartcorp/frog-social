@@ -52,10 +52,10 @@
     .nav-brand span { font-size: 1.25rem; }
     .nav-links { display: flex; align-items: center; gap: 6px; }
     .nav-links a { font-size: 0.875rem; color: var(--secondary-text); text-decoration: none; padding: 8px 14px; border-radius: 9999px; transition: all 0.15s ease; }
-    .nav-links a:hover { background: rgba(255,255,255,0.05); color: var(--primary-text); }
+    .nav-links a:hover { background: var(--card-bg); color: var(--primary-text); }
     .nav-links a.active { color: #6EE7B7; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.4); }
-    .nav-signout { background: #1E293B; border: 1px solid rgba(255,255,255,0.1); color: var(--primary-text); padding: 6px 14px; border-radius: 9999px; font-size: 0.875rem; cursor: pointer; text-decoration: none; }
-    .nav-signout:hover { background: #334155; }
+    .nav-signout { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--primary-text); padding: 6px 14px; border-radius: 9999px; font-size: 0.875rem; cursor: pointer; text-decoration: none; }
+    .nav-signout:hover { background: var(--app-body-bg); }
 
     .page-container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
     .page-header { margin-bottom: 24px; }
@@ -67,7 +67,7 @@
 
     label { display: block; font-size: 0.78rem; color: var(--secondary-text); font-weight: 500; margin-bottom: 5px; margin-top: 12px; }
     label:first-of-type { margin-top: 0; }
-    input, textarea, select { width: 100%; background: #0F172A; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 14px; font-size: 0.88rem; color: var(--primary-text); transition: border-color 0.15s; }
+    input, textarea, select { width: 100%; background: var(--app-body-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 10px 14px; font-size: 0.88rem; color: var(--primary-text); transition: border-color 0.15s; }
     input::placeholder, textarea::placeholder { color: #6B7280; }
     input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15); }
     textarea { min-height: 60px; resize: vertical; font-family: inherit; }
@@ -76,15 +76,15 @@
     .btn-primary { background: var(--accent-green); color: #0F172A; font-weight: 600; padding: 10px 20px; border-radius: 9999px; border: none; font-size: 0.85rem; cursor: pointer; box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3); transition: transform 0.15s, background 0.15s; }
     .btn-primary:hover { background: #6EE7B7; transform: translateY(-1px); }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .btn-secondary { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--secondary-text); padding: 8px 16px; border-radius: 9999px; font-size: 0.82rem; cursor: pointer; transition: all 0.15s; }
-    .btn-secondary:hover { background: rgba(255,255,255,0.05); color: var(--primary-text); }
+    .btn-secondary { background: transparent; border: 1px solid var(--card-border); color: var(--secondary-text); padding: 8px 16px; border-radius: 9999px; font-size: 0.82rem; cursor: pointer; transition: all 0.15s; }
+    .btn-secondary:hover { background: var(--card-bg); color: var(--primary-text); }
     .btn-danger { background: none; border: 1px solid rgba(239, 68, 68, 0.3); color: var(--danger); font-size: 0.75rem; padding: 4px 10px; border-radius: 9999px; cursor: pointer; }
     .btn-danger:hover { background: rgba(239, 68, 68, 0.15); }
 
     .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     @media (max-width: 600px) { .field-grid { grid-template-columns: 1fr; } }
 
-    .colony-item { padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); background: rgba(15, 23, 42, 0.5); margin-top: 10px; cursor: pointer; transition: border-color 0.15s; }
+    .colony-item { padding: 14px; border-radius: 14px; border: 1px solid var(--card-border); background: var(--card-bg); margin-top: 10px; cursor: pointer; transition: border-color 0.15s; }
     .colony-item:hover { border-color: rgba(52, 211, 153, 0.3); }
     .colony-item-header { display: flex; justify-content: space-between; align-items: center; }
     .colony-name { font-weight: 600; font-size: 0.92rem; }
@@ -102,13 +102,13 @@
     .list-view.hidden { display: none; }
 
     .tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
-    .tab-btn { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--secondary-text); padding: 7px 14px; border-radius: 9999px; font-size: 0.78rem; cursor: pointer; transition: all 0.15s; }
+    .tab-btn { background: transparent; border: 1px solid var(--card-border); color: var(--secondary-text); padding: 7px 14px; border-radius: 9999px; font-size: 0.78rem; cursor: pointer; transition: all 0.15s; }
     .tab-btn.active { background: rgba(52, 211, 153, 0.1); color: var(--accent-green); border-color: rgba(52, 211, 153, 0.4); }
 
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    .event-item { padding: 10px 14px; border-left: 3px solid rgba(52, 211, 153, 0.4); margin-bottom: 8px; background: rgba(15, 23, 42, 0.4); border-radius: 0 8px 8px 0; }
+    .event-item { padding: 10px 14px; border-left: 3px solid rgba(52, 211, 153, 0.4); margin-bottom: 8px; background: var(--card-bg); border-radius: 0 8px 8px 0; }
     .event-date { font-size: 0.72rem; color: var(--secondary-text); }
     .event-type { font-size: 0.7rem; background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 9999px; display: inline-block; margin-left: 8px; }
     .event-desc { font-size: 0.84rem; margin-top: 4px; color: var(--primary-text); }
@@ -490,7 +490,7 @@
       ];
       const pending = c.pendingInvites || [];
       let html = members.map(m => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--card-border);">
           <span style="font-size:0.85rem;">${escapeHtml(m.id)} <span style="font-size:0.7rem; color:var(--secondary-text);">(${m.role})</span></span>
           ${isOwner(c) && m.role === "Member" ? '<button class="btn-danger" data-remove="' + escapeHtml(m.id) + '">Remove</button>' : ""}
         </div>
