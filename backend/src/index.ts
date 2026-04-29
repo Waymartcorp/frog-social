@@ -209,7 +209,34 @@ app.post("/api/messages", async (req, res) => {
     (message as any).anonymous = anonymous;
     (message as any).realUserId = actor.username;
     const frogCase = await handleNewMessage(message);
-    res.json({ ok: true, threadId: message.threadId, messageId: message.id, signals: message.signals, frogCase });
+
+    // Active prior-case surfacing: if a strong related case exists, surface it
+    let priorCaseInsight: { caseNumber: number; title: string; outcome: string; summary: string } | null = null;
+    if (frogCase && Array.isArray(frogCase.relatedCaseRefs) && frogCase.relatedCaseRefs.length > 0) {
+      const top = frogCase.relatedCaseRefs[0];
+      priorCaseInsight = {
+        caseNumber: top.caseNumber,
+        title: top.title,
+        outcome: top.outcome,
+        summary: `Similar to Case #${top.caseNumber} — ${top.title} (${top.outcome})`,
+      };
+    } else if (frogCase) {
+      // Fallback: run recall against the new message content for cross-case memory
+      const matches = recallCases(message.content, 3);
+      const strong = matches.find(
+        (m) => m.matchScore >= 6 && m.caseId !== frogCase.id && m.caseId !== frogCase.caseId
+      );
+      if (strong) {
+        priorCaseInsight = {
+          caseNumber: strong.caseNumber,
+          title: strong.title,
+          outcome: strong.status,
+          summary: `Related prior case: #${strong.caseNumber} — ${strong.title} (${strong.status})`,
+        };
+      }
+    }
+
+    res.json({ ok: true, threadId: message.threadId, messageId: message.id, signals: message.signals, frogCase, priorCaseInsight });
   } catch (err) {
     console.error("[POST /api/messages] Error:", err);
     const msg = err instanceof Error ? err.message : "Failed to process message";
@@ -508,6 +535,31 @@ app.post("/api/cases/intake", async (req, res) => {
       }
     }
 
+    // Active prior-case surfacing for intake
+    let priorCaseInsight: { caseNumber: number; title: string; outcome: string; summary: string } | null = null;
+    if (Array.isArray(frogCase.relatedCaseRefs) && frogCase.relatedCaseRefs.length > 0) {
+      const top = frogCase.relatedCaseRefs[0];
+      priorCaseInsight = {
+        caseNumber: top.caseNumber,
+        title: top.title,
+        outcome: top.outcome,
+        summary: `Similar to Case #${top.caseNumber} — ${top.title} (${top.outcome})`,
+      };
+    } else {
+      const matches = recallCases(narrative, 3);
+      const strong = matches.find(
+        (m) => m.matchScore >= 6 && m.caseId !== (frogCase.caseId || frogCase.id)
+      );
+      if (strong) {
+        priorCaseInsight = {
+          caseNumber: strong.caseNumber,
+          title: strong.title,
+          outcome: strong.status,
+          summary: `Related prior case: #${strong.caseNumber} — ${strong.title} (${strong.status})`,
+        };
+      }
+    }
+
     return res.json({
       ok: true,
       caseId: frogCase.caseId || frogCase.id,
@@ -517,6 +569,7 @@ app.post("/api/cases/intake", async (req, res) => {
       admissionState: frogCase.admissionState,
       colonyId: colonyId || undefined,
       frogCase,
+      priorCaseInsight,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create direct intake case";

@@ -699,6 +699,10 @@
     .insight-text strong {
       color: var(--accent-green);
     }
+    @keyframes fadeInInsight {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body data-page="social">
@@ -1003,6 +1007,38 @@
       const notice = document.getElementById("threadNotice");
       notice.textContent = message;
       notice.className = isError ? "thread-notice error" : "thread-notice";
+    }
+
+    let priorInsightTimeout = null;
+    function showPriorCaseInsight(insight) {
+      if (!insight || !insight.summary) return;
+      const stream = document.getElementById("messageStream");
+      if (!stream) return;
+      // Remove any existing insight card
+      const existing = document.getElementById("priorCaseInsightCard");
+      if (existing) existing.remove();
+      const card = document.createElement("div");
+      card.id = "priorCaseInsightCard";
+      card.style.cssText = "margin: 12px 0; padding: 12px 16px; background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.3); border-radius: 10px; font-size: 0.82rem; line-height: 1.5; color: var(--primary-text); animation: fadeInInsight 0.3s ease;";
+      const outcomeColor = insight.outcome === "RESOLVED" ? "#34D399" : insight.outcome === "MONITORING" ? "#FBBF24" : "#9CA3AF";
+      card.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-green);">System Memory</span>
+          <span style="font-size: 0.65rem; color: var(--secondary-text);">Prior case detected</span>
+        </div>
+        <div style="font-weight: 500;">${escapeHtml(insight.summary)}</div>
+        <div style="margin-top: 4px; font-size: 0.75rem; color: var(--secondary-text);">
+          Case #${insight.caseNumber} · Status: <span style="color: ${outcomeColor}; font-weight: 500;">${escapeHtml(insight.outcome)}</span>
+        </div>
+      `;
+      stream.appendChild(card);
+      card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      // Auto-dismiss after 30 seconds
+      if (priorInsightTimeout) clearTimeout(priorInsightTimeout);
+      priorInsightTimeout = setTimeout(() => {
+        const el = document.getElementById("priorCaseInsightCard");
+        if (el) el.style.opacity = "0.5";
+      }, 30000);
     }
 
     function persistActiveThreadId(threadId) {
@@ -2011,6 +2047,9 @@
         }
         const result = await response.json();
         postedMessageId = result.messageId || "";
+        if (result.priorCaseInsight) {
+          showPriorCaseInsight(result.priorCaseInsight);
+        }
         if (result.threadId && result.threadId !== targetThreadId) {
           currentThreadId = result.threadId;
           persistActiveThreadId(currentThreadId);

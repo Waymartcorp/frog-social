@@ -376,6 +376,9 @@
           if (data.frogCase) {
             updateAIPanels(data.frogCase);
           }
+          if (data.priorCaseInsight) {
+            showPriorCaseInsight(data.priorCaseInsight);
+          }
         } else {
           statusEl.innerHTML = '<div class="status-msg error">' + (data.error || "Failed to create case") + '</div>';
           btn.disabled = false;
@@ -394,6 +397,34 @@
         document.getElementById("aiSummary").textContent = summary;
         document.getElementById("aiSummary").classList.remove("empty");
       }
+    }
+
+    function showPriorCaseInsight(insight) {
+      if (!insight || !insight.summary) return;
+      const existing = document.getElementById("priorCaseInsightCard");
+      if (existing) existing.remove();
+      const outcomeColor = insight.outcome === "RESOLVED" ? "#34D399" : insight.outcome === "MONITORING" ? "#FBBF24" : "#9CA3AF";
+      const card = document.createElement("div");
+      card.id = "priorCaseInsightCard";
+      card.style.cssText = "margin: 16px 0; padding: 14px 18px; background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.3); border-radius: 10px; font-size: 0.85rem; line-height: 1.55; color: var(--primary-text);";
+      card.innerHTML = '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">'
+        + '<span style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #34D399;">System Memory</span>'
+        + '<span style="font-size: 0.65rem; color: var(--secondary-text);">Prior case detected</span>'
+        + '</div>'
+        + '<div style="font-weight: 500;">' + escapeHtml(insight.summary) + '</div>'
+        + '<div style="margin-top: 4px; font-size: 0.75rem; color: var(--secondary-text);">'
+        + 'Case #' + insight.caseNumber + ' &middot; Status: <span style="color:' + outcomeColor + '; font-weight: 500;">' + escapeHtml(insight.outcome) + '</span>'
+        + '</div>';
+      const statusEl = document.getElementById("formStatus");
+      if (statusEl && statusEl.parentNode) {
+        statusEl.parentNode.insertBefore(card, statusEl.nextSibling);
+      }
+    }
+
+    function escapeHtml(text) {
+      const d = document.createElement("div");
+      d.textContent = text || "";
+      return d.innerHTML;
     }
 
     // Enrichment save handlers — append to the case thread
