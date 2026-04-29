@@ -16,9 +16,24 @@
       }
     })();
   </script>
+  <script>
+    (function(){var t=localStorage.getItem("frogSocialTheme");if(t==="dark")document.documentElement.setAttribute("data-theme","dark");})();
+  </script>
   <style>
     * { box-sizing: border-box; }
     :root {
+      --app-shell-bg: #FFFFFF;
+      --app-body-bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --card-border: #E2E8F0;
+      --primary-text: #1E293B;
+      --secondary-text: #64748B;
+      --accent-green: #059669;
+      --accent-cyan: #0284C7;
+      --warning: #D97706;
+      --danger: #DC2626;
+    }
+    html[data-theme="dark"] {
       --app-shell-bg: #050810;
       --app-body-bg: #0B1020;
       --card-bg: #111827;
@@ -40,9 +55,9 @@
 
     /* Navigation */
     .nav-bar {
-      background: rgba(15, 23, 42, 0.8);
+      background: var(--app-shell-bg);
       backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      border-bottom: 1px solid var(--card-border);
       padding: 12px 32px;
       display: flex;
       align-items: center;
@@ -129,9 +144,9 @@
 
     /* Tiles */
     .tile {
-      background: rgba(17, 24, 39, 0.7);
+      background: var(--card-bg);
       backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.05);
+      border: 1px solid var(--card-border);
       border-radius: 16px;
       padding: 20px 24px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.4);
@@ -217,6 +232,7 @@
       <a href="case-history.html">Case History</a>
       <a href="social.html">Social</a>
       <a href="colony-register.html">Colonies</a>
+      <button id="themeToggle" onclick="toggleTheme()" style="background:none;border:1px solid var(--card-border);border-radius:6px;padding:4px 10px;font-size:0.8rem;color:var(--secondary-text);cursor:pointer;margin-left:8px;" title="Toggle light/dark mode">◐</button>
     </div>
     <a href="login.html" class="nav-signout" id="navSignOut">Sign out</a>
   </nav>
@@ -309,6 +325,7 @@
         });
       }
     })();
+    function toggleTheme(){var h=document.documentElement;var current=h.getAttribute("data-theme");if(current==="dark"){h.removeAttribute("data-theme");localStorage.setItem("frogSocialTheme","light");}else{h.setAttribute("data-theme","dark");localStorage.setItem("frogSocialTheme","dark");}}
   </script>
 </body>
 </html>

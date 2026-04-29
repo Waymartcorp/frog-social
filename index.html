@@ -5,9 +5,40 @@
   <title>Frog Social</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
+  <script>
+    (function(){var t=localStorage.getItem("frogSocialTheme");if(t==="dark")document.documentElement.setAttribute("data-theme","dark");})();
+  </script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
+      --app-shell-bg: #FFFFFF;
+      --app-body-bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --card-border: #E2E8F0;
+      --primary-text: #1E293B;
+      --secondary-text: #64748B;
+      --accent-green: #059669;
+      --accent-cyan: #0284C7;
+      --warning: #D97706;
+      --danger: #DC2626;
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --border: #E2E8F0;
+      --text: #1E293B;
+      --muted: #64748B;
+      --accent: #059669;
+    }
+    html[data-theme="dark"] {
+      --app-shell-bg: #050810;
+      --app-body-bg: #0B1020;
+      --card-bg: #111827;
+      --card-border: #1F2937;
+      --primary-text: #F9FAFB;
+      --secondary-text: #9CA3AF;
+      --accent-green: #34D399;
+      --accent-cyan: #38BDF8;
+      --warning: #F97316;
+      --danger: #EF4444;
       --bg: #0B1020;
       --surface: #111827;
       --border: rgba(255,255,255,0.06);
@@ -25,6 +56,7 @@
       align-items: center;
       justify-content: center;
       padding: 24px;
+      position: relative;
     }
 
     .gate {
@@ -124,6 +156,7 @@
     </p>
 
     <div class="actions">
+      <button id="themeToggle" onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:0.8rem;color:var(--muted);cursor:pointer;position:absolute;top:16px;right:16px;" title="Toggle light/dark mode">◐</button>
       <a class="btn btn-secondary" href="login.html">Sign in</a>
       <a class="btn btn-primary" href="login.html?mode=signup">Request Access</a>
     </div>
@@ -151,6 +184,7 @@
         } catch (e) {}
       }
     })();
+    function toggleTheme(){var h=document.documentElement;var current=h.getAttribute("data-theme");if(current==="dark"){h.removeAttribute("data-theme");localStorage.setItem("frogSocialTheme","light");}else{h.setAttribute("data-theme","dark");localStorage.setItem("frogSocialTheme","dark");}}
   </script>
 </body>
 </html>
