@@ -206,6 +206,9 @@
 
       <div class="tabs" id="detailTabs">
         <button class="tab-btn active" data-tab="baseline">Baseline</button>
+        <button class="tab-btn" data-tab="management">Management</button>
+        <button class="tab-btn" data-tab="frogs">Frogs</button>
+        <button class="tab-btn" data-tab="notes">Notes</button>
         <button class="tab-btn" data-tab="events">Event Log</button>
         <button class="tab-btn" data-tab="status">Status</button>
         <button class="tab-btn" data-tab="cases">Cases</button>
@@ -230,6 +233,112 @@
           <textarea id="editNotes"></textarea>
           <button class="btn-primary" style="margin-top:14px; width:100%;" id="saveBaselineBtn">Save Baseline</button>
           <div id="baselineStatus"></div>
+        </div>
+      </div>
+
+      <!-- Management tab (procedures, injections, rest intervals) -->
+      <div class="tab-content" id="tab-management">
+        <div class="card">
+          <h2 style="font-size:1rem;">Log Procedure</h2>
+          <p style="font-size:0.78rem; color:var(--secondary-text); margin:0 0 12px;">Injections, oocyte extractions, squeezing, surgeries, and rest intervals.</p>
+          <div class="field-grid">
+            <div>
+              <label for="procDate">Date</label>
+              <input type="date" id="procDate" />
+            </div>
+            <div>
+              <label for="procType">Type</label>
+              <select id="procType">
+                <option value="injection">Injection</option>
+                <option value="oocyte_extraction">Oocyte Extraction</option>
+                <option value="squeeze">Squeeze</option>
+                <option value="surgery">Surgery</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <label for="procDesc">Description</label>
+          <input id="procDesc" placeholder="e.g., HCG priming injection — 3 females" />
+          <div class="field-grid" style="margin-top:10px;">
+            <div>
+              <label for="procRest">Rest Interval</label>
+              <input id="procRest" placeholder="e.g., 6 months min" />
+            </div>
+            <div>
+              <label for="procRecovery">Recovery Notes</label>
+              <input id="procRecovery" placeholder="e.g., All active, feeding normally" />
+            </div>
+          </div>
+          <button class="btn-primary" style="margin-top:14px; width:100%;" id="addProcBtn">Log Procedure</button>
+          <div id="procStatus"></div>
+        </div>
+        <div class="card">
+          <h2 style="font-size:1rem;">Procedure History</h2>
+          <div id="procList"><p class="empty">No procedures logged yet.</p></div>
+        </div>
+      </div>
+
+      <!-- Frogs tab (individual frog/cohort identification) -->
+      <div class="tab-content" id="tab-frogs">
+        <div class="card">
+          <h2 style="font-size:1rem;">Add Frog / Cohort</h2>
+          <p style="font-size:0.78rem; color:var(--secondary-text); margin:0 0 12px;">Track individual frogs or groups. Photo upload for skin-pattern recognition direction.</p>
+          <div class="field-grid">
+            <div>
+              <label for="frogLabel">Label (required)</label>
+              <input id="frogLabel" placeholder="e.g., Female-A, Tank3-group" />
+            </div>
+            <div>
+              <label for="frogTank">Tank / Bin</label>
+              <input id="frogTank" placeholder="e.g., Rack2-Bin5" />
+            </div>
+            <div>
+              <label for="frogCohort">Cohort</label>
+              <input id="frogCohort" placeholder="e.g., 2025-Spring" />
+            </div>
+            <div>
+              <label for="frogSex">Sex</label>
+              <select id="frogSex">
+                <option value="">Unknown</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+                <option value="mixed">Mixed group</option>
+              </select>
+            </div>
+          </div>
+          <label for="frogNotes">Notes</label>
+          <input id="frogNotes" placeholder="e.g., Distinguishing marks, behavioral notes" />
+          <label for="frogPhoto">Photo</label>
+          <input type="file" id="frogPhoto" accept="image/*" style="padding:8px;" />
+          <p style="font-size:0.68rem; color:var(--secondary-text); margin:4px 0 0;">Optional — dorsal photo for future skin-pattern matching.</p>
+          <div id="frogPhotoPreview" style="margin-top:8px;"></div>
+          <button class="btn-primary" style="margin-top:14px; width:100%;" id="addFrogBtn">Add Frog Record</button>
+          <div id="frogStatus"></div>
+        </div>
+        <div class="card">
+          <h2 style="font-size:1rem;">Frog Registry</h2>
+          <div id="frogList"><p class="empty">No frogs registered yet.</p></div>
+        </div>
+      </div>
+
+      <!-- Notes tab (running notes, tank/bin numbering) -->
+      <div class="tab-content" id="tab-notes">
+        <div class="card">
+          <h2 style="font-size:1rem;">Tank / Bin Numbering</h2>
+          <p style="font-size:0.78rem; color:var(--secondary-text); margin:0 0 12px;">List your tank/bin labels for reference and assignment.</p>
+          <div style="display:flex; gap:8px;">
+            <input id="tankBinInput" placeholder="e.g., Rack1-Bin3" style="flex:1;" />
+            <button class="btn-primary" style="width:auto; margin:0; padding:10px 20px;" id="addTankBinBtn">Add</button>
+          </div>
+          <div id="tankBinList" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;"></div>
+          <div id="tankBinStatus"></div>
+        </div>
+        <div class="card">
+          <h2 style="font-size:1rem;">Running Notes</h2>
+          <p style="font-size:0.78rem; color:var(--secondary-text); margin:0 0 12px;">Ongoing observations, general colony notes, reminders. Saved per colony.</p>
+          <textarea id="runningNotesArea" rows="8" placeholder="Write ongoing notes about this colony/system..."></textarea>
+          <button class="btn-primary" style="margin-top:14px; width:100%;" id="saveRunningNotesBtn">Save Notes</button>
+          <div id="runningNotesStatus"></div>
         </div>
       </div>
 
@@ -477,6 +586,10 @@
       renderEvents();
       renderStatusHistory();
       renderTeam();
+      renderProcedures();
+      renderFrogs();
+      renderTankBins();
+      document.getElementById("runningNotesArea").value = c.runningNotes || "";
       loadColonyCases();
       setTab("baseline");
     }
@@ -732,6 +845,188 @@
         }
       } catch {}
     });
+
+    // ─── Management: Procedures ───────────────────────
+    document.getElementById("procDate").value = new Date().toISOString().split("T")[0];
+    document.getElementById("addProcBtn").addEventListener("click", async () => {
+      const body = {
+        date: document.getElementById("procDate").value,
+        type: document.getElementById("procType").value,
+        description: document.getElementById("procDesc").value.trim(),
+        restInterval: document.getElementById("procRest").value.trim(),
+        recoveryNotes: document.getElementById("procRecovery").value.trim(),
+      };
+      const statusEl = document.getElementById("procStatus");
+      if (!body.description) { statusEl.innerHTML = '<div class="status-msg error">Description required</div>'; return; }
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/procedures", { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+        const data = await res.json();
+        if (data.ok) {
+          if (!activeColony.procedures) activeColony.procedures = [];
+          activeColony.procedures.unshift(data.procedure);
+          renderProcedures();
+          document.getElementById("procDesc").value = "";
+          document.getElementById("procRest").value = "";
+          document.getElementById("procRecovery").value = "";
+          statusEl.innerHTML = '<div class="status-msg ok">Procedure logged</div>';
+          setTimeout(() => { statusEl.innerHTML = ""; }, 2000);
+        } else { statusEl.innerHTML = '<div class="status-msg error">' + escapeHtml(data.error) + '</div>'; }
+      } catch { statusEl.innerHTML = '<div class="status-msg error">Network error</div>'; }
+    });
+
+    function renderProcedures() {
+      const el = document.getElementById("procList");
+      const procs = activeColony?.procedures || [];
+      if (procs.length === 0) { el.innerHTML = '<p class="empty">No procedures logged yet.</p>'; return; }
+      el.innerHTML = procs.map(p => `
+        <div class="event-item">
+          <span class="event-date">${escapeHtml(p.date)}</span>
+          <span class="event-type">${escapeHtml(p.type)}</span>
+          <div class="event-desc">${escapeHtml(p.description)}</div>
+          ${p.restInterval ? '<div style="font-size:0.72rem; color:var(--warning); margin-top:2px;">Rest interval: ' + escapeHtml(p.restInterval) + '</div>' : ''}
+          ${p.recoveryNotes ? '<div style="font-size:0.72rem; color:var(--secondary-text); margin-top:2px;">Recovery: ' + escapeHtml(p.recoveryNotes) + '</div>' : ''}
+        </div>
+      `).join("");
+    }
+
+    // ─── Frogs: Individual identification ────────────
+    document.getElementById("frogPhoto").addEventListener("change", function() {
+      const preview = document.getElementById("frogPhotoPreview");
+      preview.innerHTML = "";
+      if (this.files[0]) {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(this.files[0]);
+        img.style.cssText = "width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid var(--card-border);";
+        preview.appendChild(img);
+      }
+    });
+
+    document.getElementById("addFrogBtn").addEventListener("click", async () => {
+      const label = document.getElementById("frogLabel").value.trim();
+      const statusEl = document.getElementById("frogStatus");
+      if (!label) { statusEl.innerHTML = '<div class="status-msg error">Label is required</div>'; return; }
+      const body = {
+        label,
+        tankBin: document.getElementById("frogTank").value.trim(),
+        cohort: document.getElementById("frogCohort").value.trim(),
+        sex: document.getElementById("frogSex").value,
+        notes: document.getElementById("frogNotes").value.trim(),
+      };
+      const photoFile = document.getElementById("frogPhoto").files[0];
+      if (photoFile && photoFile.size < 200000) {
+        const reader = new FileReader();
+        reader.onload = async function() {
+          body.photoBase64 = reader.result;
+          await submitFrog(body, statusEl);
+        };
+        reader.readAsDataURL(photoFile);
+      } else {
+        await submitFrog(body, statusEl);
+      }
+    });
+
+    async function submitFrog(body, statusEl) {
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/frogs", { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+        const data = await res.json();
+        if (data.ok) {
+          if (!activeColony.frogs) activeColony.frogs = [];
+          activeColony.frogs.push(data.frog);
+          renderFrogs();
+          document.getElementById("frogLabel").value = "";
+          document.getElementById("frogTank").value = "";
+          document.getElementById("frogCohort").value = "";
+          document.getElementById("frogSex").value = "";
+          document.getElementById("frogNotes").value = "";
+          document.getElementById("frogPhoto").value = "";
+          document.getElementById("frogPhotoPreview").innerHTML = "";
+          statusEl.innerHTML = '<div class="status-msg ok">Frog record added</div>';
+          setTimeout(() => { statusEl.innerHTML = ""; }, 2000);
+        } else { statusEl.innerHTML = '<div class="status-msg error">' + escapeHtml(data.error) + '</div>'; }
+      } catch { statusEl.innerHTML = '<div class="status-msg error">Network error</div>'; }
+    }
+
+    function renderFrogs() {
+      const el = document.getElementById("frogList");
+      const frogs = activeColony?.frogs || [];
+      if (frogs.length === 0) { el.innerHTML = '<p class="empty">No frogs registered yet.</p>'; return; }
+      el.innerHTML = frogs.map(f => `
+        <div class="event-item" style="display:flex; gap:12px; align-items:start;">
+          ${f.photoBase64 ? '<img src="' + f.photoBase64 + '" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--card-border);flex-shrink:0;" />' : ''}
+          <div style="flex:1;">
+            <div style="font-weight:600; font-size:0.88rem;">${escapeHtml(f.label)}</div>
+            <div style="font-size:0.72rem; color:var(--secondary-text);">${[f.tankBin ? 'Tank: ' + f.tankBin : '', f.cohort ? 'Cohort: ' + f.cohort : '', f.sex || ''].filter(Boolean).join(' · ')}</div>
+            ${f.notes ? '<div style="font-size:0.78rem; margin-top:2px; color:var(--primary-text);">' + escapeHtml(f.notes) + '</div>' : ''}
+          </div>
+          <button class="btn-danger" data-delfrog="${f.id}" style="flex-shrink:0;">Remove</button>
+        </div>
+      `).join("");
+      el.querySelectorAll("[data-delfrog]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          try {
+            await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/frogs/" + btn.dataset.delfrog, { method: "DELETE", headers: authHeaders() });
+            activeColony.frogs = (activeColony.frogs || []).filter(f => f.id !== btn.dataset.delfrog);
+            renderFrogs();
+          } catch {}
+        });
+      });
+    }
+
+    // ─── Notes: Running notes + Tank/Bin ─────────────
+    document.getElementById("saveRunningNotesBtn").addEventListener("click", async () => {
+      const notes = document.getElementById("runningNotesArea").value;
+      const statusEl = document.getElementById("runningNotesStatus");
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/running-notes", { method: "PUT", headers: authHeaders(), body: JSON.stringify({ runningNotes: notes }) });
+        const data = await res.json();
+        if (data.ok) {
+          activeColony.runningNotes = notes;
+          statusEl.innerHTML = '<div class="status-msg ok">Saved</div>';
+          setTimeout(() => { statusEl.innerHTML = ""; }, 2000);
+        }
+      } catch { statusEl.innerHTML = '<div class="status-msg error">Failed to save</div>'; }
+    });
+
+    document.getElementById("addTankBinBtn").addEventListener("click", async () => {
+      const input = document.getElementById("tankBinInput");
+      const val = input.value.trim();
+      const statusEl = document.getElementById("tankBinStatus");
+      if (!val) return;
+      const bins = [...(activeColony.tankBins || []), val];
+      try {
+        const res = await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/tank-bins", { method: "PUT", headers: authHeaders(), body: JSON.stringify({ tankBins: bins }) });
+        const data = await res.json();
+        if (data.ok) {
+          activeColony.tankBins = data.tankBins;
+          renderTankBins();
+          input.value = "";
+        }
+      } catch { statusEl.innerHTML = '<div class="status-msg error">Failed</div>'; }
+    });
+
+    function renderTankBins() {
+      const el = document.getElementById("tankBinList");
+      const bins = activeColony?.tankBins || [];
+      if (bins.length === 0) { el.innerHTML = '<span style="font-size:0.82rem; color:var(--secondary-text);">None yet</span>'; return; }
+      el.innerHTML = bins.map((b, i) => `
+        <span style="display:inline-flex; align-items:center; gap:4px; background:var(--card-bg); border:1px solid var(--card-border); padding:4px 10px; border-radius:9999px; font-size:0.78rem;">
+          ${escapeHtml(b)}
+          <button data-deltank="${i}" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.7rem;padding:0 2px;">✕</button>
+        </span>
+      `).join("");
+      el.querySelectorAll("[data-deltank]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const idx = parseInt(btn.dataset.deltank);
+          const bins = [...(activeColony.tankBins || [])];
+          bins.splice(idx, 1);
+          try {
+            await fetch(API_BASE + "/api/colonies/" + activeColony.id + "/tank-bins", { method: "PUT", headers: authHeaders(), body: JSON.stringify({ tankBins: bins }) });
+            activeColony.tankBins = bins;
+            renderTankBins();
+          } catch {}
+        });
+      });
+    }
 
     // Sign out
     document.getElementById("navSignOut").addEventListener("click", function(e) {

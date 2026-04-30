@@ -42,14 +42,24 @@ const BETA_ALLOWLIST: string[] = (process.env.FROG_BETA_ALLOWLIST || "")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
 
+const BETA_DOMAINS: string[] = ["frogsocial-beta.org"];
+
 export function classifyEmailDomain(email: string): VerificationStatus {
   const lower = email.trim().toLowerCase();
   if (BETA_ALLOWLIST.includes(lower)) return "verified";
   const domain = lower.split("@")[1] || "";
+  for (const bd of BETA_DOMAINS) {
+    if (domain === bd) return "verified";
+  }
   for (const tld of ACADEMIC_TLDS) {
     if (domain.endsWith(tld) || domain.includes(tld)) return "verified";
   }
   return "pending_review";
+}
+
+export async function clearAllUsers(): Promise<boolean> {
+  await saveUsers([]);
+  return true;
 }
 
 export function isAllowlistedEmail(email: string): boolean {

@@ -19,6 +19,7 @@ import {
   classifyEmailDomain,
   isAllowlistedEmail,
   isUsernameTaken,
+  clearAllUsers,
   type AuthTokenPayload,
 } from "./auth";
 import {
@@ -700,6 +701,29 @@ interface ColonyStatusEntry {
   linkedCaseId?: string;
 }
 
+interface FrogRecord {
+  id: string;
+  label: string;
+  tankBin?: string;
+  cohort?: string;
+  sex?: string;
+  notes?: string;
+  photoBase64?: string;
+  addedAt: string;
+}
+
+interface ProcedureRecord {
+  id: string;
+  date: string;
+  type: "injection" | "oocyte_extraction" | "squeeze" | "surgery" | "other";
+  description: string;
+  frogIds?: string[];
+  restInterval?: string;
+  recoveryNotes?: string;
+  addedBy: string;
+  addedAt: string;
+}
+
 interface Colony {
   id: string;
   colonyCode: string;
@@ -721,6 +745,10 @@ interface Colony {
   currentStatus: ColonyStatus;
   events: ColonyEvent[];
   statusHistory: ColonyStatusEntry[];
+  frogs: FrogRecord[];
+  procedures: ProcedureRecord[];
+  runningNotes?: string;
+  tankBins?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -800,6 +828,10 @@ app.post("/api/colonies", async (req, res) => {
     currentStatus: "stable",
     events: [],
     statusHistory: [{ id: randomUUID(), date: now, status: "stable", note: "Colony registered", changedBy: actor.userId }],
+    frogs: [],
+    procedures: [],
+    runningNotes: "",
+    tankBins: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -1046,17 +1078,158 @@ app.get("/api/colonies/:id/export", async (req, res) => {
   for (const st of (colony.statusHistory || [])) {
     lines.push(`${st.date},"${st.status}","${(st.note || "").replace(/"/g, '""')}","${st.changedBy || ""}","${st.linkedCaseId || ""}"`);
   }
+  lines.push("");
+  lines.push("Frog ID,Label,Tank/Bin,Cohort,Sex,Notes,Added");
+  for (const f of (colony.frogs || [])) {
+    lines.push(`"${f.id}","${f.label}","${f.tankBin || ""}","${f.cohort || ""}","${f.sex || ""}","${(f.notes || "").replace(/"/g, '""')}","${f.addedAt}"`);
+  }
+  lines.push("");
+  lines.push("Date,Procedure Type,Description,Rest Interval,Recovery Notes,Added By");
+  for (const p of (colony.procedures || [])) {
+    lines.push(`${p.date},"${p.type}","${(p.description || "").replace(/"/g, '""')}","${p.restInterval || ""}","${(p.recoveryNotes || "").replace(/"/g, '""')}","${p.addedBy}"`);
+  }
+  if (colony.runningNotes) {
+    lines.push("");
+    lines.push("Running Notes");
+    lines.push(`"${colony.runningNotes.replace(/"/g, '""')}"`);
+  }
 
   res.setHeader("Content-Type", "text/csv");
   res.setHeader("Content-Disposition", `attachment; filename="${colony.name.replace(/[^a-zA-Z0-9]/g, "_")}_export.csv"`);
   return res.send(lines.join("\n"));
 });
 
+// ─── Colony Management: Frog Records ───────────────────────────
+app.get("/api/colonies/:id/frogs", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const colony = all.find(c => c.id === req.params.id);
+  if (!colony) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(colony, actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  return res.json({ ok: true, frogs: colony.frogs || [] });
+});
+
+app.post("/api/colonies/:id/frogs", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(all[idx], actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  const label = String(req.body.label ?? "").trim();
+  if (!label) return res.status(400).json({ ok: false, error: "Label is required" });
+  const frog: FrogRecord = {
+    id: `frog-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    label,
+    tankBin: String(req.body.tankBin ?? "").trim() || undefined,
+    cohort: String(req.body.cohort ?? "").trim() || undefined,
+    sex: String(req.body.sex ?? "").trim() || undefined,
+    notes: String(req.body.notes ?? "").trim() || undefined,
+    photoBase64: req.body.photoBase64 || undefined,
+    addedAt: new Date().toISOString(),
+  };
+  if (!all[idx].frogs) all[idx].frogs = [];
+  all[idx].frogs.push(frog);
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true, frog });
+});
+
+app.delete("/api/colonies/:id/frogs/:frogId", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(all[idx], actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  all[idx].frogs = (all[idx].frogs || []).filter(f => f.id !== req.params.frogId);
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true });
+});
+
+// ─── Colony Management: Procedures ────────────────────────────
+app.get("/api/colonies/:id/procedures", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const colony = all.find(c => c.id === req.params.id);
+  if (!colony) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(colony, actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  return res.json({ ok: true, procedures: colony.procedures || [] });
+});
+
+app.post("/api/colonies/:id/procedures", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(all[idx], actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  const description = String(req.body.description ?? "").trim();
+  if (!description) return res.status(400).json({ ok: false, error: "Description is required" });
+  const proc: ProcedureRecord = {
+    id: `proc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    date: String(req.body.date ?? new Date().toISOString().split("T")[0]),
+    type: (["injection", "oocyte_extraction", "squeeze", "surgery", "other"] as const).includes(req.body.type) ? req.body.type : "other",
+    description,
+    frogIds: Array.isArray(req.body.frogIds) ? req.body.frogIds : undefined,
+    restInterval: String(req.body.restInterval ?? "").trim() || undefined,
+    recoveryNotes: String(req.body.recoveryNotes ?? "").trim() || undefined,
+    addedBy: actor.userId,
+    addedAt: new Date().toISOString(),
+  };
+  if (!all[idx].procedures) all[idx].procedures = [];
+  all[idx].procedures.unshift(proc);
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true, procedure: proc });
+});
+
+// ─── Colony Management: Running Notes ──────────────────────────
+app.put("/api/colonies/:id/running-notes", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(all[idx], actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  all[idx].runningNotes = String(req.body.runningNotes ?? "");
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true, runningNotes: all[idx].runningNotes });
+});
+
+// ─── Colony Management: Tank/Bins ──────────────────────────────
+app.put("/api/colonies/:id/tank-bins", async (req, res) => {
+  const actor = getActorFromRequest(req);
+  if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const all = await loadAllColonies();
+  const idx = all.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ ok: false, error: "Colony not found" });
+  if (!userCanAccessColony(all[idx], actor.userId)) return res.status(403).json({ ok: false, error: "Access denied" });
+  all[idx].tankBins = Array.isArray(req.body.tankBins) ? req.body.tankBins.map((t: unknown) => String(t).trim()).filter(Boolean) : [];
+  all[idx].updatedAt = new Date().toISOString();
+  await saveAllColonies(all);
+  return res.json({ ok: true, tankBins: all[idx].tankBins });
+});
+
 app.post("/api/admin/reset", async (req, res) => {
   const actor = getActorFromRequest(req);
   if (!actor) return res.status(401).json({ ok: false, error: "Authentication required" });
+  const wipeUsers = Boolean(req.body.wipeUsers);
+  const wipeColonies = Boolean(req.body.wipeColonies);
   try {
     const result = await resetAllState();
+    if (wipeColonies) {
+      await saveAllColonies([]);
+      result.cleared.push("colonies wiped (Redis key cleared)");
+    }
+    if (wipeUsers) {
+      await clearAllUsers();
+      result.cleared.push("users wiped (Redis key cleared)");
+    }
     console.log("[admin/reset] State cleared:", result.cleared);
     res.json({ ok: true, cleared: result.cleared });
   } catch (err) {
