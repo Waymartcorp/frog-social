@@ -44,8 +44,11 @@ const BETA_ALLOWLIST: string[] = (process.env.FROG_BETA_ALLOWLIST || "")
 
 const BETA_DOMAINS: string[] = ["frogsocial-beta.org"];
 
+const FOUNDER_EMAILS: string[] = ["rob@xenopus1.com"];
+
 export function classifyEmailDomain(email: string): VerificationStatus {
   const lower = email.trim().toLowerCase();
+  if (FOUNDER_EMAILS.includes(lower)) return "verified";
   if (BETA_ALLOWLIST.includes(lower)) return "verified";
   const domain = lower.split("@")[1] || "";
   for (const bd of BETA_DOMAINS) {
